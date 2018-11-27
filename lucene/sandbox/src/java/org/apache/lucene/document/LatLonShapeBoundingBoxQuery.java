@@ -90,10 +90,10 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
     if (b == null) {
       b = new byte[4 * LatLonShape.BYTES];
     }
-    LatLonShape.encodeTriangleBoxVal(minY, b, 0);
-    LatLonShape.encodeTriangleBoxVal(minX, b, BYTES);
-    LatLonShape.encodeTriangleBoxVal(maxY, b, 2 * BYTES);
-    LatLonShape.encodeTriangleBoxVal(maxX, b, 3 * BYTES);
+    NumericUtils.intToSortableBytes(minY, b, 0);
+    NumericUtils.intToSortableBytes(minX, b, BYTES);
+    NumericUtils.intToSortableBytes(maxY, b, 2 * BYTES);
+    NumericUtils.intToSortableBytes(maxX, b, 3 * BYTES);
   }
 
   @Override
@@ -131,17 +131,25 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   /** returns true if the query matches the encoded triangle */
   @Override
   protected boolean queryMatches(byte[] t) {
+    Relation eastRelation = compareBBoxtoTriangle(this.bbox, t);
+    if (eastRelation == Relation.CELL_OUTSIDE_QUERY) {
+      if (this.crossesDateline()) {
+        if (compareBBoxtoTriangle(this.west, t) == Relation.CELL_OUTSIDE_QUERY){
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
     // decode indexed triangle
-    long a = NumericUtils.sortableBytesToLong(t, 4 * LatLonShape.BYTES);
-    long b = NumericUtils.sortableBytesToLong(t, 5 * LatLonShape.BYTES);
-    long c = NumericUtils.sortableBytesToLong(t, 6 * LatLonShape.BYTES);
+    int[] encoded = LatLonShape.decodeTriangle(t);
 
-    int aX = (int)((a >>> 32) & 0x00000000FFFFFFFFL);
-    int bX = (int)((b >>> 32) & 0x00000000FFFFFFFFL);
-    int cX = (int)((c >>> 32) & 0x00000000FFFFFFFFL);
-    int aY = (int)(a & 0x00000000FFFFFFFFL);
-    int bY = (int)(b & 0x00000000FFFFFFFFL);
-    int cY = (int)(c & 0x00000000FFFFFFFFL);
+    int aY = encoded[0];
+    int aX = encoded[1];
+    int bY = encoded[2];
+    int bX = encoded[3];
+    int cY = encoded[4];
+    int cX = encoded[5];
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
       return queryContainsTriangle(aX, aY, bX, bY, cX, cY);

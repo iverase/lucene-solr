@@ -38,6 +38,9 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FutureArrays;
+
+import static org.apache.lucene.document.LatLonShape.BYTES;
 
 /**
  * Base LatLonShape Query class providing common query logic for
@@ -62,6 +65,16 @@ abstract class LatLonShapeQuery extends Query {
     }
     this.field = field;
     this.queryRelation = queryType;
+  }
+
+  protected static Relation compareBBoxtoTriangle(final byte[] bbox, final byte[] t) {
+    if (FutureArrays.compareUnsigned(t, 0,  BYTES, bbox, 2 * BYTES, 3  * BYTES) > 0 ||
+        FutureArrays.compareUnsigned(t, 2 * BYTES, 3 * BYTES, bbox, 0, BYTES) < 0 ||
+        FutureArrays.compareUnsigned(t, BYTES, 2 * BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
+        FutureArrays.compareUnsigned(t, 3 * BYTES, 4 * BYTES, bbox, BYTES, 2 * BYTES) < 0) {
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    return Relation.CELL_CROSSES_QUERY;
   }
 
   /**
