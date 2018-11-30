@@ -130,26 +130,16 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t) {
-    Relation eastRelation = compareBBoxtoTriangle(this.bbox, t);
-    if (eastRelation == Relation.CELL_OUTSIDE_QUERY) {
-      if (this.crossesDateline()) {
-        if (compareBBoxtoTriangle(this.west, t) == Relation.CELL_OUTSIDE_QUERY){
-          return false;
-        }
-      } else {
-        return false;
-      }
-    }
+  protected boolean queryMatches(byte[] t, int[] scratchTriangle) {
     // decode indexed triangle
-    int[] encoded = LatLonShape.decodeTriangle(t);
+    LatLonShape.decodeTriangle(t, scratchTriangle);
 
-    int aY = encoded[0];
-    int aX = encoded[1];
-    int bY = encoded[2];
-    int bX = encoded[3];
-    int cY = encoded[4];
-    int cX = encoded[5];
+    int aY = scratchTriangle[0];
+    int aX = scratchTriangle[1];
+    int bY = scratchTriangle[2];
+    int bX = scratchTriangle[3];
+    int cY = scratchTriangle[4];
+    int cX = scratchTriangle[5];
 
     if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
       return queryContainsTriangle(aX, aY, bX, bY, cX, cY);

@@ -323,12 +323,16 @@ public class LatLonShape {
   /**
    * Decode a triangle encoded by {@link LatLonShape#encodeTriangle(byte[], double, double, double, double, double, double)}.
    */
-  public static int[] decodeTriangle(byte[] t) {
+  public static void decodeTriangle(byte[] t, int[] triangle) {
     int bits = NumericUtils.sortableBytesToInt(t, 6 * LatLonShape.BYTES);
     boolean firstBit  = (bits & FIRSTBIT) == FIRSTBIT;
     boolean secondBit = (bits & SECONDBIT) == SECONDBIT;
     boolean thirdBit  = (bits & THIRDBIT) == THIRDBIT;
-    int[] triangle = new int[6];
+    if (triangle == null) {
+      triangle = new int[6];
+    }
+    assert triangle.length == 6;
+
     if (firstBit) {
       if (secondBit) {
         if (thirdBit) {
@@ -398,6 +402,5 @@ public class LatLonShape {
         }
       }
     }
-    return triangle;
   }
 }

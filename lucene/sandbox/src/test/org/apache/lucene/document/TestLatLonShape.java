@@ -280,7 +280,8 @@ public class TestLatLonShape extends LuceneTestCase {
 
     byte[] b = new byte[7 * LatLonShape.BYTES];
     LatLonShape.encodeTriangle(b, alat, alon, blat, blon, clat, clon);
-    int[] encoded = LatLonShape.decodeTriangle(b);
+    int[] encoded = new int[6];
+    LatLonShape.decodeTriangle(b, encoded);
 
     for (int i = 0; i < 3; ) {
       if (compare[0] ==  encoded[i] && compare[1] ==  encoded[i + 1]) {
@@ -320,7 +321,8 @@ public class TestLatLonShape extends LuceneTestCase {
 
     byte[] b = new byte[7 * LatLonShape.BYTES];
     LatLonShape.encodeTriangle(b, alat, alon, blat, blon, alat, alon);
-    int[] encoded = LatLonShape.decodeTriangle(b);
+    int[] encoded = new int[6];
+    LatLonShape.decodeTriangle(b, encoded);
 
     for (int i = 0; i < 2; ) {
       if (compare[0] ==  encoded[i] && compare[1] ==  encoded[i + 1]) {
@@ -344,7 +346,8 @@ public class TestLatLonShape extends LuceneTestCase {
 
     byte[] b = new byte[7 * LatLonShape.BYTES];
     LatLonShape.encodeTriangle(b, lat, lon, lat, lon, lat, lon);
-    int[] encoded = LatLonShape.decodeTriangle(b);
+    int[] encoded = new int[6];
+    LatLonShape.decodeTriangle(b, encoded);
 
     assertTrue(latEnc ==  encoded[0] && latEnc ==  encoded[2] && latEnc ==  encoded[4]);
     assertTrue(lonEnc ==  encoded[1] && lonEnc ==  encoded[3] && lonEnc ==  encoded[5]);

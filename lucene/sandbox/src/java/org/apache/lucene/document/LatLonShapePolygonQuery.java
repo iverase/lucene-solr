@@ -73,15 +73,15 @@ final class LatLonShapePolygonQuery extends LatLonShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t) {
-    int[] encoded = LatLonShape.decodeTriangle(t);
+  protected boolean queryMatches(byte[] t, int[] scratchTriangle) {
+    LatLonShape.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(encoded[0]);
-    double alon = GeoEncodingUtils.decodeLongitude(encoded[1]);
-    double blat = GeoEncodingUtils.decodeLatitude(encoded[2]);
-    double blon = GeoEncodingUtils.decodeLongitude(encoded[3]);
-    double clat = GeoEncodingUtils.decodeLatitude(encoded[4]);
-    double clon = GeoEncodingUtils.decodeLongitude(encoded[5]);
+    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle[0]);
+    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle[1]);
+    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle[2]);
+    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle[3]);
+    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle[4]);
+    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle[5]);
 
     if (queryRelation == QueryRelation.WITHIN) {
       return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
