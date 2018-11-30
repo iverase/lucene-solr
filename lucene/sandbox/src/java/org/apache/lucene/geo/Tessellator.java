@@ -859,9 +859,11 @@ final public class Tessellator {
     Node[] vertex;
 
     protected Triangle(Node a, Node b, Node c) {
-      this.vertex = new Node[] {a, b, c};
-      // sort nodes by morton value
-      Arrays.sort(this.vertex, (x, y) -> x.compareLat(y));
+      if (orient(a.getLon(), a.getLat(), b.getLon(), b.getLat(), c.getLon(), c.getLat()) == -1) {
+        this.vertex = new Node[] {a, b, c};
+      } else {
+        this.vertex = new Node[]{c, b, a};
+      }
     }
 
     /** get quantized x value for the given vertex */

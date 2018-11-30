@@ -173,26 +173,22 @@ public class LatLonShape {
     INTERSECTS, WITHIN, DISJOINT
   }
 
+  private static int FIRSTBIT  = 1 << 0;
+  private static int SECONDBIT = 1 << 1;
+  private static int THIRDBIT  = 1 << 2;
+
+
   /**
-   * A triangle is encoded using 6 points and a extra point with encoded information of how to reconstruct it. The information
-   * is as follows:
-   * first bit 1 if the triangle points correspond to one of vertices of the bounding box, else two vertices.
-   * if first bit is 0, then the info is the following
-   * second bit 0, third bit 0 then the matching vertices is the minLat, minLon
-   * second bit 1, third bit 0 then the matching vertices is the maxLat, minLon
-   * second bit 0, third bit 1 then the matching vertices is the minLat, maxLon
-   * second bit 1, third bit 1 then the matching vertices is the maxLat, maxLon
-   * The fourth bit represent the orientation (CW or CCW) of the triangle.
-   *
-   * else if first bit is 1:
-   * second bit 1: matching vertices are [minLat, minLon] and [maxLat, maxLon]
-   * second bit 0: matching vertices are [minLat, maxLon] and [maxLat, minLon]
-   * The third bit represent the orientation (CW or CCW) of the triangle.
+   * A triangle is encoded using 6 points and a extra point with encoded information in three bits of how to reconstruct it.
+   * triangles must be on CCW orientation. Points can be coplanar.
    */
   public static void encodeTriangle(byte[] bytes, double aLat, double aLon, double bLat, double bLon, double cLat, double cLon) {
     assert bytes.length == 7 * BYTES;
 
     int ccw = GeoUtils.orient(aLon, aLat, bLon, bLat, cLon, cLat);
+    if (ccw == 1) {
+      throw new IllegalArgumentException("Orientation of the triangle cannot be clock-wise");
+    }
     int aX = GeoEncodingUtils.encodeLongitude(aLon);
     int bX = GeoEncodingUtils.encodeLongitude(bLon);
     int cX = GeoEncodingUtils.encodeLongitude(cLon);
@@ -212,194 +208,107 @@ public class LatLonShape {
       if (maxY == bY && maxX == bX) {
         y = cY;
         x = cX;
-        bits |= (1 << 0);
-        bits |= (1 << 1);
-        bits |= (1 << 2);
+        bits |= FIRSTBIT | SECONDBIT | THIRDBIT;
       } else if (maxY == cY && maxX == cX) {
         y = bY;
         x = bX;
-        bits |= (1 << 0);
-        bits |= (1 << 1);
+        bits |= FIRSTBIT | SECONDBIT;
       } else {
-        if (ccw == -1) {
-          y = cY;
-          x = bX;
-          bits |= (1 << 3);
-        } else {
-          y = bY;
-          x = cX;
-        }
+        y = cY;
+        x = bX;
       }
     } else if (minY == bY && minX == bX) {
       if (maxY == cY && maxX == cX) {
         y = aY;
         x = aX;
-        bits |= (1 << 0);
-        bits |= (1 << 1);
-        bits |= (1 << 2);
+        bits |=  FIRSTBIT | SECONDBIT | THIRDBIT;
       } else if (maxY == aY && maxX == aX) {
         y = cY;
         x = cX;
-        bits |= (1 << 0);
-        bits |= (1 << 1);
+        bits |= FIRSTBIT | SECONDBIT;
       } else {
-        if (ccw == -1) {
-          y = aY;
-          x = cX;
-          bits |= (1 << 3);
-        } else {
-          y = cY;
-          x = aX;
-        }
+        y = aY;
+        x = cX;
       }
     } else if (minY == cY && minX == cX) {
       if (maxY == aY && maxX == aX) {
         y = bY;
         x = bX;
-        bits |= (1 << 0);
-        bits |= (1 << 1);
-        bits |= (1 << 2);
+        bits |=  FIRSTBIT | SECONDBIT | THIRDBIT;
       } else if (maxY == bY && maxX == bX) {
         y = aY;
         x = aX;
-        bits |= (1 << 0);
-        bits |= (1 << 1);
+        bits |= FIRSTBIT | SECONDBIT;
       } else {
-        if (ccw == -1) {
-          y = bY;
-          x = aX;
-          bits |= (1 << 3);
-        } else {
-          y = aY;
-          x = bX;
-        }
+        y = bY;
+        x = aX;
       }
     } else if (minY == aY && maxX == aX) {
       if (maxY == bY && minX == bX) {
         y = cY;
         x = cX;
-        bits |= (1 << 0);
-        bits |= (1 << 2);
+        bits |= FIRSTBIT | THIRDBIT;
       } else if (maxY == cY && minX == cX) {
         y = bY;
         x = bX;
-        bits |= (1 << 0);
+        bits |= FIRSTBIT;
       } else {
-        bits |= (1 << 2);
-        if (ccw == -1) {
-          y = bY;
-          x = cX;
-          bits |= (1 << 3);
-        } else {
-          y = cY;
-          x = bX;
-        }
+        y = bY;
+        x = cX;
+        bits |= THIRDBIT;
       }
     } else if (minY == bY && maxX == bX) {
-      if (maxY == aY && minX == aX) {
-        y = cY;
-        x = cX;
-        bits |= (1 << 0);
-      } else if (maxY == cY && minX == cX) {
+      if (maxY == cY && minX == cX) {
         y = aY;
         x = aX;
-        bits |= (1 << 0);
-        bits |= (1 << 2);
+        bits |= FIRSTBIT | THIRDBIT;
+      } else if (maxY == aY && minX == aX) {
+        y = cY;
+        x = cX;
+        bits |= FIRSTBIT;
       } else {
-        bits |= (1 << 2);
-        if (ccw == -1) {
-          y = cY;
-          x = aX;
-          bits |= (1 << 3);
-        } else {
-          y = aY;
-          x = cX;
-        }
+        y = cY;
+        x = aX;
+        bits |= THIRDBIT;
       }
     } else if (minY == cY && maxX == cX) {
       if (maxY == aY && minX == aX) {
         y = bY;
         x = bX;
-        bits |= (1 << 0);
-        bits |= (1 << 2);
+        bits |= FIRSTBIT | THIRDBIT;
       } else if (maxY == bY && minX == bX) {
         y = aY;
         x = aX;
-        bits |= (1 << 0);
+        bits |= FIRSTBIT;
       } else {
-        bits |= (1 << 2);
-        if (ccw == -1) {
-          y = aY;
-          x = bX;
-          bits |= (1 << 3);
-        } else {
-          y = bY;
-          x = aX;
-        }
+        y = aY;
+        x = bX;
+        bits |= THIRDBIT;
       }
     } else if (maxY == aY && maxX == aX) {
-      bits |= (1 << 1);
-      bits |= (1 << 2);
-      if (ccw == -1) {
-        y = cY;
-        x = bX;
-        bits |= (1 << 3);
-      } else {
-        y = bY;
-        x = cX;
-      }
+      y = cY;
+      x = bX;
+      bits |= SECONDBIT | THIRDBIT;
     } else if (maxY == bY && maxX == bX) {
-      bits |= (1 << 1);
-      bits |= (1 << 2);
-      if (ccw == -1) {
-        y = aY;
-        x = cX;
-        bits |= (1 << 3);
-      } else {
-        y = cY;
-        x = aX;
-      }
+      y = aY;
+      x = cX;
+      bits |= SECONDBIT | THIRDBIT;
     } else if (maxY == cY && maxX == cX) {
-      bits |= (1 << 1);
-      bits |= (1 << 2);
-      if (ccw == -1) {
-        y = bY;
-        x = aX;
-        bits |= (1 << 3);
-      } else {
-        y = aY;
-        x = bX;
-      }
+      y = bY;
+      x = aX;
+      bits |= SECONDBIT | THIRDBIT;
     } else if (maxY == aY && minX == aX) {
-      bits |= (1 << 1);
-      if (ccw == -1) {
-        y = bY;
-        x = cX;
-        bits |= (1 << 3);
-      } else {
-        y = cY;
-        x = bX;
-      }
+      y = bY;
+      x = cX;
+      bits |= SECONDBIT;
     } else if (maxY == bY && minX == bX) {
-      bits |= (1 << 1);
-      if (ccw == -1) {
-        y = cY;
-        x = aX;
-        bits |= (1 << 3);
-      } else {
-        y = aY;
-        x = cX;
-      }
+      y = cY;
+      x = aX;
+      bits |= SECONDBIT;
     } else if (maxY == cY && minX == cX) {
-      bits |= (1 << 1);
-      if (ccw == -1) {
-        y = aY;
-        x = bX;
-        bits |= (1 << 3);
-      } else {
-        y = bY;
-        x = aX;
-      }
+      y = aY;
+      x = bX;
+      bits |= SECONDBIT;
     }
 
     NumericUtils.intToSortableBytes(minY, bytes, 0);
@@ -416,9 +325,9 @@ public class LatLonShape {
    */
   public static int[] decodeTriangle(byte[] t) {
     int bits = NumericUtils.sortableBytesToInt(t, 6 * LatLonShape.BYTES);
-    boolean firstBit  = (bits & 1 << 0) == 1 << 0;
-    boolean secondBit = (bits & 1 << 1) == 1 << 1;
-    boolean thirdBit  = (bits & 1 << 2) == 1 << 2;
+    boolean firstBit  = (bits & FIRSTBIT) == FIRSTBIT;
+    boolean secondBit = (bits & SECONDBIT) == SECONDBIT;
+    boolean thirdBit  = (bits & THIRDBIT) == THIRDBIT;
     int[] triangle = new int[6];
     if (firstBit) {
       if (secondBit) {
@@ -455,74 +364,37 @@ public class LatLonShape {
         }
       }
     } else {
-      boolean fourthBit = (bits & 1 << 3) == 1 << 3;
       if (secondBit) {
         if (thirdBit) {
-          if (fourthBit) {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-          } else {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-          }
+          triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
+          triangle[1] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
+          triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
+          triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
+          triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
+          triangle[5] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
         } else {
-          if (fourthBit) {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-          } else {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-          }
+          triangle[0] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
+          triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
+          triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
+          triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
+          triangle[4] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
+          triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
         }
       } else {
         if (thirdBit) {
-          if (fourthBit) {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-          } else {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-          }
+          triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
+          triangle[1] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
+          triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
+          triangle[3] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
+          triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
+          triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
         } else {
-          if (fourthBit) {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLat
-          } else {
-            triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
-            triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
-            triangle[2] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
-            triangle[3] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLon
-            triangle[4] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
-            triangle[5] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
-          }
+          triangle[0] = NumericUtils.sortableBytesToInt(t, 0 * LatLonShape.BYTES); //minLat
+          triangle[1] = NumericUtils.sortableBytesToInt(t, 1 * LatLonShape.BYTES); //minLon
+          triangle[2] = NumericUtils.sortableBytesToInt(t, 2 * LatLonShape.BYTES); //maxLat
+          triangle[3] = NumericUtils.sortableBytesToInt(t, 5 * LatLonShape.BYTES); //lon
+          triangle[4] = NumericUtils.sortableBytesToInt(t, 4 * LatLonShape.BYTES); //lat
+          triangle[5] = NumericUtils.sortableBytesToInt(t, 3 * LatLonShape.BYTES); //maxLat
         }
       }
     }

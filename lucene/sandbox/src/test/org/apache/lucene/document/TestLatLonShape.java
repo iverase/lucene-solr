@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.LatLonShape.QueryRelation;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DirectoryReader;
@@ -257,7 +258,10 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon;
     double clat;
     double clon;
+
     int[] compare;
+
+
     do {
        alat = GeoTestUtil.nextLatitude();
        alon = GeoTestUtil.nextLongitude();
@@ -265,15 +269,14 @@ public class TestLatLonShape extends LuceneTestCase {
        blon = GeoTestUtil.nextLongitude();
        clat = GeoTestUtil.nextLatitude();
        clon = GeoTestUtil.nextLongitude();
-       compare = new int[] {GeoEncodingUtils.encodeLatitude(alat),
+      compare = new int[] {GeoEncodingUtils.encodeLatitude(alat),
           GeoEncodingUtils.encodeLongitude(alon),
           GeoEncodingUtils.encodeLatitude(blat),
           GeoEncodingUtils.encodeLongitude(blon),
           GeoEncodingUtils.encodeLatitude(clat),
           GeoEncodingUtils.encodeLongitude(clon)};
-    } while ((compare[0] == compare[2] && compare[1] == compare[3]) ||
-        (compare[0] == compare[4] && compare[1] == compare[5]) ||
-        (compare[2] == compare[4] && compare[3] == compare[5]));
+    } while (GeoUtils.orient(compare[1], compare[0], compare[3], compare[2], compare[5], compare[4]) >= 0
+             || GeoUtils.orient(alon, alat, blon, blat, clon, clat) != -1);
 
     byte[] b = new byte[7 * LatLonShape.BYTES];
     LatLonShape.encodeTriangle(b, alat, alon, blat, blon, clat, clon);
@@ -290,6 +293,43 @@ public class TestLatLonShape extends LuceneTestCase {
         } else {
           assertTrue(compare[2] ==  encoded[0] && compare[3] ==  encoded[1]);
           assertTrue(compare[4] ==  encoded[2] && compare[5] ==  encoded[3]);
+        }
+      }
+      i += 2;
+    }
+  }
+
+  public void testRandomLineEncoding() {
+    double alat;
+    double alon;
+    double blat;
+    double blon;
+
+    do {
+      alat = GeoTestUtil.nextLatitude();
+      alon = GeoTestUtil.nextLongitude();
+      blat = GeoTestUtil.nextLatitude();
+      blon = GeoTestUtil.nextLongitude();
+
+    } while ((alat == blat && alon == blon));
+
+    int[] compare = new int[] {GeoEncodingUtils.encodeLatitude(alat),
+        GeoEncodingUtils.encodeLongitude(alon),
+        GeoEncodingUtils.encodeLatitude(blat),
+        GeoEncodingUtils.encodeLongitude(blon)};
+
+    byte[] b = new byte[7 * LatLonShape.BYTES];
+    LatLonShape.encodeTriangle(b, alat, alon, blat, blon, alat, alon);
+    int[] encoded = LatLonShape.decodeTriangle(b);
+
+    for (int i = 0; i < 2; ) {
+      if (compare[0] ==  encoded[i] && compare[1] ==  encoded[i + 1]) {
+        if (i ==0) {
+          assertTrue(compare[2] ==  encoded[2] && compare[3] ==  encoded[3]);
+          assertTrue(compare[0] ==  encoded[4] && compare[1] ==  encoded[5]);
+        } else {
+          assertTrue(compare[2] ==  encoded[4] && compare[3] ==  encoded[5]);
+          assertTrue(compare[0] ==  encoded[0] && compare[1] ==  encoded[1]);
         }
       }
       i += 2;
