@@ -32,7 +32,7 @@ class DocIdsWriter {
     boolean sorted = true;
     //boolean equals = true;
     int distinctSequentialDocs = 1;
-    int limit = count / 10;
+    int limit = count / 5;
     int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (sorted && docIds[start + i - 1] > docIds[start + i]) {
