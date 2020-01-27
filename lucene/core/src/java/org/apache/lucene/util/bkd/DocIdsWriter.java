@@ -32,7 +32,7 @@ class DocIdsWriter {
     boolean sorted = true;
     //boolean equals = true;
     int distinctSequentialDocs = 1;
-    int limit = count / 5;
+    int limit = count / 3;
     int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (sorted && docIds[start + i - 1] > docIds[start + i]) {
@@ -49,7 +49,7 @@ class DocIdsWriter {
     }
     if (distinctSequentialDocs == 1) {
       out.writeByte((byte) 64);
-      out.writeVInt(docId);
+      out.writeInt(docId);
     } else if(distinctSequentialDocs < limit) {
       out.writeByte((byte) 4);
       docId = docIds[start];
@@ -58,7 +58,7 @@ class DocIdsWriter {
         int doc = docIds[start + i];
         if (doc != docId) {
           out.writeVInt(numDocs);
-          out.writeVInt(docId);
+          out.writeInt(docId);
           docId = doc;
           numDocs = 1;
         } else {
@@ -66,7 +66,7 @@ class DocIdsWriter {
         }
       }
       out.writeVInt(numDocs);
-      out.writeVInt(docId);
+      out.writeInt(docId);
     } else if (sorted) {
       out.writeByte((byte) 0);
       int previous = 0;
@@ -120,7 +120,7 @@ class DocIdsWriter {
   }
 
   private static void readAllEquals(IndexInput in, int count, int[] docIDs) throws IOException {
-    int doc = in.readVInt();
+    int doc = in.readInt();
     for (int i = 0; i < count; i++) {
       docIDs[i] = doc;
     }
@@ -129,7 +129,7 @@ class DocIdsWriter {
   private static void readRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count;) {
       int numberDocs = in.readVInt();
-      int doc = in.readVInt();
+      int doc = in.readInt();
       for (int j = 0; j < numberDocs; j++) {
         docIDs[i++] = doc;
       }
@@ -195,7 +195,7 @@ class DocIdsWriter {
   }
 
   private static void readAllEquals(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int doc = in.readVInt();
+    int doc = in.readInt();
     for (int i = 0; i < count; i++) {
       visitor.visit(doc);
     }
@@ -204,7 +204,7 @@ class DocIdsWriter {
   private static void readRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
       int numberDocs = in.readVInt();
-      int doc = in.readVInt();
+      int doc = in.readInt();
       for (int j = 0; j < numberDocs; j++) {
         visitor.visit(doc);
         i++;
