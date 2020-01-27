@@ -122,9 +122,7 @@ class DocIdsWriter {
 
   private static void readAllEquals(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = in.readInt();
-    for (int i = 0; i < count; i++) {
-      docIDs[i] = doc;
-    }
+    Arrays.fill(docIDs, 0, count, doc);
   }
 
   private static void readRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
