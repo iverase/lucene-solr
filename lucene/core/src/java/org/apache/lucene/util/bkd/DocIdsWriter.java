@@ -17,6 +17,7 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
@@ -130,9 +131,8 @@ class DocIdsWriter {
     for (int i = 0; i < count;) {
       int numberDocs = in.readVInt();
       int doc = in.readInt();
-      for (int j = 0; j < numberDocs; j++) {
-        docIDs[i++] = doc;
-      }
+      Arrays.fill(docIDs, i, i + numberDocs, doc);
+      i += numberDocs;
     }
   }
 
