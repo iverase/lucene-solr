@@ -195,20 +195,13 @@ class DocIdsWriter {
   }
 
   private static void readAllEquals(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int doc = in.readInt();
-    for (int i = 0; i < count; i++) {
-      visitor.visit(doc);
-    }
+    visitor.visit(in.readInt());
   }
 
   private static void readRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
-      int numberDocs = in.readVInt();
-      int doc = in.readInt();
-      for (int j = 0; j < numberDocs; j++) {
-        visitor.visit(doc);
-        i++;
-      }
+      i += in.readVInt();
+      visitor.visit(in.readInt());
     }
   }
 
