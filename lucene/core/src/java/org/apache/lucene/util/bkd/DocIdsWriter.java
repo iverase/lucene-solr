@@ -30,13 +30,44 @@ class DocIdsWriter {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
+    //boolean equals = true;
+    int distinctSequentialDocs = 1;
+    int limit = count / 10;
+    int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i - 1] > docIds[start + i]) {
+      if (sorted && docIds[start + i - 1] > docIds[start + i]) {
         sorted = false;
-        break;
+        //break;
+      }
+      if (docIds[start + i] != docId) {
+        docId = docIds[start + i];
+        distinctSequentialDocs++;
+        if (distinctSequentialDocs >= limit) {
+          break;
+        }
       }
     }
-    if (sorted) {
+    if (distinctSequentialDocs == 1) {
+      out.writeByte((byte) 64);
+      out.writeVInt(docId);
+    } else if(distinctSequentialDocs < limit) {
+      out.writeByte((byte) 4);
+      docId = docIds[start];
+      int numDocs = 1;
+      for (int i = 1; i < count; ++i) {
+        int doc = docIds[start + i];
+        if (doc != docId) {
+          out.writeVInt(numDocs);
+          out.writeVInt(docId);
+          docId = doc;
+          numDocs = 1;
+        } else {
+          numDocs++;
+        }
+      }
+      out.writeVInt(numDocs);
+      out.writeVInt(docId);
+    } else if (sorted) {
       out.writeByte((byte) 0);
       int previous = 0;
       for (int i = 0; i < count; ++i) {
@@ -71,6 +102,12 @@ class DocIdsWriter {
       case 0:
         readDeltaVInts(in, count, docIDs);
         break;
+      case 64:
+        readAllEquals(in, count, docIDs);
+        break;
+      case 4:
+        readRunLen(in, count, docIDs);
+        break;
       case 32:
         readInts32(in, count, docIDs);
         break;
@@ -79,6 +116,23 @@ class DocIdsWriter {
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
+    }
+  }
+
+  private static void readAllEquals(IndexInput in, int count, int[] docIDs) throws IOException {
+    int doc = in.readVInt();
+    for (int i = 0; i < count; i++) {
+      docIDs[i] = doc;
+    }
+  }
+
+  private static void readRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
+    for (int i = 0; i < count;) {
+      int numberDocs = in.readVInt();
+      int doc = in.readVInt();
+      for (int j = 0; j < numberDocs; j++) {
+        docIDs[i++] = doc;
+      }
     }
   }
 
@@ -123,6 +177,12 @@ class DocIdsWriter {
       case 0:
         readDeltaVInts(in, count, visitor);
         break;
+      case 64:
+        readAllEquals(in, count, visitor);
+        break;
+      case 4:
+        readRunLen(in, count, visitor);
+        break;
       case 32:
         readInts32(in, count, visitor);
         break;
@@ -131,6 +191,24 @@ class DocIdsWriter {
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
+    }
+  }
+
+  private static void readAllEquals(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    int doc = in.readVInt();
+    for (int i = 0; i < count; i++) {
+      visitor.visit(doc);
+    }
+  }
+
+  private static void readRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    for (int i = 0; i < count;) {
+      int numberDocs = in.readVInt();
+      int doc = in.readVInt();
+      for (int j = 0; j < numberDocs; j++) {
+        visitor.visit(doc);
+        i++;
+      }
     }
   }
 
