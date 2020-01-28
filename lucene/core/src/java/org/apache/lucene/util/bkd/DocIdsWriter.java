@@ -39,9 +39,7 @@ class DocIdsWriter {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
-    //boolean equals = true;
     int runLenDocs = 1;
-    int limit = count / 2;
     int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (sorted && docIds[start + i - 1] > docIds[start + i]) {
@@ -50,16 +48,13 @@ class DocIdsWriter {
       if (docIds[start + i] != docId) {
         docId = docIds[start + i];
         runLenDocs++;
-        if (runLenDocs >= limit) {
-          break;
-        }
       }
     }
     if (runLenDocs == 1) {
       out.writeByte(EQUALS);
       out.writeInt(docId);
     } else if (sorted) {
-      if (runLenDocs < limit) {
+      if (runLenDocs < count / 2) {
         writeDeltaRunLen(docIds, start, count, out);
       } else {
         writeDelta(docIds, start, count, out);
@@ -70,13 +65,13 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        //if (runLenDocs < limit) {
-        //  writeRunLen24(docIds, start, count, out, runLenDocs);
-        //} else {
+        if (runLenDocs < count / 1.5) {
+          writeRunLen24(docIds, start, count, out, runLenDocs);
+        } else {
           writeInt24(docIds, start, count, out);
-        //}
+        }
       } else {
-        if (runLenDocs < limit) {
+        if (runLenDocs < count / 1.75) {
           writeRunLen(docIds, start, count, out);
         } else {
           writeInt32(docIds, start, count, out);
