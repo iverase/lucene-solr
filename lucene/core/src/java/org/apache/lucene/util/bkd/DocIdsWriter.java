@@ -127,10 +127,10 @@ class DocIdsWriter {
 
   private static void readRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count;) {
-      int numberDocs = in.readVInt();
-      int doc = in.readInt();
-      Arrays.fill(docIDs, i, i + numberDocs, doc);
-      i += numberDocs;
+      int j = i;
+      i += in.readVInt();
+      Arrays.fill(docIDs, j, i,  in.readInt());
+
     }
   }
 
