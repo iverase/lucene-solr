@@ -189,7 +189,7 @@ class DocIdsWriter {
     for (int i = 0; i < count;) {
       final int runLen = in.readVInt();
       final int doc = in.readInt();
-      for (int j =0; j < runLen; j++) {
+      for (int j = 0; j < runLen; j++) {
         docIDs[i++] = doc;
       }
     }
@@ -199,8 +199,8 @@ class DocIdsWriter {
     int doc = 0;
     for (int i = 0; i < count;) {
       final int runLen = in.readVInt();
-      doc += in.readInt();
-      for (int j =0; j < runLen; j++) {
+      doc += in.readVInt();
+      for (int j = 0; j < runLen; j++) {
         docIDs[i++] = doc;
       }
     }
