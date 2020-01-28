@@ -17,7 +17,6 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
@@ -39,26 +38,25 @@ class DocIdsWriter {
     // or when a segment is sorted
     boolean sorted = true;
     //boolean equals = true;
-    int distinctSequentialDocs = 1;
-    int limit = count / 2;
+    int runLenDocs = 1;
+    int limit = count / 3;
     int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (sorted && docIds[start + i - 1] > docIds[start + i]) {
         sorted = false;
-        //break;
       }
       if (docIds[start + i] != docId) {
         docId = docIds[start + i];
-        distinctSequentialDocs++;
-        if (distinctSequentialDocs >= limit) {
+        runLenDocs++;
+        if (runLenDocs >= limit) {
           break;
         }
       }
     }
-    if (distinctSequentialDocs == 1) {
+    if (runLenDocs == 1) {
       out.writeByte(EQUALS);
       out.writeInt(docId);
-    } else if (distinctSequentialDocs < limit) {
+    } else if (runLenDocs < limit) {
       if (sorted) {
         writeDeltaRunLen(docIds, start, count, out);
       } else {
@@ -181,8 +179,10 @@ class DocIdsWriter {
   }
 
   private static void readAllEquals(IndexInput in, int count, int[] docIDs) throws IOException {
-    int doc = in.readInt();
-    Arrays.fill(docIDs, 0, count, doc);
+    final int doc = in.readInt();
+    for (int i = 0; i < count; i++) {
+      docIDs[i] = doc;
+    }
   }
 
   private static void readRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
