@@ -69,7 +69,11 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        writeInt24(docIds, start, count, out);
+        if (runLenDocs < limit) {
+          writeRunLen24(docIds, start, count, out);
+        } else {
+          writeInt24(docIds, start, count, out);
+        }
       } else {
         if (runLenDocs < limit) {
           writeRunLen(docIds, start, count, out);
@@ -138,7 +142,6 @@ class DocIdsWriter {
       int doc = docIds[start + i];
       if (doc != docId) {
         out.writeVInt(numDocs);
-        out.writeInt(docId);
         out.writeShort((short) (docId >>> 8));
         out.writeByte((byte) docId);
         docId = doc;
@@ -180,6 +183,9 @@ class DocIdsWriter {
         break;
       case RUNLEN:
         readRunLen(in, count, docIDs);
+        break;
+      case RUNLEN24:
+        readRunLen24(in, count, docIDs);
         break;
       case DELTARUNLEN:
         readDeltaRunLen(in, count, docIDs);
@@ -231,6 +237,16 @@ class DocIdsWriter {
     }
   }
 
+  private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
+    for (int i = 0; i < count;) {
+      final int runLen = in.readVInt();
+      final int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
+    }
+  }
+
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
@@ -269,6 +285,9 @@ class DocIdsWriter {
         break;
       case RUNLEN:
         readRunLen(in, count, visitor);
+        break;
+      case RUNLEN24:
+        readRunLen24(in, count, visitor);
         break;
       case DELTARUNLEN:
         readDeltaRunLen(in, count, visitor);
@@ -309,6 +328,13 @@ class DocIdsWriter {
       i += in.readVInt();
       doc += in.readVInt();
       visitor.visit(doc);
+    }
+  }
+
+  private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    for (int i = 0; i < count;) {
+      i += in.readVInt();
+      visitor.visit((Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte()));
     }
   }
 
