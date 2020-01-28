@@ -26,12 +26,11 @@ import org.apache.lucene.store.IndexInput;
 class DocIdsWriter {
 
   private static final byte DELTA = (byte) 0;
-  private static final byte INT24 = (byte) 24;
-  private static final byte INT32 = (byte) 32;
-  private static final byte EQUALS = (byte) 64;
+  private static final byte EQUALS = (byte) 2;
   private static final byte RUNLEN = (byte) 4;
   private static final byte DELTARUNLEN = (byte) 8;
-
+  private static final byte INT24 = (byte) 24;
+  private static final byte INT32 = (byte) 32;
 
   private DocIdsWriter() {}
 
@@ -161,11 +160,11 @@ class DocIdsWriter {
       case DELTARUNLEN:
         readDeltaRunLen(in, count, docIDs);
         break;
-      case INT32:
-        readInts32(in, count, docIDs);
-        break;
       case INT24:
         readInts24(in, count, docIDs);
+        break;
+      case INT32:
+        readInts32(in, count, docIDs);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -181,8 +180,7 @@ class DocIdsWriter {
     for (int i = 0; i < count;) {
       int j = i;
       i += in.readVInt();
-      Arrays.fill(docIDs, j, i,  in.readInt());
-
+      Arrays.fill(docIDs, j, i, in.readInt());
     }
   }
 
@@ -192,7 +190,7 @@ class DocIdsWriter {
       int j = i;
       i += in.readVInt();
       doc += in.readVInt();
-      Arrays.fill(docIDs, j, i,  doc);
+      Arrays.fill(docIDs, j, i, doc);
     }
   }
 
@@ -246,11 +244,11 @@ class DocIdsWriter {
       case DELTARUNLEN:
         readDeltaRunLen(in, count, visitor);
         break;
-      case INT32:
-        readInts32(in, count, visitor);
-        break;
       case INT24:
         readInts24(in, count, visitor);
+        break;
+      case INT32:
+        readInts32(in, count, visitor);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
