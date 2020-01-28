@@ -27,6 +27,7 @@ class DocIdsWriter {
   private static final byte DELTA = (byte) 0;
   private static final byte EQUALS = (byte) 2;
   private static final byte RUNLEN = (byte) 4;
+  private static final byte RUNLEN24 = (byte) 6;
   private static final byte DELTARUNLEN = (byte) 8;
   private static final byte INT24 = (byte) 24;
   private static final byte INT32 = (byte) 32;
@@ -56,14 +57,12 @@ class DocIdsWriter {
     if (runLenDocs == 1) {
       out.writeByte(EQUALS);
       out.writeInt(docId);
-    } else if (runLenDocs < limit) {
-      if (sorted) {
+    } else if (sorted) {
+      if (runLenDocs < limit) {
         writeDeltaRunLen(docIds, start, count, out);
       } else {
-        writeRunLen(docIds, start, count, out);
+        writeDelta(docIds, start, count, out);
       }
-    } else if (sorted) {
-      writeDelta(docIds, start, count, out);
     } else {
       long max = 0;
       for (int i = 0; i < count; ++i) {
@@ -72,7 +71,11 @@ class DocIdsWriter {
       if (max <= 0xffffff) {
         writeInt24(docIds, start, count, out);
       } else {
-        writeInt32(docIds, start, count, out);
+        if (runLenDocs < limit) {
+          writeRunLen(docIds, start, count, out);
+        } else {
+          writeInt32(docIds, start, count, out);
+        }
       }
     }
   }
@@ -125,6 +128,28 @@ class DocIdsWriter {
     }
     out.writeVInt(numDocs);
     out.writeVInt(docId - previous);
+  }
+
+  private static void writeRunLen24(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(RUNLEN24);
+    int docId = docIds[start];
+    int numDocs = 1;
+    for (int i = 1; i < count; ++i) {
+      int doc = docIds[start + i];
+      if (doc != docId) {
+        out.writeVInt(numDocs);
+        out.writeInt(docId);
+        out.writeShort((short) (docId >>> 8));
+        out.writeByte((byte) docId);
+        docId = doc;
+        numDocs = 1;
+      } else {
+        numDocs++;
+      }
+    }
+    out.writeVInt(numDocs);
+    out.writeShort((short) (docId >>> 8));
+    out.writeByte((byte) docId);
   }
 
   private static void writeInt24(int[] docIds, int start, int count, DataOutput out) throws IOException {
