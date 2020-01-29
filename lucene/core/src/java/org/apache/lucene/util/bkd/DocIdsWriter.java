@@ -17,7 +17,6 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
@@ -66,7 +65,7 @@ class DocIdsWriter {
       }
       if (max <= 0xffffff) {
         if (runLenDocs < count / 2) {
-          writeRunLen24(docIds, start, count, out, runLenDocs);
+          writeRunLen(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
         }
