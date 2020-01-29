@@ -156,7 +156,7 @@ class DocIdsWriter {
     for (; i < count; ++i) {
       int doc = docIds[start + i];
       if (doc != docId) {
-        out.writeVInt(numDocs);
+        out.writeShort((short) numDocs);
         docId = doc;
         numDocs = 1;
         counter++;
@@ -167,7 +167,7 @@ class DocIdsWriter {
         numDocs++;
       }
     }
-    out.writeVInt(numDocs);
+    out.writeShort((short) numDocs);
     return i;
   }
 
@@ -293,36 +293,39 @@ class DocIdsWriter {
       final long l2 = in.readLong();
       final long l3 = in.readLong();
 
+      final long rl1 = in.readLong();
+      final long rl2 = in.readLong();
+
       int start = i;
-      i += in.readVInt();
+      i += (int) (rl1 >>> 48);
       Arrays.fill(docIDs, start, i, (int) (l1 >>> 40));
 
       start = i;
-      i += in.readVInt();
+      i += (int) (rl1 >>> 32  & 0xffff);
       Arrays.fill(docIDs, start, i, (int) (l1 >>> 16) & 0xffffff);
 
       start = i;
-      i += in.readVInt();
+      i += (int) (rl1 >>> 16 & 0xffff);
       Arrays.fill(docIDs, start, i, (int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
 
       start = i;
-      i += in.readVInt();
+      i += (int) (rl1  & 0xffff);
       Arrays.fill(docIDs, start, i, (int) (l2 >>> 32) & 0xffffff);
 
       start = i;
-      i += in.readVInt();
+      i +=  (int) (rl2 >>> 48);
       Arrays.fill(docIDs, start, i, (int) (l2 >>> 8) & 0xffffff);
 
       start = i;
-      i += in.readVInt();
+      i += (int) (rl2 >>> 32  & 0xffff);
       Arrays.fill(docIDs, start, i,  (int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
 
       start = i;
-      i += in.readVInt();
+      i += (int) (rl2 >>> 16 & 0xffff);
       Arrays.fill(docIDs, start, i,  (int) (l3 >>> 24) & 0xffffff);
 
       start = i;
-      i += in.readVInt();
+      i += (int) (rl2 & 0xffff);
       Arrays.fill(docIDs, start, i,  (int) l3 & 0xffffff);
 
       numdocs -= 8;
@@ -427,38 +430,15 @@ class DocIdsWriter {
       final long l1 = in.readLong();
       final long l2 = in.readLong();
       final long l3 = in.readLong();
-      int doc =  (int) (l1 >>> 40);
-      int runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc = (int) (l1 >>> 16) & 0xffffff;
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc = (int) (l2 >>> 32) & 0xffffff;
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc = (int) (l2 >>> 8) & 0xffffff;
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc =  (int) (l3 >>> 24) & 0xffffff;
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
-      doc =  (int) l3 & 0xffffff;
-      runLen = in.readVInt();
-      visitor.visit(doc);
-
+      visitor.visit((int) (l1 >>> 40));
+      visitor.visit((int) (l1 >>> 16) & 0xffffff);
+      visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
+      visitor.visit((int) (l2 >>> 32) & 0xffffff);
+      visitor.visit((int) (l2 >>> 8) & 0xffffff);
+      visitor.visit((int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
+      visitor.visit((int) (l3 >>> 24) & 0xffffff);
+      visitor.visit((int) l3 & 0xffffff);
+      in.skipBytes(16);
       numdocs -= 8;
     }
     for (int j = 0; j < numdocs; j++) {
