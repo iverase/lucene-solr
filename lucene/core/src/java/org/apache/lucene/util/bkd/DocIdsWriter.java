@@ -53,30 +53,30 @@ class DocIdsWriter {
       out.writeByte(EQUALS);
       out.writeInt(docId);
     } else if (sorted) {
-      if (runLenDocs < count / 2) {
-        writeDeltaRunLen(docIds, start, count, out);
-      } else {
+      //if (runLenDocs < count / 2) {
+      //  writeDeltaRunLen(docIds, start, count, out);
+      //} else {
         writeDelta(docIds, start, count, out);
-      }
+      //}
     } else {
       long max = 0;
       for (int i = 0; i < count; ++i) {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        if (runLenDocs < count / 3) {
+        //if (runLenDocs < count / 3) {
           // runLen24 is  slow for decoding, so instead
           // if dividing by 1.34, we do it by 3
-          writeRunLen24(docIds, start, count, out);
-        } else {
+         // writeRunLen24(docIds, start, count, out);
+        //} else {
           writeInt24(docIds, start, count, out);
-        }
+        //}
       } else {
-        if (runLenDocs < count / 1.25) {
-          writeRunLen(docIds, start, count, out);
-        } else {
+        //if (runLenDocs < count / 1.25) {
+        //  writeRunLen(docIds, start, count, out);
+       // } else {
           writeInt32(docIds, start, count, out);
-        }
+       // }
       }
     }
   }
@@ -245,23 +245,26 @@ class DocIdsWriter {
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int i;
-    for (i = 0; i < count - 7; i += 8) {
-      final long l1 = in.readLong();
-      final long l2 = in.readLong();
-      final long l3 = in.readLong();
-      docIDs[i] =  (int) (l1 >>> 40);
-      docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
-      docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      docIDs[i+3] = (int) (l2 >>> 32) & 0xffffff;
-      docIDs[i+4] = (int) (l2 >>> 8) & 0xffffff;
-      docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      docIDs[i+6] = (int) (l3 >>> 24) & 0xffffff;
-      docIDs[i+7] = (int) l3 & 0xffffff;
+    for (int i = 0; i < count;) {
+      docIDs[i++] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
-    for (; i < count; ++i) {
-      docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
-    }
+//    int i;
+//    for (i = 0; i < count - 7; i += 8) {
+//      final long l1 = in.readLong();
+//      final long l2 = in.readLong();
+//      final long l3 = in.readLong();
+//      docIDs[i] =  (int) (l1 >>> 40);
+//      docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
+//      docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
+//      docIDs[i+3] = (int) (l2 >>> 32) & 0xffffff;
+//      docIDs[i+4] = (int) (l2 >>> 8) & 0xffffff;
+//      docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
+//      docIDs[i+6] = (int) (l3 >>> 24) & 0xffffff;
+//      docIDs[i+7] = (int) l3 & 0xffffff;
+//    }
+//    for (; i < count; ++i) {
+//      docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
+//    }
   }
 
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
