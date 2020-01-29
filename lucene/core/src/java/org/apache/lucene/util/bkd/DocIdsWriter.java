@@ -65,9 +65,9 @@ class DocIdsWriter {
       }
       if (max <= 0xffffff) {
         if (runLenDocs < count / 3) {
-          // runLen24 is too slow for decoding, so instead
-          // if dividing by 1.34, we do it by 4
-          writeRunLen(docIds, start, count, out);
+          // runLen24 is  slow for decoding, so instead
+          // if dividing by 1.34, we do it by 3
+          writeRunLen24(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
         }
