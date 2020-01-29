@@ -91,7 +91,13 @@ class DocIdsWriter {
   }
 
   static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; i++) {
+    int i;
+    for (i = 0; i < count - 1; i += 2) {
+      long l = in.readLong();
+      docIDs[i] =  (int) (l >>> 32);
+      docIDs[i+1] = (int) l;
+    }
+    for (; i < count; ++i) {
       docIDs[i] = in.readInt();
     }
   }
@@ -143,7 +149,13 @@ class DocIdsWriter {
   }
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; i++) {
+    int i;
+    for (i = 0; i < count - 1; i += 2) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 32));
+      visitor.visit((int) l);
+    }
+    for (; i < count; ++i) {
       visitor.visit(in.readInt());
     }
   }
