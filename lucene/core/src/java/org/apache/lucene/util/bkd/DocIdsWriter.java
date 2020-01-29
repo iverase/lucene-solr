@@ -288,7 +288,7 @@ class DocIdsWriter {
   private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     int numDocs = in.readVInt();
     int i = 0;
-    while (numDocs > 7) {
+    for (; numDocs > 7; numDocs -= 8) {
       final long l1 = in.readLong();
       final long l2 = in.readLong();
       final long l3 = in.readLong();
@@ -343,10 +343,8 @@ class DocIdsWriter {
       for (; i < runLen; i++) {
         docIDs[i] = doc;
       }
-
-      numDocs -= 8;
     }
-    for (int j = 0; j < numDocs; j++) {
+    for (; numDocs > 0; numDocs--) {
       final int runLen = i + in.readVInt();
       final int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
       for (; i < runLen; i++) {
