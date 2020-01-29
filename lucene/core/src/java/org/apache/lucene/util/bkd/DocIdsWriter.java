@@ -347,10 +347,11 @@ class DocIdsWriter {
       numDocs -= 8;
     }
     for (int j = 0; j < numDocs; j++) {
-      int start = i;
-      i += in.readVInt();
+      final int runLen = in.readVInt();
       final int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
-      Arrays.fill(docIDs, start, i,  doc);
+      for (int k = 0; k < runLen; k++) {
+        docIDs[i++] = doc;
+      }
     }
     assert i == count : i + " " + count;
   }
