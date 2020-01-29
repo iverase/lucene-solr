@@ -67,7 +67,8 @@ class DocIdsWriter {
         if (runLenDocs < count / 2) {
           // runLen24 is too slow for decoding, so instead
           // if dividing by 1.34, we do it by two
-          writeRunLen24(docIds, start, count, out);
+          // writeRunLen24(docIds, start, count, out);
+          writeRunLen(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
         }
