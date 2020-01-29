@@ -65,13 +65,13 @@ class DocIdsWriter {
       }
       if (max <= 0xffffff) {
         if (runLenDocs < count / 2) {
-          writeRunLen(docIds, start, count, out);
+          writeRunLen(docIds, start, count, out, runLenDocs);
         } else {
           writeInt24(docIds, start, count, out);
         }
       } else {
         if (runLenDocs < count / 1.75) {
-          writeRunLen(docIds, start, count, out);
+          writeRunLen(docIds, start, count, out, runLenDocs);
         } else {
           writeInt32(docIds, start, count, out);
         }
@@ -89,23 +89,35 @@ class DocIdsWriter {
     }
   }
 
-  private static void writeRunLen(int[] docIds, int start, int count, DataOutput out) throws IOException {
+  private static void writeRunLen(int[] docIds, int start, int count, DataOutput out, int runLenDocs) throws IOException {
     out.writeByte(RUNLEN);
     int docId = docIds[start];
     int numDocs = 1;
+    int runlen1 = -1;
+    out.writeVInt(runLenDocs);
     for (int i = 1; i < count; ++i) {
       int doc = docIds[start + i];
       if (doc != docId) {
-        out.writeVInt(numDocs);
         out.writeInt(docId);
+        if (runlen1 == -1) {
+          runlen1 = numDocs;
+        } else {
+          out.writeVInt(runlen1);
+          out.writeVInt(numDocs);
+          runlen1 = -1;
+        }
         docId = doc;
         numDocs = 1;
       } else {
         numDocs++;
       }
     }
-    out.writeVInt(numDocs);
     out.writeInt(docId);
+    if (runlen1 != -1) {
+      out.writeVInt(runlen1);
+    }
+    out.writeVInt(numDocs);
+
   }
 
   private static void writeDeltaRunLen(int[] docIds, int start, int count, DataOutput out) throws IOException {
@@ -264,11 +276,27 @@ class DocIdsWriter {
   }
 
   private static void readRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count;) {
-      final int runLen = in.readVInt();
+    int numDocs = in.readVInt();
+    int k = 0;
+    int i;
+    for (i = numDocs; i > 1; i -=2) {
+      final long l = in.readLong();
+      final int runLen1 = in.readVInt();
+      final int doc1 = (int) (l >>> 32);
+      for (int j = 0; j < runLen1; j++) {
+        docIDs[k++] = doc1;
+      }
+      final int runLen2 = in.readVInt();
+      final int doc2 = (int) l & 0xffffff;
+      for (int j = 0; j < runLen2; j++) {
+        docIDs[k++] = doc2;
+      }
+    }
+    if (i == 1) {
       final int doc = in.readInt();
+      final int runLen = in.readVInt();
       for (int j = 0; j < runLen; j++) {
-        docIDs[i++] = doc;
+        docIDs[k++] = doc;
       }
     }
   }
@@ -422,9 +450,17 @@ class DocIdsWriter {
   }
 
   private static void readRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count;) {
-      i += in.readVInt();
+    int numDocs = in.readVInt();
+    int i;
+    for (i = numDocs; i > 1; i -=2) {
+      final long l = in.readLong();
+      visitor.visit((int) (l >>> 32));
+      visitor.visit((int) l & 0xffffff);
+      in.readVInt(); in.readVInt();
+    }
+    if (i == 1) {
       visitor.visit(in.readInt());
+       in.readVInt();
     }
   }
 

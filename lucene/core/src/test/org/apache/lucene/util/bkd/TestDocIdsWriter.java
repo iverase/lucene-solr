@@ -21,6 +21,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -42,6 +44,23 @@ public class TestDocIdsWriter extends LuceneTestCase {
         test(dir, docIDs);
       }
     }
+  }
+
+  public void testRandom2() throws Exception {
+    int i1 = TestUtil.nextInt(random(), 0, 1024);
+    int i2 =  TestUtil.nextInt(random(), 0, 1024);
+
+    ByteBuffersDataOutput output = new ByteBuffersDataOutput();
+    output.writeInt(i1);
+    output.writeInt(i2);
+    ByteArrayDataInput input = new ByteArrayDataInput();
+    input.reset(output.toArrayCopy());
+
+    long l = input.readLong();
+    int x1 = (int) (l >>> 32);
+    assertEquals(i1, x1);
+    int x2 =  (int) l & 0xffffff;
+    assertEquals(i2, x2);
   }
 
   public void testSorted() throws Exception {
