@@ -65,7 +65,7 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        if (runLenDocs < count / 1.5) {
+        if (runLenDocs < count / 2) {
           writeRunLen24(docIds, start, count, out, runLenDocs);
         } else {
           writeInt24(docIds, start, count, out);
