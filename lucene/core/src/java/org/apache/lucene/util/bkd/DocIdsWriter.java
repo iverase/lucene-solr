@@ -53,7 +53,7 @@ class DocIdsWriter {
       out.writeByte(EQUALS);
       out.writeInt(docId);
     } else if (sorted) {
-      if (runLenDocs < count / 3) {
+      if (runLenDocs < count / 2) {
         writeDeltaRunLen(docIds, start, count, out);
       } else {
         writeDelta(docIds, start, count, out);
@@ -64,7 +64,7 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        if (runLenDocs < count / 3) {
+        if (runLenDocs < count / 1.34) {
           writeRunLen24(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
