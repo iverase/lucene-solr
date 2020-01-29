@@ -301,32 +301,32 @@ class DocIdsWriter {
       Arrays.fill(docIDs, start, i, (int) (l1 >>> 40));
 
       start = i;
-      i += (int) (rl1 >>> 32  & 0xffff);
-      Arrays.fill(docIDs, start, i, (int) ((l1 >>> 16) & 0xffffff));
+      i += (int) (rl1 >>> 32)  & 0xffff;
+      Arrays.fill(docIDs, start, i, (int) (l1 >>> 16) & 0xffffff);
 
       start = i;
-      i += (int) (rl1 >>> 16 & 0xffff);
+      i += (int) (rl1 >>> 16) & 0xffff;
       Arrays.fill(docIDs, start, i, (int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
 
       start = i;
-      i += (int) (rl1  & 0xffff);
-      Arrays.fill(docIDs, start, i, (int) ((l2 >>> 32) & 0xffffff));
+      i += (int) rl1  & 0xffff;
+      Arrays.fill(docIDs, start, i, (int) (l2 >>> 32) & 0xffffff);
 
       start = i;
       i +=  (int) (rl2 >>> 48);
-      Arrays.fill(docIDs, start, i, (int) ((l2 >>> 8) & 0xffffff));
+      Arrays.fill(docIDs, start, i, (int) (l2 >>> 8) & 0xffffff);
 
       start = i;
-      i += (int) (rl2 >>> 32  & 0xffff);
+      i += (int) (rl2 >>> 32)  & 0xffff;
       Arrays.fill(docIDs, start, i,  (int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
 
       start = i;
-      i += (int) (rl2 >>> 16 & 0xffff);
-      Arrays.fill(docIDs, start, i,  (int) ((l3 >>> 24) & 0xffffff));
+      i += (int) (rl2 >>> 16) & 0xffff;
+      Arrays.fill(docIDs, start, i,  (int) (l3 >>> 24) & 0xffffff);
 
       start = i;
-      i += (int) (rl2 & 0xffff);
-      Arrays.fill(docIDs, start, i,  (int) (l3 & 0xffffff));
+      i += (int) rl2 & 0xffff;
+      Arrays.fill(docIDs, start, i,  (int) l3 & 0xffffff);
 
       numdocs -= 8;
     }
