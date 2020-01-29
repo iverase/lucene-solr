@@ -69,7 +69,7 @@ class DocIdsWriter {
           // if dividing by 1.34, we do it by 3
          // writeRunLen24(docIds, start, count, out);
         //} else {
-          writeInt24(docIds, start, count, out);
+        writeInt32(docIds, start, count, out);
         //}
       } else {
         //if (runLenDocs < count / 1.25) {
