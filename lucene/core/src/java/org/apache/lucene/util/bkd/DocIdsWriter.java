@@ -93,10 +93,10 @@ class DocIdsWriter {
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     int offset = count - 1;
-    for (i = 0; i < offset; i += 2) {
+    for (i = 0; i < offset; ) {
       long l = in.readLong();
-      docIDs[i] =  (int) (l >>> 32);
-      docIDs[i+1] = (int) l;
+      docIDs[i++] =  (int) (l >>> 32);
+      docIDs[i++] = (int) l;
     }
     for (; i < count; ++i) {
       docIDs[i] = in.readInt();
@@ -106,18 +106,18 @@ class DocIdsWriter {
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     int offset = count - 7;
-    for (i = 0; i < offset; i += 8) {
+    for (i = 0; i < offset; ) {
       long l1 = in.readLong();
       long l2 = in.readLong();
       long l3 = in.readLong();
-      docIDs[i] =  (int) (l1 >>> 40);
-      docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
-      docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      docIDs[i+3] = (int) (l2 >>> 32) & 0xffffff;
-      docIDs[i+4] = (int) (l2 >>> 8) & 0xffffff;
-      docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      docIDs[i+6] = (int) (l3 >>> 24) & 0xffffff;
-      docIDs[i+7] = (int) l3 & 0xffffff;
+      docIDs[i++] =  (int) (l1 >>> 40);
+      docIDs[i++] = (int) (l1 >>> 16) & 0xffffff;
+      docIDs[i++] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
+      docIDs[i++] = (int) (l2 >>> 32) & 0xffffff;
+      docIDs[i++] = (int) (l2 >>> 8) & 0xffffff;
+      docIDs[i++] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
+      docIDs[i++] = (int) (l3 >>> 24) & 0xffffff;
+      docIDs[i++] = (int) l3 & 0xffffff;
     }
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
