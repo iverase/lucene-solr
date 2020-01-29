@@ -286,9 +286,9 @@ class DocIdsWriter {
   }
 
   private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int numdocs = in.readVInt();
+    int numDocs = in.readVInt();
     int i = 0;
-    while(numdocs > 7) {
+    while (numDocs > 7) {
       final long l1 = in.readLong();
       final long l2 = in.readLong();
       final long l3 = in.readLong();
@@ -296,41 +296,57 @@ class DocIdsWriter {
       final long rl1 = in.readLong();
       final long rl2 = in.readLong();
 
-      int start = i;
-      i += (int) (rl1 >>> 48);
-      Arrays.fill(docIDs, start, i, (int) (l1 >>> 40));
+      int doc = (int) (l1 >>> 40);
+      int runLen = (int) (rl1 >>> 48);
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i += (int) (rl1 >>> 32)  & 0xffff;
-      Arrays.fill(docIDs, start, i, (int) (l1 >>> 16) & 0xffffff);
+      doc = (int) (l1 >>> 16) & 0xffffff;
+      runLen = (int) (rl1 >>> 32)  & 0xffff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i += (int) (rl1 >>> 16) & 0xffff;
-      Arrays.fill(docIDs, start, i, (int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
+      doc = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
+      runLen = (int) (rl1 >>> 16) & 0xffff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i += (int) rl1  & 0xffff;
-      Arrays.fill(docIDs, start, i, (int) (l2 >>> 32) & 0xffffff);
+      doc = (int) (l2 >>> 32) & 0xffffff;
+      runLen = (int) rl1  & 0xffff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i +=  (int) (rl2 >>> 48);
-      Arrays.fill(docIDs, start, i, (int) (l2 >>> 8) & 0xffffff);
+      doc = (int) (l2 >>> 8) & 0xffffff;
+      runLen = (int) (rl2 >>> 48);
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i += (int) (rl2 >>> 32)  & 0xffff;
-      Arrays.fill(docIDs, start, i,  (int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
+      doc = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
+      runLen = (int) (rl2 >>> 32)  & 0xffff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i += (int) (rl2 >>> 16) & 0xffff;
-      Arrays.fill(docIDs, start, i,  (int) (l3 >>> 24) & 0xffffff);
+      doc = (int) (l3 >>> 24) & 0xffffff;
+      runLen = (int) (rl2 >>> 16) & 0xffff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      start = i;
-      i += (int) rl2 & 0xffff;
-      Arrays.fill(docIDs, start, i,  (int) l3 & 0xffffff);
+      doc = (int) l3 & 0xffffff;
+      runLen = (int) rl2 & 0xffff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
 
-      numdocs -= 8;
+      numDocs -= 8;
     }
-    for (int j = 0; j < numdocs; j++) {
+    for (int j = 0; j < numDocs; j++) {
       int start = i;
       i += in.readVInt();
       final int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
