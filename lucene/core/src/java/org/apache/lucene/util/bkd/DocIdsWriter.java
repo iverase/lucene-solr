@@ -343,7 +343,7 @@ class DocIdsWriter {
   private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
       int len = in.readVInt();
-      int doc = in.readVInt();
+      int doc = in.readInt();
       for (int j = 0; j < len; j++) {
         visitor.visit(doc);
       }
