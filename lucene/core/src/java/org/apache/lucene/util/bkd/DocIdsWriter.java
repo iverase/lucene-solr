@@ -92,14 +92,20 @@ class DocIdsWriter {
 
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
-    int offset = count - 1;
+    int offset = count - 5;
     for (i = 0; i < offset; ) {
-      long l = in.readLong();
-      docIDs[i++] =  (int) (l >>> 32);
-      docIDs[i++] = (int) l;
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
+      docIDs[i++] = (int) (l1 >>> 32);
+      docIDs[i++] = (int) l1;
+      docIDs[i++] = (int) (l2 >>> 32);
+      docIDs[i++] = (int) l2;
+      docIDs[i++] = (int) (l3 >>> 32);
+      docIDs[i++] = (int) l3;
     }
     for (; i < count; ++i) {
-      docIDs[i] = in.readInt();
+      docIDs[i] = in.readInt();;
     }
   }
 
@@ -152,11 +158,18 @@ class DocIdsWriter {
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int i;
-    int offset = count - 1;
-    for (i = 0; i < offset; i += 2) {
-      long l = in.readLong();
-      visitor.visit((int) (l >>> 32));
-      visitor.visit((int) l);
+    int offset = count - 5;
+    for (i = 0; i < offset; i += 6) {
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
+      visitor.visit((int) (l1 >>> 32));
+      visitor.visit((int) l1);
+      visitor.visit((int) (l2 >>> 32));
+      visitor.visit((int) l2);
+      visitor.visit((int) (l3 >>> 32));
+      visitor.visit((int) l3);
+
     }
     for (; i < count; ++i) {
       visitor.visit(in.readInt());
