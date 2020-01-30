@@ -50,6 +50,9 @@ class DocIdsWriter {
       if (docIds[start + i] != docId) {
         docId = docIds[start + i];
         runLenDocs++;
+        if (runLenDocs >= count / 2) {
+          break;
+        }
       }
     }
     if (runLenDocs == 1) {
