@@ -37,6 +37,10 @@ class DocIdsWriter {
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
+    if (count == 0) {
+      out.writeByte(INT32);
+      return;
+    }
     boolean sorted = true;
     int runLenDocs = 1;
     int docId = docIds[start];
@@ -64,9 +68,7 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        if (runLenDocs < count / 3) {
-          // runLen24 is  slow for decoding, so instead
-          // if dividing by 1.34, we do it by 3
+        if (runLenDocs < count / 1.34) {
           writeRunLen24(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
@@ -310,29 +312,43 @@ class DocIdsWriter {
   }
 
   private static void readAllEquals(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    visitor.visit(in.readInt());
+    int doc =  in.readInt();
+    for (int i = 0; i < count; i++) {
+      visitor.visit(doc);
+    }
   }
 
   private static void readRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
-      i += in.readVInt();
-      visitor.visit(in.readInt());
+      int len = in.readVInt();
+      int doc = in.readVInt();
+      for (int j = 0; j < len; j++) {
+        visitor.visit(doc);
+      }
+      i += len;
     }
   }
 
   private static void readDeltaRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
     for (int i = 0; i < count;) {
-      i += in.readVInt();
+      int len = in.readVInt();
       doc += in.readVInt();
-      visitor.visit(doc);
+      for (int j = 0; j < len; j++) {
+        visitor.visit(doc);
+      }
+      i += len;
     }
   }
 
   private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
-      i += in.readVInt();
-      visitor.visit(((in.readByte() & 0xFF) << 16) | ((in.readByte() & 0xFF) <<  8) |  (in.readByte() & 0xFF));
+      int len = in.readVInt();
+      int doc =((in.readByte() & 0xFF) << 16) | ((in.readByte() & 0xFF) <<  8) | (in.readByte() & 0xFF);
+      for (int j = 0; j < len; j++) {
+        visitor.visit(doc);
+      }
+      i += len;
     }
   }
 
