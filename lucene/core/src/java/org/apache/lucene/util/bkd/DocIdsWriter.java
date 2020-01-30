@@ -52,8 +52,9 @@ class DocIdsWriter {
       if (max <= 0xffffff) {
         out.writeByte((byte) 24);
         for (int i = 0; i < count; ++i) {
-          out.writeShort((short) (docIds[start + i] >>> 8));
-          out.writeByte((byte) docIds[start + i]);
+          out.writeByte( (byte) (docIds[start + i] >> 16));
+          out.writeByte( (byte) (docIds[start + i] >> 8));
+          out.writeByte( (byte) docIds[start + i]);
         }
       } else {
         out.writeByte((byte) 32);
@@ -98,7 +99,7 @@ class DocIdsWriter {
 
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; i++) {
-      docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
+      docIDs[i] = ((in.readByte() & 0xFF) << 16 | (in.readByte() & 0xFF) << 8 | in.readByte() & 0xFF);
     }
   }
 
@@ -136,7 +137,7 @@ class DocIdsWriter {
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count; i++) {
-      visitor.visit((Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte()));
+      visitor.visit(((in.readByte() & 0xFF) << 16 | (in.readByte() & 0xFF) << 8 | in.readByte() & 0xFF));
     }
   }
 }
