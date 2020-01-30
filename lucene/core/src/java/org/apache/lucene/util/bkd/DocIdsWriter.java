@@ -139,8 +139,9 @@ class DocIdsWriter {
       int doc = docIds[start + i];
       if (doc != docId) {
         out.writeVInt(numDocs);
-        out.writeShort((short) (docId >>> 8));
-        out.writeByte((byte) docId);
+        out.writeByte((byte)(doc >> 16));
+        out.writeByte((byte)(doc >>  8));
+        out.writeByte((byte) doc);
         docId = doc;
         numDocs = 1;
       } else {
@@ -237,7 +238,7 @@ class DocIdsWriter {
   private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count;) {
       final int runLen = in.readVInt();
-      final int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
+      final int doc = ((in.readByte() & 0xFF) << 16) | ((in.readByte() & 0xFF) <<  8) |  (in.readByte() & 0xFF);
       for (int j = 0; j < runLen; j++) {
         docIDs[i++] = doc;
       }
@@ -331,7 +332,7 @@ class DocIdsWriter {
   private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
       i += in.readVInt();
-      visitor.visit((Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte()));
+      visitor.visit(((in.readByte() & 0xFF) << 16) | ((in.readByte() & 0xFF) <<  8) |  (in.readByte() & 0xFF));
     }
   }
 
