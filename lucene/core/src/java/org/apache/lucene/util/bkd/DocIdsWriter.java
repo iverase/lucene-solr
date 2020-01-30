@@ -73,7 +73,7 @@ class DocIdsWriter {
           writeInt24(docIds, start, count, out);
         }
       } else {
-        if (runLenDocs < count / 2.5) {
+        if (runLenDocs < count / 2) {
           writeRunLen32(docIds, start, count, out);
         } else {
           writeInt32(docIds, start, count, out);
