@@ -135,7 +135,6 @@ class DocIdsWriter {
       int doc = docIds[start + i];
       if (doc != docId) {
         out.writeVInt(numDocs);
-        out.writeInt(docId);
         out.writeShort((short) (docId >>> 8));
         out.writeByte((byte) docId);
         docId = doc;
