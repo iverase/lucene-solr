@@ -77,7 +77,7 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        // int24 is very fast decoding because it reads 3 times the index each 8 documents.
+        // int24 is very fast decoding because it reads 6 integers each 8 documents.
         // we make sure we only use runLen when we read less times from the index.
         if (runLenDocs < count / 4.5) {
           writeRunLen24(docIds, start, count, out);
