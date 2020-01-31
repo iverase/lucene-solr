@@ -70,7 +70,7 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        if (runLenDocs < count / 8) {
+        if (runLenDocs < count / 7) {
           writeRunLen32(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
