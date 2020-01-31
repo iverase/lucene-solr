@@ -105,12 +105,10 @@ public class Point2D implements Component2D {
   @Override
   public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                        double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
-    if (aX == bX && aY == bY && aX == cX && aY == cY) {
-      if (contains(aX, aY)) {
-        return WithinRelation.CANDIDATE;
-      }
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY)) {
+      return WithinRelation.CANDIDATE;
     }
-    return WithinRelation.DISJOINT;
+    return WithinRelation.NOTWITHIN;
   }
 
   /** create a Point2D component tree from provided array of LatLon points.  */
