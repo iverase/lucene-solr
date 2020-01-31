@@ -194,10 +194,10 @@ class DocIdsWriter {
   private static void readDeltaRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
     for (int i = 0; i < count;) {
-      final int runLen = in.readVInt();
+      final int runLen = i + in.readVInt();
       doc += in.readVInt();
-      for (int j = 0; j < runLen; j++) {
-        docIDs[i++] = doc;
+      for (; i < runLen; i++) {
+        docIDs[i] = doc;
       }
     }
   }
@@ -240,10 +240,10 @@ class DocIdsWriter {
 
   private static void readRunLen32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count;) {
-      final int runLen = in.readVInt();
+      final int runLen = i + in.readVInt();
       final int doc = in.readInt();
-      for (int j = 0; j < runLen; j++) {
-        docIDs[i++] = doc;
+      for (; i < runLen; i++) {
+        docIDs[i] = doc;
       }
     }
   }
@@ -294,12 +294,11 @@ class DocIdsWriter {
   private static void readDeltaRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
     for (int i = 0; i < count;) {
-      int len = in.readVInt();
+      int len = i + in.readVInt();
       doc += in.readVInt();
-      for (int j = 0; j < len; j++) {
+      for (; i < len; i++) {
         visitor.visit(doc);
       }
-      i += len;
     }
   }
 
@@ -342,12 +341,11 @@ class DocIdsWriter {
 
   private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count;) {
-      int len = in.readVInt();
+      int len = i + in.readVInt();
       int doc = in.readInt();
-      for (int j = 0; j < len; j++) {
+      for (; i < len; i++) {
         visitor.visit(doc);
       }
-      i += len;
     }
   }
 }
