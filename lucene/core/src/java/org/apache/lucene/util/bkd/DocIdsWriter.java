@@ -26,11 +26,11 @@ class DocIdsWriter {
 
   private static final byte DELTA = (byte) 0;
   private static final byte RUNLENDELTA = (byte) 2;
-  private static final byte EQUALS = (byte) 4;
   private static final byte INT24 = (byte) 24;
   private static final byte RUNLEN24 = (byte) 26;
   private static final byte INT32 = (byte) 32;
   private static final byte RUNLEN32 = (byte) 34;
+  private static final byte EQUALS = (byte) 64;
 
   private DocIdsWriter() {}
 
@@ -42,25 +42,31 @@ class DocIdsWriter {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
+    // in case of multi-value, we can have several times the same document.
+    boolean runLen = true;
+    final int runLenOffset = count / 2;
     int runLenDocs = 1;
     int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (sorted && docIds[start + i - 1] > docIds[start + i]) {
         sorted = false;
       }
-      if (docIds[start + i] != docId) {
+      if (runLen && docIds[start + i] != docId) {
         docId = docIds[start + i];
-        runLenDocs++;
-        if (runLenDocs >= count / 2) {
-          break;
+        if (++runLenDocs >= runLenOffset) {
+          // we cannot do runLen encoding.
+          runLen = false;
         }
       }
+      if (sorted == false && runLen == false) {
+        break;
+      }
     }
-    if (runLenDocs == 1) {
-      out.writeByte(EQUALS);
-      out.writeInt(docId);
-    } else if (sorted) {
-      if (runLenDocs < count / 2) {
+    if (sorted) {
+      if (runLenDocs == 1) {
+        out.writeByte(EQUALS);
+        out.writeInt(docId);
+      } else if (runLenDocs < runLenOffset) {
         writeDeltaRunLen(docIds, start, count, out);
       } else {
         writeDelta(docIds, start, count, out);
@@ -71,6 +77,8 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
+        // int24 is very fast decoding because it reads 3 times the index each 8 documents.
+        // we make sure we only use runLen when we read less times from the index.
         if (runLenDocs < count / 9) {
           writeRunLen24(docIds, start, count, out);
         } else if (runLenDocs < count / 6) {
@@ -79,7 +87,7 @@ class DocIdsWriter {
           writeInt24(docIds, start, count, out);
         }
       } else {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < runLenOffset) {
           writeRunLen32(docIds, start, count, out);
         } else {
           writeInt32(docIds, start, count, out);
@@ -328,15 +336,16 @@ class DocIdsWriter {
 
   private static void readDeltaRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
-    int len = 0;
+    //int len = 0;
     for (int i = 0; i < count;) {
-      len += in.readVInt();
+      //len += in.readVInt();
+      i += in.readVInt();
       doc += in.readVInt();
-      for (; i < len; i++) {
+     // for (; i < len; i++) {
         visitor.visit(doc);
-      }
+     // }
     }
-    assert count == len;
+   // assert count == len;
   }
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
@@ -360,15 +369,16 @@ class DocIdsWriter {
   }
 
   private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int len = 0;
+    //int len = 0;
     for (int i = 0; i < count;) {
-      len += in.readVInt();
+      //len += in.readVInt();
+      i += in.readVInt();
       int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
-      for (; i < len; i++) {
+      //for (; i < len; i++) {
         visitor.visit(doc);
-      }
+      //}
     }
-    assert len == count;
+    //assert len == count;
   }
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
@@ -378,14 +388,15 @@ class DocIdsWriter {
   }
 
   private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int len = 0;
+    //int len = 0;
     for (int i = 0; i < count;) {
-      len += in.readVInt();
+      //len += in.readVInt();
+      i += in.readVInt();
       int doc = in.readInt();
-      for (; i < len; i++) {
+      //for (; i < len; i++) {
         visitor.visit(doc);
-      }
+      //}
     }
-    assert len == count;
+    //assert len == count;
   }
 }

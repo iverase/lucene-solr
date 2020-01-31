@@ -44,6 +44,26 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
+  public void testRunLen() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        int i = 0;
+        int runLen = 0;
+        for (; i < docIDs.length; ++i) {
+          runLen += TestUtil.nextInt(random(), 0, docIDs.length - i);
+          final int value = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+          for (; i < runLen; i++) {
+            docIDs[i] = value;
+          }
+        }
+        test(dir, docIDs);
+      }
+    }
+  }
+
   public void testSorted() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
@@ -54,6 +74,40 @@ public class TestDocIdsWriter extends LuceneTestCase {
           docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
         }
         Arrays.sort(docIDs);
+        test(dir, docIDs);
+      }
+    }
+  }
+
+  public void testSortedRunLen() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        int i = 0;
+        int runLen = 0;
+        for (; i < docIDs.length; ++i) {
+          runLen += TestUtil.nextInt(random(), 0, docIDs.length - i);
+          final int value = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+          for (; i < runLen; i++) {
+            docIDs[i] = value;
+          }
+        }
+        Arrays.sort(docIDs);
+        test(dir, docIDs);
+      }
+    }
+  }
+
+  public void testAllEquals() throws Exception {
+    int numIters = atLeast(10);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        final int value = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+        Arrays.fill(docIDs, value);
         test(dir, docIDs);
       }
     }
