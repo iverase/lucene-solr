@@ -72,27 +72,27 @@ class DocIdsWriter {
         writeDelta(docIds, start, count, out);
       }
     } else {
-      long max = 0;
-      for (int i = 0; i < count; ++i) {
-        max |= Integer.toUnsignedLong(docIds[start + i]);
-      }
-      if (max <= 0xffffff) {
-        // int24 is very fast decoding because it reads 6 integers each 8 documents.
-        // we make sure we only use runLen when we read less times from the index.
-        if (runLenDocs < count / 8) {
-          writeRunLen24(docIds, start, count, out);
-        } else if (runLenDocs < count / 5.4) {
-          writeRunLen32(docIds, start, count, out);
-        } else {
-          writeInt24(docIds, start, count, out);
-        }
-      } else {
-        if (runLenDocs < runLenOffset) {
-          writeRunLen32(docIds, start, count, out);
-        } else {
+//      long max = 0;
+//      for (int i = 0; i < count; ++i) {
+//        max |= Integer.toUnsignedLong(docIds[start + i]);
+//      }
+//      if (max <= 0xffffff) {
+//        // int24 is very fast decoding because it reads 6 integers each 8 documents.
+//        // we make sure we only use runLen when we read less times from the index.
+//        if (runLenDocs < count / 8) {
+//          writeRunLen24(docIds, start, count, out);
+//        } else if (runLenDocs < count / 5.4) {
+//          writeRunLen32(docIds, start, count, out);
+//        } else {
+//          writeInt24(docIds, start, count, out);
+//        }
+//      } else {
+//        if (runLenDocs < runLenOffset) {
+//          writeRunLen32(docIds, start, count, out);
+//        } else {
           writeInt32(docIds, start, count, out);
-        }
-      }
+ //       }
+ //     }
     }
   }
 
