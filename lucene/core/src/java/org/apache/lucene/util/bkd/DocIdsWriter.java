@@ -79,9 +79,9 @@ class DocIdsWriter {
       if (max <= 0xffffff) {
         // int24 is very fast decoding because it reads 3 times the index each 8 documents.
         // we make sure we only use runLen when we read less times from the index.
-        if (runLenDocs < count / 9) {
+        if (runLenDocs < count / 4.5) {
           writeRunLen24(docIds, start, count, out);
-        } else if (runLenDocs < count / 6) {
+        } else if (runLenDocs < count / 2) {
           writeRunLen32(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
@@ -336,16 +336,15 @@ class DocIdsWriter {
 
   private static void readDeltaRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
-    //int len = 0;
+    int len = 0;
     for (int i = 0; i < count;) {
-      //len += in.readVInt();
-      i += in.readVInt();
+      len += in.readVInt();
       doc += in.readVInt();
-     // for (; i < len; i++) {
+     for (; i < len; i++) {
         visitor.visit(doc);
-     // }
+     }
     }
-   // assert count == len;
+    assert count == len;
   }
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
@@ -369,16 +368,15 @@ class DocIdsWriter {
   }
 
   private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    //int len = 0;
+    int len = 0;
     for (int i = 0; i < count;) {
-      //len += in.readVInt();
-      i += in.readVInt();
+      len += in.readVInt();
       int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
-      //for (; i < len; i++) {
+      for (; i < len; i++) {
         visitor.visit(doc);
-      //}
+      }
     }
-    //assert len == count;
+    assert len == count;
   }
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
@@ -388,15 +386,13 @@ class DocIdsWriter {
   }
 
   private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    //int len = 0;
+    int len = 0;
     for (int i = 0; i < count;) {
-      //len += in.readVInt();
-      i += in.readVInt();
+      len += in.readVInt();
       int doc = in.readInt();
-      //for (; i < len; i++) {
+      for (; i < len; i++) {
         visitor.visit(doc);
-      //}
+      }
     }
-    //assert len == count;
   }
 }
