@@ -81,7 +81,7 @@ class DocIdsWriter {
         // we make sure we only use runLen when we read less times from the index.
         if (runLenDocs < count / 4.5) {
           writeRunLen24(docIds, start, count, out);
-        } else if (runLenDocs < count / 2) {
+        } else if (runLenDocs < count / 3) {
           writeRunLen32(docIds, start, count, out);
         } else {
           writeInt24(docIds, start, count, out);
