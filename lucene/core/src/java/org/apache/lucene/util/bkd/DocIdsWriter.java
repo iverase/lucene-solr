@@ -24,196 +24,83 @@ import org.apache.lucene.store.IndexInput;
 
 class DocIdsWriter {
 
-  private static final byte DELTA = (byte) 0;
-  private static final byte RUNLENDELTA = (byte) 2;
+  private static final byte SORTED = (byte) 0;
+  private static final byte INT8 = (byte) 8;
+  private static final byte INT16 = (byte) 16;
   private static final byte INT24 = (byte) 24;
-  private static final byte RUNLEN24 = (byte) 26;
   private static final byte INT32 = (byte) 32;
-  private static final byte RUNLEN32 = (byte) 34;
-  private static final byte EQUALS = (byte) 64;
 
   private DocIdsWriter() {}
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    if (count == 0) {
-      out.writeByte(INT32);
-      return;
-    }
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
-    // in case of multi-value, we can have several times the same document.
-    boolean runLen = true;
-    final int runLenOffset = count / 2;
-    int runLenDocs = 1;
-    int docId = docIds[start];
     for (int i = 1; i < count; ++i) {
-      if (sorted && docIds[start + i - 1] > docIds[start + i]) {
+      if (docIds[start + i - 1] > docIds[start + i]) {
         sorted = false;
-      }
-      if (runLen && docIds[start + i] != docId) {
-        docId = docIds[start + i];
-        if (++runLenDocs >= runLenOffset) {
-          // we cannot do runLen encoding.
-          runLen = false;
-        }
-      }
-      if (sorted == false && runLen == false) {
         break;
       }
     }
     if (sorted) {
-      if (runLenDocs == 1) {
-        out.writeByte(EQUALS);
-        out.writeInt(docId);
-      } else if (runLenDocs < runLenOffset) {
-        writeDeltaRunLen(docIds, start, count, out);
-      } else {
-        writeDelta(docIds, start, count, out);
+      out.writeByte(SORTED);
+      int previous = 0;
+      for (int i = 0; i < count; ++i) {
+        int doc = docIds[start + i];
+        out.writeVInt(doc - previous);
+        previous = doc;
       }
     } else {
-//      long max = 0;
-//      for (int i = 0; i < count; ++i) {
-//        max |= Integer.toUnsignedLong(docIds[start + i]);
-//      }
-//      if (max <= 0xffffff) {
-//        // int24 is very fast decoding because it reads 6 integers each 8 documents.
-//        // we make sure we only use runLen when we read less times from the index.
-//        if (runLenDocs < count / 8) {
-//          writeRunLen24(docIds, start, count, out);
-//        } else if (runLenDocs < count / 5.4) {
-//          writeRunLen32(docIds, start, count, out);
-//        } else {
-//          writeInt24(docIds, start, count, out);
-//        }
-//      } else {
-//        if (runLenDocs < runLenOffset) {
-//          writeRunLen32(docIds, start, count, out);
-//        } else {
-          writeInt32(docIds, start, count, out);
- //       }
- //     }
-    }
-  }
-
-  private static void writeDelta(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    out.writeByte(DELTA);
-    int previous = 0;
-    for (int i = 0; i < count; ++i) {
-      int doc = docIds[start + i];
-      out.writeVInt(doc - previous);
-      previous = doc;
-    }
-  }
-
-  private static void writeDeltaRunLen(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    out.writeByte(RUNLENDELTA);
-    int docId = docIds[start];
-    int previous = 0;
-    int numDocs = 0;
-    for (int i = 1; i < count; ++i) {
-      numDocs++;
-      int doc = docIds[start + i];
-      if (doc != docId) {
-        out.writeVInt(numDocs);
-        out.writeVInt(docId - previous);
-        previous = docId;
-        docId = doc;
-        numDocs = 0;
+      long max = 0;
+      for (int i = 0; i < count; ++i) {
+        max |= Integer.toUnsignedLong(docIds[start + i]);
+      }
+      if (max <= 0xff) {
+        out.writeByte(INT8);
+        for (int i = 0; i < count; ++i) {
+          out.writeByte((byte) (docIds[start + i]));
+        }
+      } else if (max <= 0xffff) {
+        out.writeByte(INT16);
+        for (int i = 0; i < count; ++i) {
+          out.writeShort((short) (docIds[start + i]));
+        }
+      } else if (max <= 0xffffff) {
+        out.writeByte(INT24);
+        for (int i = 0; i < count; ++i) {
+          out.writeShort((short) (docIds[start + i] >>> 8));
+          out.writeByte((byte) docIds[start + i]);
+        }
+      } else {
+        out.writeByte(INT32);
+        for (int i = 0; i < count; ++i) {
+          out.writeInt(docIds[start + i]);
+        }
       }
     }
-    out.writeVInt(numDocs + 1);
-    out.writeVInt(docId - previous);
   }
-
-  private static void writeInt24(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    out.writeByte(INT24);
-    for (int i = 0; i < count; ++i) {
-      out.writeShort((short) (docIds[start + i] >>> 8));
-      out.writeByte((byte) docIds[start + i]);
-    }
-  }
-
-  private static void writeRunLen24(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    out.writeByte(RUNLEN24);
-    int docId = docIds[start];
-    int numDocs = 0;
-    for (int i = 1; i < count; ++i) {
-      numDocs++;
-      int doc = docIds[start + i];
-      if (doc != docId) {
-        out.writeVInt(numDocs);
-        out.writeShort((short) (docId >>> 8));
-        out.writeByte((byte) docId);
-        docId = doc;
-        numDocs = 0;
-      }
-    }
-    out.writeVInt(numDocs + 1);
-    out.writeShort((short) (docId >>> 8));
-    out.writeByte((byte) docId);
-  }
-
-  private static void writeInt32(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    out.writeByte(INT32);
-    for (int i = 0; i < count; ++i) {
-      out.writeInt(docIds[start + i]);
-    }
-  }
-
-  private static void writeRunLen32(int[] docIds, int start, int count, DataOutput out) throws IOException {
-    out.writeByte(RUNLEN32);
-    int docId = docIds[start];
-    int numDocs = 0;
-    for (int i = 1; i < count; ++i) {
-      numDocs++;
-      int doc = docIds[start + i];
-      if (doc != docId) {
-        out.writeVInt(numDocs);
-        out.writeInt(docId);
-        docId = doc;
-        numDocs = 0;
-      }
-    }
-    out.writeVInt(numDocs + 1);
-    out.writeInt(docId);
-  }
-
 
   /** Read {@code count} integers into {@code docIDs}. */
   static void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
-    final byte bpv = in.readByte();
+    final int bpv = in.readByte();
     switch (bpv) {
-      case DELTA:
+      case SORTED:
         readDeltaVInts(in, count, docIDs);
-        break;
-      case EQUALS:
-        readAllEquals(in, count, docIDs);
-        break;
-      case RUNLEN32:
-        readRunLen32(in, count, docIDs);
-        break;
-      case RUNLEN24:
-        readRunLen24(in, count, docIDs);
-        break;
-      case RUNLENDELTA:
-        readDeltaRunLen(in, count, docIDs);
-        break;
-      case INT24:
-        readInts24(in, count, docIDs);
         break;
       case INT32:
         readInts32(in, count, docIDs);
         break;
+      case INT24:
+        readInts24(in, count, docIDs);
+        break;
+      case INT16:
+        readInts16(in, count, docIDs);
+        break;
+      case INT8:
+        readInts8(in, count, docIDs);
+        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
-    }
-  }
-
-  private static void readAllEquals(IndexInput in, int count, int[] docIDs) throws IOException {
-    final int doc = in.readInt();
-    for (int i = 0; i < count; i++) {
-      docIDs[i] = doc;
     }
   }
 
@@ -225,25 +112,24 @@ class DocIdsWriter {
     }
   }
 
-  private static void readDeltaRunLen(IndexInput in, int count, int[] docIDs) throws IOException {
-    int len = 0;
-    int doc = 0;
-    for (int i = 0; i < count;) {
-      len += in.readVInt();
-      doc += in.readVInt();
-      for (; i < len; i++) {
-        docIDs[i] = doc;
-      }
+  private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+    int i;
+    for (i = 0; i < count - 1; i += 2) {
+      long l = in.readLong();
+      docIDs[i] =  (int) (l >>> 32);
+      docIDs[i+1] = (int) l;
     }
-    assert count == len;
+    for (; i < count; ++i) {
+      docIDs[i] = in.readInt();
+    }
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
-      final long l1 = in.readLong();
-      final long l2 = in.readLong();
-      final long l3 = in.readLong();
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
       docIDs[i] =  (int) (l1 >>> 40);
       docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -258,80 +144,60 @@ class DocIdsWriter {
     }
   }
 
-  private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int len = 0;
-    for (int i = 0; i < count;) {
-      len += in.readVInt();
-      final int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
-      for (; i < len; i++) {
-        docIDs[i] = doc;
-      }
-    }
-    assert count == len;
-  }
-
-  private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-//    for (int i = 0; i < count; i++) {
-//      docIDs[i] = in.readInt();
-//    }
+  private static void readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
-    for (i = 0; i < count - 1; i += 2) {
-      final long l = in.readLong();
-      docIDs[i] =  (int) (l >>> 32);
-      docIDs[i+1] = (int) l;
+    for (i = 0; i < count - 3; i += 4) {
+      long l = in.readLong();
+      docIDs[i] = (int) (l >>> 48) & 0xffff;
+      docIDs[i+1] = (int) (l >>> 32) & 0xffff;
+      docIDs[i+2] = (int) (l >>> 16) & 0xffff;
+      docIDs[i+3] = (int) l & 0xffff;
     }
     for (; i < count; ++i) {
-      docIDs[i] = in.readInt();
+      docIDs[i] = Short.toUnsignedInt(in.readShort());
     }
   }
 
-  private static void readRunLen32(IndexInput in, int count, int[] docIDs) throws IOException {
-    int len = 0;
-    for (int i = 0; i < count;) {
-      len += in.readVInt();
-      final int doc = in.readInt();
-      for (; i < len; i++) {
-        docIDs[i] = doc;
-      }
+  private static void readInts8(IndexInput in, int count, int[] docIDs) throws IOException {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      docIDs[i] =  (int) (l >>> 56) & 0xff;
+      docIDs[i+1] = (int) (l >>> 48) & 0xff;
+      docIDs[i+2] = (int) (l >>> 40) & 0xff;
+      docIDs[i+3] = (int) (l >>> 32) & 0xff;
+      docIDs[i+4] = (int) (l >>> 24) & 0xff;
+      docIDs[i+5] = (int) (l >>> 16) & 0xff;
+      docIDs[i+6] = (int) (l >>> 8) & 0xff;
+      docIDs[i+7] = (int) (l & 0xff);
     }
-    assert count == len;
+    for (; i < count; ++i) {
+      docIDs[i] = Byte.toUnsignedInt(in.readByte());
+    }
   }
 
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
   static void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    final byte bpv = in.readByte();
+    final int bpv = in.readByte();
     switch (bpv) {
-      case DELTA:
+      case SORTED:
         readDeltaVInts(in, count, visitor);
-        break;
-      case EQUALS:
-        readAllEquals(in, count, visitor);
-        break;
-      case RUNLEN32:
-        readRunLen32(in, count, visitor);
-        break;
-      case RUNLEN24:
-        readRunLen24(in, count, visitor);
-        break;
-      case RUNLENDELTA:
-        readDeltaRunLen(in, count, visitor);
-        break;
-      case INT24:
-        readInts24(in, count, visitor);
         break;
       case INT32:
         readInts32(in, count, visitor);
         break;
+      case INT24:
+        readInts24(in, count, visitor);
+        break;
+      case INT16:
+        readInts16(in, count, visitor);
+        break;
+      case INT8:
+        readInts8(in, count, visitor);
+        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
-    }
-  }
-
-  private static void readAllEquals(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int doc =  in.readInt();
-    for (int i = 0; i < count; i++) {
-      visitor.visit(doc);
     }
   }
 
@@ -343,17 +209,16 @@ class DocIdsWriter {
     }
   }
 
-  private static void readDeltaRunLen(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int doc = 0;
-    int len = 0;
-    for (int i = 0; i < count;) {
-      len += in.readVInt();
-      doc += in.readVInt();
-     for (; i < len; i++) {
-        visitor.visit(doc);
-     }
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    int i;
+    for (i = 0; i < count - 1; i += 2) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 32));
+      visitor.visit((int) l);
     }
-    assert count == len;
+    for (; i < count; ++i) {
+      visitor.visit(in.readInt());
+    }
   }
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
@@ -376,41 +241,35 @@ class DocIdsWriter {
     }
   }
 
-  private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int len = 0;
-    for (int i = 0; i < count;) {
-      len += in.readVInt();
-      int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
-      for (; i < len; i++) {
-        visitor.visit(doc);
-      }
-    }
-    assert len == count;
-  }
-
-  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-//    for (int i = 0; i < count; i++) {
-//      visitor.visit(in.readInt());
-//    }
+  private static void readInts16(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int i;
-    for (i = 0; i < count - 1; i += 2) {
+    for (i = 0; i < count - 3; i += 4) {
       long l = in.readLong();
-      visitor.visit((int) (l >>> 32));
-      visitor.visit((int) l);
+      visitor.visit((int) (l >>> 48) & 0xffff);
+      visitor.visit((int) (l >>> 32) & 0xffff);
+      visitor.visit((int) (l >>> 16) & 0xffff);
+      visitor.visit((int) l & 0xffff);
     }
     for (; i < count; ++i) {
-      visitor.visit(in.readInt());
+      visitor.visit(Short.toUnsignedInt(in.readShort()));
     }
   }
 
-  private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int len = 0;
-    for (int i = 0; i < count;) {
-      len += in.readVInt();
-      int doc = in.readInt();
-      for (; i < len; i++) {
-        visitor.visit(doc);
-      }
+  private static void readInts8(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 56) & 0xff);
+      visitor.visit((int) (l >>> 48) & 0xff);
+      visitor.visit((int) (l >>> 40) & 0xff);
+      visitor.visit((int) (l >>> 32) & 0xff);
+      visitor.visit((int) (l >>> 24) & 0xff);
+      visitor.visit((int) (l >>> 16) & 0xff);
+      visitor.visit((int) (l >>> 8) & 0xff);
+      visitor.visit((int) (l & 0xff));
+    }
+    for (; i < count; ++i) {
+      visitor.visit(Byte.toUnsignedInt(in.readByte()));
     }
   }
 }
