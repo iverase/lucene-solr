@@ -47,7 +47,7 @@ class DocIdsWriter {
       }
       max |= Integer.toUnsignedLong(docIds[start + i]);
     }
-    if (sorted && max > 0xffff) {
+    if (sorted && max > 0xffffff) {
       out.writeByte(SORTED);
       int previous = 0;
       for (int i = 0; i < count; ++i) {
