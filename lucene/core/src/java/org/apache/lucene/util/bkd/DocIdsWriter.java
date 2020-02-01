@@ -157,7 +157,7 @@ class DocIdsWriter {
     int prevIndex = 0;
     int doc = docIds[start];
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i] != doc || (i - prevIndex == 0xff)) {
+      if (docIds[start + i] != doc || (i - prevIndex - 1 == 0xff)) {
         out.writeByte((byte) (i - prevIndex));
         out.writeShort((short) (doc >>> 8));
         out.writeByte((byte) doc);
@@ -320,7 +320,7 @@ class DocIdsWriter {
     for (int i = 0; i < count; ) {
       int l = in.readInt();
       int runLen = (l >>> 24) & 0xff;
-      int doc = (l) & 0xffffff;
+      int doc =  l & 0xffffff;
       for (int j = 0; j < runLen; j++) {
         docIDs[i++] = doc;
       }
@@ -498,7 +498,7 @@ class DocIdsWriter {
     for (int i =0; i < count; ) {
       int l = in.readInt();
       int runLen = (l >>> 24) & 0xff;
-      int doc = (l) & 0xffffff;
+      int doc =  l & 0xffffff;
       for (int j = 0; j < runLen; j++) {
         visitor.visit(doc);
       }
