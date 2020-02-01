@@ -148,7 +148,7 @@ class DocIdsWriter {
     int i;
     for (i = 0; i < count - 3; i += 4) {
       long l = in.readLong();
-      docIDs[i] = (int) (l >>> 48) & 0xffff;
+      docIDs[i] = (int) (l >>> 48);
       docIDs[i+1] = (int) (l >>> 32) & 0xffff;
       docIDs[i+2] = (int) (l >>> 16) & 0xffff;
       docIDs[i+3] = (int) l & 0xffff;
@@ -162,7 +162,7 @@ class DocIdsWriter {
     int i;
     for (i = 0; i < count - 7; i += 8) {
       long l = in.readLong();
-      docIDs[i] =  (int) (l >>> 56) & 0xff;
+      docIDs[i] =  (int) (l >>> 56);
       docIDs[i+1] = (int) (l >>> 48) & 0xff;
       docIDs[i+2] = (int) (l >>> 40) & 0xff;
       docIDs[i+3] = (int) (l >>> 32) & 0xff;
@@ -245,7 +245,7 @@ class DocIdsWriter {
     int i;
     for (i = 0; i < count - 3; i += 4) {
       long l = in.readLong();
-      visitor.visit((int) (l >>> 48) & 0xffff);
+      visitor.visit((int) (l >>> 48));
       visitor.visit((int) (l >>> 32) & 0xffff);
       visitor.visit((int) (l >>> 16) & 0xffff);
       visitor.visit((int) l & 0xffff);
@@ -259,7 +259,7 @@ class DocIdsWriter {
     int i;
     for (i = 0; i < count - 7; i += 8) {
       long l = in.readLong();
-      visitor.visit((int) (l >>> 56) & 0xff);
+      visitor.visit((int) (l >>> 56));
       visitor.visit((int) (l >>> 48) & 0xff);
       visitor.visit((int) (l >>> 40) & 0xff);
       visitor.visit((int) (l >>> 32) & 0xff);

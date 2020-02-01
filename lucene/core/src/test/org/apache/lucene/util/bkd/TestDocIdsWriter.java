@@ -44,6 +44,32 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
+  public void testRandom8() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = TestUtil.nextInt(random(), 0, 0xff);
+        }
+        test(dir, docIDs);
+      }
+    }
+  }
+
+  public void testRandom16() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = TestUtil.nextInt(random(), 0, 0xffff);
+        }
+        test(dir, docIDs);
+      }
+    }
+  }
+
   public void testRunLen() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
