@@ -157,7 +157,7 @@ class DocIdsWriter {
     int prevIndex = 0;
     int doc = docIds[start];
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i] != doc || (i - prevIndex - 1 == 0xff)) {
+      if (docIds[start + i] != doc || (i - prevIndex == 0xff)) {
         out.writeByte((byte) (i - prevIndex));
         out.writeShort((short) (doc >>> 8));
         out.writeByte((byte) doc);
@@ -165,7 +165,7 @@ class DocIdsWriter {
         prevIndex = i;
       }
     }
-    out.writeVInt(count - prevIndex);
+    out.writeByte((byte) (count - prevIndex));
     out.writeShort((short) (doc >>> 8));
     out.writeByte((byte) doc);
   }
