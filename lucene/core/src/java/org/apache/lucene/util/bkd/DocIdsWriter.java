@@ -59,103 +59,139 @@ class DocIdsWriter {
       }
     }
     if (sorted) {
-      out.writeByte(SORTED);
-      int previous = 0;
-      for (int i = 0; i < count; ++i) {
-        int doc = docIds[start + i];
-        out.writeVInt(doc - previous);
-        previous = doc;
-      }
+      writeDeltaVInts(docIds, start, count, out);
     } else {
       if (max <= 0xff) {
         if (runLenDocs < count / 2) {
-          out.writeByte(RUNLEN8);
-          int prevIndex = 0;
-          int doc = docIds[start];
-          for (int i = 1; i < count; ++i) {
-            if (docIds[start + i] != doc) {
-              out.writeVInt(i - prevIndex);
-              out.writeByte((byte) doc);
-              doc = docIds[start + i];
-              prevIndex = i;
-            }
-          }
-          out.writeVInt(count - prevIndex);
-          out.writeByte((byte) doc);
+          writeRunLen8(docIds, start, count, out);
         } else {
-          out.writeByte(INT8);
-          for (int i = 0; i < count; ++i) {
-            out.writeByte((byte) (docIds[start + i]));
-          }
+          writeInts8(docIds, start, count, out);
         }
       } else if (max <= 0xffff) {
         if (runLenDocs < count / 2) {
-          out.writeByte(RUNLEN16);
-          int prevIndex = 0;
-          int doc = docIds[start];
-          for (int i = 1; i < count; ++i) {
-            if (docIds[start + i] != doc) {
-              out.writeVInt(i - prevIndex);
-              out.writeShort((short) doc);
-              doc = docIds[start + i];
-              prevIndex = i;
-            }
-          }
-          out.writeVInt(count - prevIndex);
-          out.writeShort((short) doc);
+          writeRunLen16(docIds, start, count, out);
         } else {
-          out.writeByte(INT16);
-          for (int i = 0; i < count; ++i) {
-            out.writeShort((short) (docIds[start + i]));
-          }
+          writeInts16(docIds, start, count, out);
         }
       } else if (max <= 0xffffff) {
         if (runLenDocs < count / 2) {
-          out.writeByte(RUNLEN24);
-          int prevIndex = 0;
-          int doc = docIds[start];
-          for (int i = 1; i < count; ++i) {
-            if (docIds[start + i] != doc) {
-              out.writeVInt(i - prevIndex);
-              out.writeShort((short) (doc >>> 8));
-              out.writeByte((byte) doc);
-              doc = docIds[start + i];
-              prevIndex = i;
-            }
-          }
-          out.writeVInt(count - prevIndex);
-          out.writeShort((short) (doc >>> 8));
-          out.writeByte((byte) doc);
+          writeRunLen24(docIds, start, count, out);
         } else {
-          out.writeByte(INT24);
-          for (int i = 0; i < count; ++i) {
-            out.writeShort((short) (docIds[start + i] >>> 8));
-            out.writeByte((byte) docIds[start + i]);
-          }
+          writeInts24(docIds, start, count, out);
         }
       } else {
         if (runLenDocs < count / 2) {
-          out.writeByte(RUNLEN32);
-          int prevIndex = 0;
-          int doc = docIds[start];
-          for (int i = 1; i < count; ++i) {
-            if (docIds[start + i] != doc) {
-              out.writeVInt(i - prevIndex);
-              out.writeInt(doc);
-              doc = docIds[start + i];
-              prevIndex = i;
-            }
-          }
-          out.writeVInt(count - prevIndex);
-          out.writeInt(doc);
+          writeRunLen32(docIds, start, count, out);
         } else {
-          out.writeByte(INT32);
-          for (int i = 0; i < count; ++i) {
-            out.writeInt(docIds[start + i]);
-          }
+          writeInts32(docIds, start, count, out);
         }
       }
     }
+  }
+
+  private static void writeDeltaVInts(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(SORTED);
+    int previous = 0;
+    for (int i = 0; i < count; ++i) {
+      int doc = docIds[start + i];
+      out.writeVInt(doc - previous);
+      previous = doc;
+    }
+  }
+
+  private static void writeInts32(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(INT32);
+    for (int i = 0; i < count; ++i) {
+      out.writeInt(docIds[start + i]);
+    }
+  }
+
+  private static void writeRunLen32(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(RUNLEN32);
+    int prevIndex = 0;
+    int doc = docIds[start];
+    for (int i = 1; i < count; ++i) {
+      if (docIds[start + i] != doc) {
+        out.writeVInt(i - prevIndex);
+        out.writeInt(doc);
+        doc = docIds[start + i];
+        prevIndex = i;
+      }
+    }
+    out.writeVInt(count - prevIndex);
+    out.writeInt(doc);
+  }
+
+  private static void writeInts24(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(INT24);
+    for (int i = 0; i < count; ++i) {
+      out.writeShort((short) (docIds[start + i] >>> 8));
+      out.writeByte((byte) docIds[start + i]);
+    }
+  }
+
+  private static void writeRunLen24(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(RUNLEN24);
+    int prevIndex = 0;
+    int doc = docIds[start];
+    for (int i = 1; i < count; ++i) {
+      if (docIds[start + i] != doc) {
+        out.writeVInt(i - prevIndex);
+        out.writeShort((short) (doc >>> 8));
+        out.writeByte((byte) doc);
+        doc = docIds[start + i];
+        prevIndex = i;
+      }
+    }
+    out.writeVInt(count - prevIndex);
+    out.writeShort((short) (doc >>> 8));
+    out.writeByte((byte) doc);
+  }
+
+  private static void writeInts16(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(INT16);
+    for (int i = 0; i < count; ++i) {
+      out.writeShort((short) (docIds[start + i]));
+    }
+  }
+
+  private static void writeRunLen16(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(RUNLEN16);
+    int prevIndex = 0;
+    int doc = docIds[start];
+    for (int i = 1; i < count; ++i) {
+      if (docIds[start + i] != doc) {
+        out.writeVInt(i - prevIndex);
+        out.writeShort((short) doc);
+        doc = docIds[start + i];
+        prevIndex = i;
+      }
+    }
+    out.writeVInt(count - prevIndex);
+    out.writeShort((short) doc);
+  }
+
+  private static void writeInts8(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(INT8);
+    for (int i = 0; i < count; ++i) {
+      out.writeByte((byte) (docIds[start + i]));
+    }
+  }
+
+  private static void writeRunLen8(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(RUNLEN8);
+    int prevIndex = 0;
+    int doc = docIds[start];
+    for (int i = 1; i < count; ++i) {
+      if (docIds[start + i] != doc) {
+        out.writeVInt(i - prevIndex);
+        out.writeByte((byte) doc);
+        doc = docIds[start + i];
+        prevIndex = i;
+      }
+    }
+    out.writeVInt(count - prevIndex);
+    out.writeByte((byte) doc);
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
