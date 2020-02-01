@@ -33,16 +33,21 @@ class DocIdsWriter {
   private DocIdsWriter() {}
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    if (count == 0) {
+      out.writeByte(INT32);
+      return;
+    }
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
+    long max = Integer.toUnsignedLong(docIds[start]);
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i - 1] > docIds[start + i]) {
+      if (sorted && docIds[start + i - 1] > docIds[start + i]) {
         sorted = false;
-        break;
       }
+      max |= Integer.toUnsignedLong(docIds[start + i]);
     }
-    if (sorted) {
+    if (sorted && max > 0xffff) {
       out.writeByte(SORTED);
       int previous = 0;
       for (int i = 0; i < count; ++i) {
@@ -51,10 +56,6 @@ class DocIdsWriter {
         previous = doc;
       }
     } else {
-      long max = 0;
-      for (int i = 0; i < count; ++i) {
-        max |= Integer.toUnsignedLong(docIds[start + i]);
-      }
       if (max <= 0xff) {
         out.writeByte(INT8);
         for (int i = 0; i < count; ++i) {
