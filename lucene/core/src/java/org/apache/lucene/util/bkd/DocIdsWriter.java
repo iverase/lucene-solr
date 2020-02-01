@@ -25,6 +25,7 @@ import org.apache.lucene.store.IndexInput;
 class DocIdsWriter {
 
   private static final byte SORTED = (byte) 0;
+  private static final byte RUNLENSORTED = (byte) 1;
   private static final byte INT8 = (byte) 8;
   private static final byte RUNLEN8 = (byte) 9;
   private static final byte INT16 = (byte) 16;
@@ -48,7 +49,6 @@ class DocIdsWriter {
     long max = Integer.toUnsignedLong(docId);
     int runLenDocs = 1;
     for (int i = 1; i < count; ++i) {
-
       if (sorted && docId > docIds[start + i]) {
         sorted = false;
       }
@@ -59,7 +59,11 @@ class DocIdsWriter {
       }
     }
     if (sorted) {
-      writeDeltaVInts(docIds, start, count, out);
+      if (runLenDocs < count / 2) {
+        writeRunLenDeltaVInts(docIds, start, count, out);
+      } else {
+        writeDeltaVInts(docIds, start, count, out);
+      }
     } else {
       if (max <= 0xff) {
         if (runLenDocs < count / 2) {
@@ -97,6 +101,24 @@ class DocIdsWriter {
       out.writeVInt(doc - previous);
       previous = doc;
     }
+  }
+
+  private static void writeRunLenDeltaVInts(int[] docIds, int start, int count, DataOutput out) throws IOException {
+    out.writeByte(RUNLENSORTED);
+    int prevIndex = 0;
+    int previous = 0;
+    int doc = docIds[start];
+    for (int i = 1; i < count; ++i) {
+      if (docIds[start + i] != doc) {
+        out.writeVInt(i - prevIndex);
+        out.writeInt(doc - previous);
+        previous = doc;
+        doc = docIds[start + i];
+        prevIndex = i;
+      }
+    }
+    out.writeVInt(count - prevIndex);
+    out.writeInt(doc - previous);
   }
 
   private static void writeInts32(int[] docIds, int start, int count, DataOutput out) throws IOException {
@@ -201,6 +223,9 @@ class DocIdsWriter {
       case SORTED:
         readDeltaVInts(in, count, docIDs);
         break;
+      case RUNLENSORTED:
+        readRunLenDeltaVInts(in, count, docIDs);
+        break;
       case INT32:
         readInts32(in, count, docIDs);
         break;
@@ -235,6 +260,17 @@ class DocIdsWriter {
     for (int i = 0; i < count; i++) {
       doc += in.readVInt();
       docIDs[i] = doc;
+    }
+  }
+
+  private static void readRunLenDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
+    int doc = 0;
+    for (int i = 0; i < count; ) {
+      int runLen = in.readVInt();
+      doc += in.readInt();
+      for (int j = 0; j < runLen; j++) {
+        docIDs[i++] = doc;
+      }
     }
   }
 
@@ -362,6 +398,9 @@ class DocIdsWriter {
       case SORTED:
         readDeltaVInts(in, count, visitor);
         break;
+      case RUNLENSORTED:
+        readRunLenDeltaVInts(in, count, visitor);
+        break;
       case INT32:
         readInts32(in, count, visitor);
         break;
@@ -396,6 +435,18 @@ class DocIdsWriter {
     for (int i = 0; i < count; i++) {
       doc += in.readVInt();
       visitor.visit(doc);
+    }
+  }
+
+  private static void readRunLenDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    int doc = 0;
+    for (int i =0; i < count; ) {
+      int runLen = in.readVInt();
+      doc += in.readInt();
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
+      i += runLen;
     }
   }
 
