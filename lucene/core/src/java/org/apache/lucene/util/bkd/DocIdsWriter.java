@@ -67,19 +67,19 @@ class DocIdsWriter {
         writeDeltaVInts(docIds, start, count, out);
       }
     } else {
-//      if (max <= 0xff) {
-//        if (runLenDocs < count / 2) {
-//          writeRunLen8(docIds, start, count, out);
-//        } else {
-//          writeInts8(docIds, start, count, out);
-//        }
-//      } else if (max <= 0xffff) {
-//        if (runLenDocs < count / 2) {
-//          writeRunLen16(docIds, start, count, out);
-//        } else {
-//          writeInts16(docIds, start, count, out);
-//        }
-//      } else
+      if (max <= 0xff) {
+        if (runLenDocs < count / 2) {
+          writeRunLen8(docIds, start, count, out);
+        } else {
+          writeInts8(docIds, start, count, out);
+        }
+      } else if (max <= 0xffff) {
+        if (runLenDocs < count / 2) {
+          writeRunLen16(docIds, start, count, out);
+        } else {
+          writeInts16(docIds, start, count, out);
+        }
+      } else
         if (max <= 0xffffff) {
         if (runLenDocs < count / 2) {
           writeRunLen24(docIds, start, count, out, runLenDocs);
@@ -326,20 +326,20 @@ class DocIdsWriter {
     int index = 0;
     for (i = 0; i < runLenDocs - 1; i += 2) {
       long l = in.readLong();
-      int runLen = (int) (l >>> 56) & 0xff;
+      int runLen = (int) (l >>> 56);
       int doc = (int) (l >>> 32) & 0xffffff;
       for (int j = 0; j < runLen; j++) {
         docIDs[index++] = doc;
       }
       runLen =  (int) (l >>> 24) & 0xff;
-      doc = (int)  l & 0xffffff;
+      doc = (int) l & 0xffffff;
       for (int j = 0; j < runLen; j++) {
         docIDs[index++] = doc;
       }
     }
     for (; i < runLenDocs; ++i) {
       int l = in.readInt();
-      int runLen =  (l >>> 24) & 0xff;
+      int runLen =  (l >>> 24);
       int doc = l & 0xffffff;
       for (int j = 0; j < runLen; j++) {
         docIDs[index++] = doc;
@@ -520,7 +520,7 @@ class DocIdsWriter {
     int i;
     for (i = 0; i < runLenDocs - 1; i += 2) {
       long l = in.readLong();
-      int runLen = (int) (l >>> 56) & 0xff;
+      int runLen = (int) (l >>> 56);
       int doc = (int) (l >>> 32)& 0xffffff;
       for (int j = 0; j < runLen; j++) {
         visitor.visit(doc);
@@ -533,7 +533,7 @@ class DocIdsWriter {
     }
     for (; i < runLenDocs; ++i) {
       int l = in.readInt();
-      int runLen =  (l >>> 24) & 0xff;
+      int runLen =  (l >>> 24);
       int doc = l & 0xffffff;
       for (int j = 0; j < runLen; j++) {
         visitor.visit(doc);
