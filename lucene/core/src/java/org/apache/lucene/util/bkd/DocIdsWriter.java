@@ -68,26 +68,26 @@ class DocIdsWriter {
       }
     } else {
       if (max <= 0xff) {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 2.5) {
           writeRunLen8(docIds, start, count, out, runLenDocs);
         } else {
           writeInts8(docIds, start, count, out);
         }
       } else if (max <= 0xffff) {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 2.5) {
           writeRunLen16(docIds, start, count, out, runLenDocs);
         } else {
           writeInts16(docIds, start, count, out);
         }
       } else
         if (max <= 0xffffff) {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 2.5) {
           writeRunLen24(docIds, start, count, out, runLenDocs);
         } else {
           writeInts24(docIds, start, count, out);
         }
       } else {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 2.5) {
           writeRunLen32(docIds, start, count, out);
         } else {
           writeInts32(docIds, start, count, out);
