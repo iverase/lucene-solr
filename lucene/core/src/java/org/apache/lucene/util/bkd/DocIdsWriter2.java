@@ -877,8 +877,8 @@ class DocIdsWriter2 {
       }
     }
     for (; i < runLenDocs; ++i) {
-      int runLen = in.readByte();
-      int doc = in.readByte();
+      int runLen = in.readByte() & 0xff;
+      int doc = in.readByte() & 0xff;
       for (int j = 0; j < runLen; j++) {
         visitor.visit(doc);
       }
