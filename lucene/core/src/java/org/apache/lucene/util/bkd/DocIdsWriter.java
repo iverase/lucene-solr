@@ -374,56 +374,57 @@ class DocIdsWriter {
     final int runLenDocs = in.readVInt();
     int i;
     int index = 0;
+    int runLen = 0;
     for (i = 0; i < runLenDocs - 7; i += 8) {
       long l1 = in.readLong();
       long l2 = in.readLong();
       long l3 = in.readLong();
-      int runLen  = (int) (l1 >>> 56);
+      runLen += (int) (l1 >>> 56);
       int doc =  (int) (l1 >>> 40) & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) (l1 >>> 32) & 0xff;
+      runLen += (int) (l1 >>> 32) & 0xff;
       doc =  (int) (l1 >>> 16) & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) (l1 >>> 8) & 0xff;
+      runLen += (int) (l1 >>> 8) & 0xff;
       doc =  (int) (((l1 & 0xff) << 8) | (l2 >>> 56));
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) (l2 >>> 48) & 0xff;
+      runLen += (int) (l2 >>> 48) & 0xff;
       doc =  (int) (l2 >>> 32) & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) (l2 >>> 24) & 0xff;
+      runLen += (int) (l2 >>> 24) & 0xff;
       doc =  (int) (l2 >>> 8) & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) l2 & 0xff;
+      runLen += (int) l2 & 0xff;
       doc =  (int) (l3 >>> 48) & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) (l3 >>> 40) & 0xff;
+      runLen += (int) (l3 >>> 40) & 0xff;
       doc =  (int) (l3 >>> 24) & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen  = (int) (l3 >>> 16) & 0xff;
+      runLen += (int) (l3 >>> 16) & 0xff;
       doc =  (int) l3 & 0xffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     for (; i < runLenDocs; ++i) {
-      int runLen = Byte.toUnsignedInt(in.readByte());
+      runLen += Byte.toUnsignedInt(in.readByte());
       int doc = Short.toUnsignedInt(in.readShort());
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     assert index == count;
@@ -457,48 +458,49 @@ class DocIdsWriter {
   private static void readRunLen8(IndexInput in, int count, int[] docIDs) throws IOException {
     final int runLenDocs = in.readVInt();
     int index = 0;
+    int runLen = 0;
     int i;
     for (i = 0; i < runLenDocs - 3; i += 4) {
       long l = in.readLong();
-      int runLen = (int) (l >>> 56);
+      runLen += (int) (l >>> 56);
       int doc = (int) (l >>> 48) & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen = (int) (l >>> 40) & 0xff;
+      runLen += (int) (l >>> 40) & 0xff;
       doc = (int) (l >>> 32) & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen = (int) (l >>> 24) & 0xff;
+      runLen += (int) (l >>> 24) & 0xff;
       doc = (int) (l >>> 16) & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen = (int) (l >>> 8) & 0xff;
+      runLen += (int) (l >>> 8) & 0xff;
       doc = (int) l & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     for (; i < runLenDocs - 1; i += 2) {
       long l = in.readInt();
-      int runLen = (int) (l >>> 24) & 0xff;
+      runLen += (int) (l >>> 24) & 0xff;
       int doc = (int) (l >>> 16) & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen = (int) (l >>> 8) & 0xff;
+      runLen += (int) (l >>> 8) & 0xff;
       doc = (int) l & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     for (; i < runLenDocs; ++i) {
-      int runLen = in.readByte() & 0xff;
+      runLen += in.readByte() & 0xff;
       int doc = in.readByte() & 0xff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     assert index == count;
