@@ -67,20 +67,21 @@ class DocIdsWriter {
         writeDeltaVInts(docIds, start, count, out);
       }
     } else {
-      if (max <= 0xff) {
+//      if (max <= 0xff) {
+//        if (runLenDocs < count / 2) {
+//          writeRunLen8(docIds, start, count, out);
+//        } else {
+//          writeInts8(docIds, start, count, out);
+//        }
+//      } else if (max <= 0xffff) {
+//        if (runLenDocs < count / 2) {
+//          writeRunLen16(docIds, start, count, out);
+//        } else {
+//          writeInts16(docIds, start, count, out);
+//        }
+//      } else
+        if (max <= 0xffffff) {
         if (runLenDocs < count / 2) {
-          writeRunLen8(docIds, start, count, out);
-        } else {
-          writeInts8(docIds, start, count, out);
-        }
-      } else if (max <= 0xffff) {
-        if (runLenDocs < count / 2) {
-          writeRunLen16(docIds, start, count, out);
-        } else {
-          writeInts16(docIds, start, count, out);
-        }
-      } else if (max <= 0xffffff) {
-        if (runLenDocs < count / 3) {
           writeRunLen24(docIds, start, count, out, runLenDocs);
         } else {
           writeInts24(docIds, start, count, out);
