@@ -342,24 +342,14 @@ class DocIdsWriter {
   private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     int index = 0;
-    int runLen = 0;
     for (i = 0; i < count - 1; i += 2) {
       long l = in.readLong();
-      runLen += (int) (l >>> 56);
-      int doc = (int) (l >>> 32) & 0xffffff;
-      Arrays.fill(docIDs, index, runLen, doc);
-      index = runLen;
-
-      runLen += (int) (l >>> 24) & 0xff;
-      doc = (int) l & 0xffffff;
-      Arrays.fill(docIDs, index, runLen, doc);
-      index = runLen;
+      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
     }
     for (; i < count; ++i) {
       int l = in.readInt();
-      runLen +=  (l >>> 24);
-      Arrays.fill(docIDs, index, runLen, l & 0xffffff);
-      index = runLen;
+      Arrays.fill(docIDs, index,  index += (l >>> 24), l & 0xffffff);
     }
     return index;
   }
