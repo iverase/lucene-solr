@@ -86,7 +86,7 @@ class DocIdsWriter {
         out.writeVInt(count);
         writeInts16(docIds, start, count, out);
       }
-    }  else if (max <= 0xffffff) {
+    } else if (max <= 0xffffff) {
       if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen24(docIds, start, count, out, runLenDocs);
@@ -94,7 +94,7 @@ class DocIdsWriter {
         out.writeVInt(count);
         writeInts24(docIds, start, count, out);
       }
-    }  else {
+    } else {
       if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen32(docIds, start, count, out, runLenDocs);
