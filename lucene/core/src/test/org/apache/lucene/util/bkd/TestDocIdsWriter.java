@@ -188,13 +188,14 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      DocIdsWriter.readInts(in, ints.length, read);
+      int count = DocIdsWriter.readInts(in, read);
+      assertEquals(count, read.length);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      DocIdsWriter.readInts(in, ints.length, new IntersectVisitor() {
+      DocIdsWriter.readInts(in, new IntersectVisitor() {
         int i = 0;
         @Override
         public void visit(int docID) throws IOException {
