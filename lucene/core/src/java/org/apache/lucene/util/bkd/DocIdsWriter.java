@@ -122,14 +122,14 @@ class DocIdsWriter {
     int doc = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (docIds[start + i] != doc || (i - prevIndex == 0xff)) {
-        out.writeVInt(i - prevIndex);
+        out.writeByte((byte) (i - prevIndex));
         out.writeVInt(doc - previous);
         previous = doc;
         doc = docIds[start + i];
         prevIndex = i;
       }
     }
-    out.writeVInt(count - prevIndex);
+    out.writeByte((byte) (count - prevIndex));
     out.writeVInt(doc - previous);
   }
 
@@ -271,7 +271,7 @@ class DocIdsWriter {
     int doc = 0;
     int index = 0;
     for (int i = 0; i < count; i++) {
-      Arrays.fill(docIDs, index, index += in.readVInt(), doc += in.readVInt());
+      Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), doc += in.readVInt());
     }
     return index;
   }
@@ -492,7 +492,7 @@ class DocIdsWriter {
   private static void readRunLenDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
     for (int i = 0; i < count; i++) {
-      visit(in.readVInt(), doc += in.readVInt(), visitor);
+      visit(Byte.toUnsignedInt(in.readByte()), doc += in.readVInt(), visitor);
     }
   }
 
