@@ -63,7 +63,7 @@ class DocIdsWriter {
       }
     }
     if (sorted && max > 0xffffff) {
-      if (runLenDocs < count / 2.1) {
+      if (runLenDocs < count / 4) {
         out.writeVInt(count);
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
@@ -72,7 +72,7 @@ class DocIdsWriter {
       }
     } else {
       if (max <= 0xff) {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 4) {
           out.writeVInt(runLenDocs);
           writeRunLen8(docIds, start, count, out, runLenDocs);
         } else {
@@ -80,7 +80,7 @@ class DocIdsWriter {
           writeInts8(docIds, start, count, out);
         }
       } else if (max <= 0xffff) {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 4) {
           out.writeVInt(runLenDocs);
           writeRunLen16(docIds, start, count, out, runLenDocs);
         } else {
@@ -89,7 +89,7 @@ class DocIdsWriter {
         }
       } else
         if (max <= 0xffffff) {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 4) {
           out.writeVInt(runLenDocs);
           writeRunLen24(docIds, start, count, out, runLenDocs);
         } else {
@@ -97,7 +97,7 @@ class DocIdsWriter {
           writeInts24(docIds, start, count, out);
         }
       } else {
-        if (runLenDocs < count / 2) {
+        if (runLenDocs < count / 4) {
           out.writeVInt(runLenDocs);
           writeRunLen32(docIds, start, count, out, runLenDocs);
         } else {
@@ -379,24 +379,24 @@ class DocIdsWriter {
   private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     int index = 0;
-    //int runLen = 0;
+    int runLen = 0;
     for (i = 0; i < count - 1; i += 2) {
-      final long l = in.readLong();
-      final int runLen1 = (int) (l >>> 56);
-      final int doc1 = (int) (l >>> 32) & 0xffffff;
-      Arrays.fill(docIDs, index, index + runLen1, doc1);
-      index += runLen1;
+      long l = in.readLong();
+      runLen += (int) (l >>> 56);
+      int doc = (int) (l >>> 32) & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
 
-      int runLen2 = (int) (l >>> 24) & 0xff;
-      final int doc2 = (int) l & 0xffffff;
-      Arrays.fill(docIDs, index, index + runLen2, doc2);
-      index += runLen2;
+      runLen += (int) (l >>> 24) & 0xff;
+      doc = (int) l & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
     }
     for (; i < count; ++i) {
-      final int l = in.readInt();
-      final int runLen =  (l >>> 24);
-      Arrays.fill(docIDs, index, index + runLen, l & 0xffffff);
-      index += runLen;
+      int l = in.readInt();
+      runLen +=  (l >>> 24);
+      Arrays.fill(docIDs, index, runLen, l & 0xffffff);
+      index = runLen;
     }
     return index;
   }
