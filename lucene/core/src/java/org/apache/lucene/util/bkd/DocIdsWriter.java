@@ -80,7 +80,7 @@ class DocIdsWriter {
       }
     } else if (sorted) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(count);
+        out.writeVInt(runLenDocs);
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
         out.writeVInt(count);
@@ -121,7 +121,7 @@ class DocIdsWriter {
     int previous = 0;
     int doc = docIds[start];
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i] != doc) {
+      if (docIds[start + i] != doc || (i - prevIndex == 0xff)) {
         out.writeVInt(i - prevIndex);
         out.writeVInt(doc - previous);
         previous = doc;
@@ -269,14 +269,11 @@ class DocIdsWriter {
 
   private static int readRunLenDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
-    for (int i = 0; i < count; ) {
-      int runLen = in.readVInt();
-      doc += in.readVInt();
-      for (int j = 0; j < runLen; j++) {
-        docIDs[i++] = doc;
-      }
+    int index = 0;
+    for (int i = 0; i < count; i++) {
+      Arrays.fill(docIDs, index, index += in.readVInt(), doc += in.readVInt());
     }
-    return count;
+    return index;
   }
 
   private static int readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
@@ -494,11 +491,8 @@ class DocIdsWriter {
 
   private static void readRunLenDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
-    for (int i =0; i < count; ) {
-      int runLen = in.readVInt();
-      doc += in.readVInt();
-      visit(runLen, doc, visitor);
-      i += runLen;
+    for (int i = 0; i < count; i++) {
+      visit(in.readVInt(), doc += in.readVInt(), visitor);
     }
   }
 
