@@ -60,7 +60,7 @@ class DocIdsWriter {
         prevIndex = i;
       }
     }
-    if (sorted && runLenDocs > 0xffff) {
+    if (sorted) {
       if (runLenDocs < count / 2) {
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
@@ -69,7 +69,7 @@ class DocIdsWriter {
     } else {
       if (max <= 0xff) {
         if (runLenDocs < count / 2) {
-          writeRunLen8(docIds, start, count, out);
+          writeRunLen8(docIds, start, count, out, runLenDocs);
         } else {
           writeInts8(docIds, start, count, out);
         }
@@ -204,19 +204,20 @@ class DocIdsWriter {
     }
   }
 
-  private static void writeRunLen8(int[] docIds, int start, int count, DataOutput out) throws IOException {
+  private static void writeRunLen8(int[] docIds, int start, int count, DataOutput out, int runLenDocs) throws IOException {
     out.writeByte(RUNLEN8);
+    out.writeVInt(runLenDocs);
     int prevIndex = 0;
     int doc = docIds[start];
     for (int i = 1; i < count; ++i) {
-      if (docIds[start + i] != doc) {
-        out.writeVInt(i - prevIndex);
+      if (docIds[start + i] != doc || (i - prevIndex == 0xff)) {
+        out.writeByte((byte) (i - prevIndex));
         out.writeByte((byte) doc);
         doc = docIds[start + i];
         prevIndex = i;
       }
     }
-    out.writeVInt(count - prevIndex);
+    out.writeByte((byte) (count - prevIndex));
     out.writeByte((byte) doc);
   }
 
@@ -403,13 +404,53 @@ class DocIdsWriter {
   }
 
   private static void readRunLen8(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; ) {
-      int runLen = in.readVInt();
-      int doc = Byte.toUnsignedInt(in.readByte());
+    final int runLenDocs = in.readVInt();
+    int index = 0;
+    int i;
+    for (i = 0; i < runLenDocs - 3; i += 4) {
+      long l = in.readLong();
+      int runLen = (int) (l >>> 56);
+      int doc = (int) (l >>> 48) & 0xff;
       for (int j = 0; j < runLen; j++) {
-        docIDs[i++] = doc;
+        docIDs[index++] = doc;
+      }
+      runLen = (int) (l >>> 40) & 0xff;
+      doc = (int) (l >>> 32) & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[index++] = doc;
+      }
+      runLen = (int) (l >>> 24) & 0xff;
+      doc = (int) (l >>> 16) & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[index++] = doc;
+      }
+      runLen = (int) (l >>> 8) & 0xff;
+      doc = (int) l & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[index++] = doc;
       }
     }
+    for (; i < runLenDocs - 1; i += 2) {
+      long l = in.readInt();
+      int runLen = (int) (l >>> 24) & 0xff;
+      int doc = (int) (l >>> 16) & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[index++] = doc;
+      }
+      runLen = (int) (l >>> 8) & 0xff;
+      doc = (int) l & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[index++] = doc;
+      }
+    }
+    for (; i < runLenDocs; ++i) {
+      int runLen = in.readByte() & 0xff;
+      int doc = in.readByte() & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        docIDs[index++] = doc;
+      }
+    }
+    assert index == count;
   }
 
 
@@ -597,13 +638,50 @@ class DocIdsWriter {
   }
 
   private static void readRunLen8(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i =0; i < count; ) {
-      int runLen = in.readVInt();
-      int doc = Byte.toUnsignedInt(in.readByte());
+    int runLenDocs = in.readVInt();
+    int i;
+    for (i = 0; i < runLenDocs - 3; i += 4) {
+      long l = in.readLong();
+      int runLen = (int) (l >>> 56);
+      int doc = (int) (l >>> 48) & 0xff;
       for (int j = 0; j < runLen; j++) {
         visitor.visit(doc);
       }
-      i += runLen;
+      runLen = (int) (l >>> 40) & 0xff;
+      doc = (int) (l >>> 32) & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
+      runLen = (int) (l >>> 24) & 0xff;
+      doc = (int) (l >>> 16) & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
+      runLen = (int) (l >>> 8) & 0xff;
+      doc = (int) l & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
+    }
+    for (; i < runLenDocs - 1; i += 2) {
+      long l = in.readInt();
+      int runLen = (int) (l >>> 24) & 0xff;
+      int doc = (int) (l >>> 16) & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
+      runLen = (int) (l >>> 8) & 0xff;
+      doc = (int) l & 0xff;
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
+    }
+    for (; i < runLenDocs; ++i) {
+      int runLen = in.readByte();
+      int doc = in.readByte();
+      for (int j = 0; j < runLen; j++) {
+        visitor.visit(doc);
+      }
     }
   }
 }
