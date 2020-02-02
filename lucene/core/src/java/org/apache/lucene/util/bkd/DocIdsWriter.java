@@ -78,14 +78,6 @@ class DocIdsWriter {
         out.writeVInt(count);
         writeInts16(docIds, start, count, out);
       }
-    } else if (max <= 0xffffff) {
-      if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
-        writeRunLen24(docIds, start, count, out, runLenDocs);
-      } else {
-        out.writeVInt(count);
-        writeInts24(docIds, start, count, out);
-      }
     } else if (sorted) {
       if (runLenDocs < count / 2) {
         out.writeVInt(count);
@@ -94,7 +86,15 @@ class DocIdsWriter {
         out.writeVInt(count);
         writeDeltaVInts(docIds, start, count, out);
       }
-    } else {
+    } else if (max <= 0xffffff) {
+      if (runLenDocs < count / 2) {
+        out.writeVInt(runLenDocs);
+        writeRunLen24(docIds, start, count, out, runLenDocs);
+      } else {
+        out.writeVInt(count);
+        writeInts24(docIds, start, count, out);
+      }
+    }  else {
       if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen32(docIds, start, count, out, runLenDocs);
