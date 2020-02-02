@@ -380,12 +380,46 @@ class DocIdsWriter {
     int i;
     int index = 0;
     int runLen = 0;
-    for (i = 0; i < count - 1; i += 2) {
+    for (i = 0; i < count - 7; i += 8) {
       long l = in.readLong();
       runLen += (int) (l >>> 56);
       int doc = (int) (l >>> 32) & 0xffffff;
       Arrays.fill(docIDs, index, runLen, doc);
       index = runLen;
+
+      runLen += (int) (l >>> 24) & 0xff;
+      doc = (int) l & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+
+      l = in.readLong();
+      runLen += (int) (l >>> 56);
+      doc = (int) (l >>> 32) & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+
+      runLen += (int) (l >>> 24) & 0xff;
+      doc = (int) l & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+
+      l = in.readLong();
+      runLen += (int) (l >>> 56);
+      doc = (int) (l >>> 32) & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+
+      runLen += (int) (l >>> 24) & 0xff;
+      doc = (int) l & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+
+      l = in.readLong();
+      runLen += (int) (l >>> 56);
+       doc = (int) (l >>> 32) & 0xffffff;
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+
       runLen += (int) (l >>> 24) & 0xff;
       doc = (int) l & 0xffffff;
       Arrays.fill(docIDs, index, runLen, doc);
