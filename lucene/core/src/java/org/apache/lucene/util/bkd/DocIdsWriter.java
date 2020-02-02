@@ -17,6 +17,7 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
@@ -385,14 +386,18 @@ class DocIdsWriter {
       long l = in.readLong();
       runLen += (int) (l >>> 56);
       int doc = (int) (l >>> 32) & 0xffffff;
-      for (; index < runLen; index++) {
-        docIDs[index] = doc;
-      }
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+//      for (; index < runLen; index++) {
+//        docIDs[index] = doc;
+//      }
       runLen += (int) (l >>> 24) & 0xff;
       doc = (int) l & 0xffffff;
-      for (; index < runLen; index++) {
-        docIDs[index] = doc;
-      }
+      Arrays.fill(docIDs, index, runLen, doc);
+      index = runLen;
+//      for (; index < runLen; index++) {
+//        docIDs[index] = doc;
+//      }
     }
     for (; i < count; ++i) {
       int l = in.readInt();
