@@ -326,25 +326,26 @@ class DocIdsWriter {
     final int runLenDocs = in.readVInt();
     int i;
     int index = 0;
+    int runLen = 0;
     for (i = 0; i < runLenDocs - 1; i += 2) {
       long l = in.readLong();
-      int runLen = (int) (l >>> 56);
+      runLen += (int) (l >>> 56);
       int doc = (int) (l >>> 32) & 0xffffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
-      runLen =  (int) (l >>> 24) & 0xff;
+      runLen += (int) (l >>> 24) & 0xff;
       doc = (int) l & 0xffffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     for (; i < runLenDocs; ++i) {
       int l = in.readInt();
-      int runLen =  (l >>> 24);
+      runLen +=  (l >>> 24);
       int doc = l & 0xffffff;
-      for (int j = 0; j < runLen; j++) {
-        docIDs[index++] = doc;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
       }
     }
     assert index == count;
