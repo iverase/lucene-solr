@@ -60,7 +60,7 @@ class DocIdsWriter {
         prevIndex = i;
       }
     }
-    if (sorted) {
+    if (sorted && runLenDocs > 0xffff) {
       if (runLenDocs < count / 2) {
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
@@ -80,7 +80,7 @@ class DocIdsWriter {
           writeInts16(docIds, start, count, out);
         }
       } else if (max <= 0xffffff) {
-        if (runLenDocs < count / 2.5) {
+        if (runLenDocs < count / 3) {
           writeRunLen24(docIds, start, count, out, runLenDocs);
         } else {
           writeInts24(docIds, start, count, out);
