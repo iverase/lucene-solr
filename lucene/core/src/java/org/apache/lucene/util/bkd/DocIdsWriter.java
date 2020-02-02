@@ -74,14 +74,14 @@ class DocIdsWriter {
           writeInts8(docIds, start, count, out);
         }
       } else if (max <= 0xffff) {
-        if (runLenDocs < count / (12. /8)) {
+        if (runLenDocs < count / 2) {
           writeRunLen16(docIds, start, count, out, runLenDocs);
         } else {
           writeInts16(docIds, start, count, out);
         }
       } else
         if (max <= 0xffffff) {
-        if (runLenDocs < count / (8. / 6)) {
+        if (runLenDocs < count / 2) {
           writeRunLen24(docIds, start, count, out, runLenDocs);
         } else {
           writeInts24(docIds, start, count, out);
