@@ -380,15 +380,37 @@ class DocIdsWriter {
     int i;
     int index = 0;
     int runLen = 0;
-    for (i = 0; i < runLenDocs - 1; i += 2) {
-      long l = in.readLong();
-      runLen += (int) (l >>> 56);
-      int doc = (int) (l >>> 32) & 0xffffff;
+    for (i = 0; i < runLenDocs - 5; i += 6) {
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
+      runLen += (int) (l1 >>> 56);
+      int doc = (int) (l1 >>> 32) & 0xffffff;
       for (; index < runLen; index++) {
         docIDs[index] = doc;
       }
-      runLen += (int) (l >>> 24) & 0xff;
-      doc = (int) l & 0xffffff;
+      runLen += (int) (l1 >>> 24) & 0xff;
+      doc = (int) l1 & 0xffffff;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
+      }
+      runLen += (int) (l2 >>> 56);
+      doc = (int) (l2 >>> 32) & 0xffffff;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
+      }
+      runLen += (int) (l2 >>> 24) & 0xff;
+      doc = (int) l2 & 0xffffff;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
+      }
+      runLen += (int) (l3 >>> 56);
+      doc = (int) (l3 >>> 32) & 0xffffff;
+      for (; index < runLen; index++) {
+        docIDs[index] = doc;
+      }
+      runLen += (int) (l3 >>> 24) & 0xff;
+      doc = (int) l3 & 0xffffff;
       for (; index < runLen; index++) {
         docIDs[index] = doc;
       }
