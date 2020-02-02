@@ -339,12 +339,21 @@ class DocIdsWriter {
   private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     int index = 0;
-//    for (i = 0; i < count - 1; i += 2) {
-//      long l = in.readLong();
-//      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
-//      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
-//    }
-    for (i = 0; i < count; ++i) {
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
+      l = in.readLong();
+      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
+      l = in.readLong();
+      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
+      l = in.readLong();
+      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
+    }
+    for (; i < count; ++i) {
       int l = in.readInt();
       Arrays.fill(docIDs, index,  index += (l >>> 24), l & 0xffffff);
     }
