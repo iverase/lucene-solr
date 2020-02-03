@@ -99,15 +99,17 @@ class DocIdsWriter {
 
   private static void writeRunLen32(int[] docIds, int start, int count, DataOutput out) throws IOException {
     out.writeByte(RUNLEN32);
+    int prevIndex = 0;
     int doc = docIds[start];
     for (int i = 1; i < count; ++i) {
       if (docIds[start + i] != doc) {
-        out.writeVInt(i);
+        out.writeVInt(i - prevIndex);
         out.writeInt(doc);
         doc = docIds[start + i];
+        prevIndex = i;
       }
     }
-    out.writeVInt(count);
+    out.writeVInt(count - prevIndex);
     out.writeInt(doc);
   }
 
@@ -169,7 +171,7 @@ class DocIdsWriter {
   private static void readRunLen32(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count;) {
-      Arrays.fill(docIDs, i, i = in.readVInt(), in.readInt());
+      Arrays.fill(docIDs, i, i += in.readVInt(), in.readInt());
     }
   }
 
@@ -231,7 +233,7 @@ class DocIdsWriter {
   private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int i;
     for (i = 0; i < count;) {
-      visit(visitor, i, i = in.readVInt(), in.readInt());
+      visit(visitor, i, i += in.readVInt(), in.readInt());
     }
   }
 
