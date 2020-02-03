@@ -270,13 +270,8 @@ class DocIdsWriter {
 
   private static int readRunLenDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
-    int runLen = 0;
     for (int i = 0; i < count; ) {
-      runLen += Byte.toUnsignedInt(in.readByte());
-      doc += in.readVInt();
-      for (; i < runLen; i++) {
-        docIDs[i] = doc;
-      }
+      Arrays.fill(docIDs, i, i += Byte.toUnsignedInt(in.readByte()), doc += in.readVInt());
     }
     return count;
   }
