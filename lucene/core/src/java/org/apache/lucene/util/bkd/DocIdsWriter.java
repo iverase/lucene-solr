@@ -87,8 +87,8 @@ class DocIdsWriter {
         writeInts16(docIds, start, count, out);
       }
     } else if (max <= 0xffffff) {
-      if (runLenDocs < count / 4) {
-        out.writeVInt(runLenDocs);
+      if (runLenDocs < count / 2) {
+        out.writeVInt(count);
         writeRunLen24(docIds, start, count, out, runLenDocs);
       } else {
         out.writeVInt(count);
@@ -338,17 +338,16 @@ class DocIdsWriter {
 
   private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
-    int index = 0;
-    for (i = 0; i < count - 1; i += 2) {
-      long l = in.readLong();
-      Arrays.fill(docIDs, index, index += (int) (l >>> 56) , (int) (l >>> 32) & 0xffffff);
-      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) l & 0xffffff);
+    int runLen = 0;
+    for (i = 0; i < count; ) {
+      int val = in.readInt();
+      runLen += (val >>> 56);
+      int doc = (val >>> 32) & 0xffffff;
+      for (; i < runLen; i++) {
+        docIDs[i] = doc;
+      }
     }
-    for (; i < count; ++i) {
-      int l = in.readInt();
-      Arrays.fill(docIDs, index,  index += (l >>> 24), l & 0xffffff);
-    }
-    return index;
+    return count;
   }
 
   private static int readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
@@ -552,14 +551,14 @@ class DocIdsWriter {
 
   private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int i;
-    for (i = 0; i < count - 1; i += 2) {
-      long l = in.readLong();
-      visit((int) (l >>> 56), (int) (l >>> 32) & 0xffffff, visitor);
-      visit((int) (l >>> 24) & 0xff, (int) l & 0xffffff, visitor);
-    }
-    for (; i < count; ++i) {
-      int l = in.readInt();
-      visit((l >>> 24), l & 0xffffff, visitor);
+    int runLen = 0;
+    for (i = 0; i < count; ) {
+      int val = in.readInt();
+      runLen += (val >>> 56);
+      int doc = (val >>> 32) & 0xffffff;
+      for (; i < runLen; i++) {
+        visitor.visit(doc);
+      }
     }
   }
 
