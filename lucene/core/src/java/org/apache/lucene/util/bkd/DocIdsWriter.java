@@ -73,7 +73,7 @@ class DocIdsWriter {
 //    } else
       if (sorted) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
+        out.writeVInt(count);
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
         out.writeVInt(count);
@@ -270,11 +270,15 @@ class DocIdsWriter {
 
   private static int readRunLenDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
-    int index = 0;
-    for (int i = 0; i < count; i++) {
-      Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), doc += in.readVInt());
+    int runLen = 0;
+    for (int i = 0; i < count; ) {
+      runLen += Byte.toUnsignedInt(in.readByte());
+      doc += in.readVInt();
+      for (; i < runLen; i++) {
+        docIDs[i] = doc;
+      }
     }
-    return index;
+    return count;
   }
 
   private static int readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
@@ -338,9 +342,8 @@ class DocIdsWriter {
   }
 
   private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int i;
     int runLen = 0;
-    for (i = 0; i < count; ) {
+    for (int i = 0; i < count; ) {
       int val = in.readInt();
       runLen += (val >>> 56);
       int doc = (val >>> 32) & 0xffffff;
