@@ -63,7 +63,7 @@ class DocIdsWriter {
       }
     }
     if (max <= 0xff) {
-      if (runLenDocs < count / 5) {
+      if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen8(docIds, start, count, out, runLenDocs);
       } else {
@@ -71,7 +71,7 @@ class DocIdsWriter {
         writeInts8(docIds, start, count, out);
       }
     } else if (sorted) {
-      if (runLenDocs < count / 5) {
+      if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
@@ -79,7 +79,7 @@ class DocIdsWriter {
         writeDeltaVInts(docIds, start, count, out);
       }
     } else if (max <= 0xffff) {
-      if (runLenDocs < count / 5) {
+      if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen16(docIds, start, count, out, runLenDocs);
       } else {
@@ -87,7 +87,7 @@ class DocIdsWriter {
         writeInts16(docIds, start, count, out);
       }
     } else if (max <= 0xffffff) {
-      if (runLenDocs < count / 5) {
+      if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen24(docIds, start, count, out, runLenDocs);
       } else {
@@ -95,7 +95,7 @@ class DocIdsWriter {
         writeInts24(docIds, start, count, out);
       }
     } else {
-      if (runLenDocs < count / 5) {
+      if (runLenDocs < count / 2) {
         out.writeVInt(runLenDocs);
         writeRunLen32(docIds, start, count, out, runLenDocs);
       } else {
