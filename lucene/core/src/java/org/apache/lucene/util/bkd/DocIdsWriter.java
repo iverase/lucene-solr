@@ -490,12 +490,18 @@ class DocIdsWriter {
       doc += in.readVInt();
       visitor.visit(doc);
     }
+
   }
 
   private static void readRunLenDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
-    for (int i = 0; i < count; i++) {
-      visit(Byte.toUnsignedInt(in.readByte()), doc += in.readVInt(), visitor);
+    int runLen = 0;
+    for (int i = 0; i < count; ) {
+      runLen += Byte.toUnsignedInt(in.readByte());
+      doc += in.readVInt();
+      for (; i < runLen; i++) {
+        visitor.visit(doc);
+      }
     }
   }
 
