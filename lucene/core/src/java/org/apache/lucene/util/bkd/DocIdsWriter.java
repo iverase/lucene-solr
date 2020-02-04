@@ -344,7 +344,20 @@ class DocIdsWriter {
   }
 
   private static void readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 3; i += 4) {
+      long l = in.readLong();
+      docIDs[i] = (int) (l >>> 48);
+      docIDs[i+1] = (int) (l >>> 32) & 0xffff;
+      docIDs[i+2] = (int) (l >>> 16) & 0xffff;
+      docIDs[i+3] = (int) l & 0xffff;
+    }
+    for (; i < count - 1; i += 2) {
+      long l = in.readInt();
+      docIDs[i] = (int) (l >>> 16) & 0xffff;
+      docIDs[i+1] = (int) l & 0xffff;
+    }
+    for (; i < count; ++i) {
       docIDs[i] = Short.toUnsignedInt(in.readShort());
     }
   }
@@ -467,7 +480,20 @@ class DocIdsWriter {
   }
 
   private static void readInts16(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 3; i += 4) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 48));
+      visitor.visit((int) (l >>> 32) & 0xffff);
+      visitor.visit((int) (l >>> 16) & 0xffff);
+      visitor.visit((int) l & 0xffff);
+    }
+    for (; i < count - 1; i += 2) {
+      long l = in.readInt();
+      visitor.visit((int) (l >>> 16) & 0xffff);
+      visitor.visit((int) l & 0xffff);
+    }
+    for (; i < count; ++i) {
       visitor.visit(Short.toUnsignedInt(in.readShort()));
     }
   }
