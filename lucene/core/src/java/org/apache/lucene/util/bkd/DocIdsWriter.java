@@ -40,6 +40,7 @@ class DocIdsWriter {
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out) throws IOException {
     if (count == 0) {
+      // Should be disallow this case?
       out.writeByte(SORTED);
       return;
     }
@@ -61,31 +62,31 @@ class DocIdsWriter {
         prevIndex = i;
       }
     }
-//    if (max <= 0xff) {
-//      if (runLenDocs < count / 2) {
-//        writeRunLen8(docIds, start, count, out);
-//      } else {
-//        writeInts8(docIds, start, count, out);
-//      }
-//    } else
-      if (sorted) {
+    if (max <= 0xff) {
+      if (runLenDocs < count / 2) {
+        writeRunLen8(docIds, start, count, out);
+      } else {
+        writeInts8(docIds, start, count, out);
+      }
+    } else if (sorted) {
       if (runLenDocs < count / 2) {
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
         writeDeltaVInts(docIds, start, count, out);
       }
-//    } else if (max <= 0xffff) {
-//      if (runLenDocs < count / 2) {
-//        writeRunLen16(docIds, start, count, out);
-//      } else {
-//        writeInts16(docIds, start, count, out);
-//      }
-//    } else if (max <= 0xffffff) {
-//      if (runLenDocs < count / 2) {
-//        writeRunLen24(docIds, start, count, out);
-//      } else {
-//        writeInts24(docIds, start, count, out);
-//      }
+    } else if (max <= 0xffff) {
+      if (runLenDocs < count / 2) {
+        writeRunLen16(docIds, start, count, out);
+      } else {
+        writeInts16(docIds, start, count, out);
+      }
+    } else if (max <= 0xffffff) {
+      if (runLenDocs < count / 2) {
+       // writeRunLen24(docIds, start, count, out);
+        writeRunLen32(docIds, start, count, out);
+      } else {
+        writeInts24(docIds, start, count, out);
+      }
     } else {
       if (runLenDocs < count / 2) {
         writeRunLen32(docIds, start, count, out);
@@ -240,18 +241,18 @@ class DocIdsWriter {
       case RUNLEN24:
         readRunLen24(in, count, docIDs);
         break;
-//      case INT16:
-//        readInts16(in, count, docIDs);
-//        break;
-//      case RUNLEN16:
-//        readRunLen16(in, count, docIDs);
-//        break;
-//      case INT8:
-//        readInts8(in, count, docIDs);
-//        break;
-//      case RUNLEN8:
-//        readRunLen8(in, count, docIDs);
-//        break;
+      case INT16:
+        readInts16(in, count, docIDs);
+        break;
+      case RUNLEN16:
+        readRunLen16(in, count, docIDs);
+        break;
+      case INT8:
+        readInts8(in, count, docIDs);
+        break;
+      case RUNLEN8:
+        readRunLen8(in, count, docIDs);
+        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
@@ -357,18 +358,18 @@ class DocIdsWriter {
       case RUNLEN24:
         readRunLen24(in, count, visitor);
         break;
-//      case INT16:
-//        readInts16(in, count, visitor);
-//        break;
-//      case RUNLEN16:
-//        readRunLen16(in, count, visitor);
-//        break;
-//      case INT8:
-//        readInts8(in, count, visitor);
-//        break;
-//      case RUNLEN8:
-//        readRunLen8(in, count, visitor);
-//        break;
+      case INT16:
+        readInts16(in, count, visitor);
+        break;
+      case RUNLEN16:
+        readRunLen16(in, count, visitor);
+        break;
+      case INT8:
+        readInts8(in, count, visitor);
+        break;
+      case RUNLEN8:
+        readRunLen8(in, count, visitor);
+        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
