@@ -62,7 +62,7 @@ class DocIdsWriter {
     if (sorted) {
       writeDeltaVInts(docIds, start, count, out);
     } else {
-      if (runLenDocs < count / 2) {
+      if (false) { //runLenDocs < count / 2) {
         writeRunLen32(docIds, start, count, out);
       } else if (max <= 0xffffff) {
         writeInts24(docIds, start, count, out);
@@ -121,10 +121,17 @@ class DocIdsWriter {
         readDeltaVInts(in, count, docIDs);
         break;
       case INT32:
+       // long start = System.nanoTime();
         readInts32(in, count, docIDs);
+       // long end = System.nanoTime();
+       // System.out.println("INT32: " + (end - start));
         break;
       case INT24:
+       //start = System.nanoTime();
         readInts24(in, count, docIDs);
+       // end = System.nanoTime();
+       // System.out.println("INT32: " + (end - start));
+
         break;
       case RUNLEN32:
         readRunLen32(in, count, docIDs);
@@ -142,9 +149,14 @@ class DocIdsWriter {
     }
   }
 
-  static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; i++) {
-      docIDs[i] = in.readInt();
+  private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+    for (int i = 0; i < count -1; i += 2) {
+      long l = in.readLong();
+      docIDs[i] = (int) l >>> 32;
+      docIDs[i + 1] = (int) l;
+    }
+    for (int i = 0; i < count; i ++) {
+      docIDs[i] =  in.readInt();
     }
   }
 
