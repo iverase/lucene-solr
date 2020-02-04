@@ -225,63 +225,63 @@ class DocIdsWriter {
     final int bpv = in.readByte();
     switch (bpv) {
       case SORTED:
-        long start = System.nanoTime();
+        //long start = System.nanoTime();
         readDeltaVInts(in, count, docIDs);
-        long end = System.nanoTime();
+        //long end = System.nanoTime();
         //System.out.println("SORTED: " + (end -start));
         break;
       case RUNLENSORTED:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readRunLenDeltaVInts(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("RUNLENSORTED: " + (end -start));
         break;
       case INT32:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readInts32(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
        // System.out.println("INT32: " + (end -start));
         break;
       case RUNLEN32:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readRunLen32(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("RUNLEN32: " + (end -start));
         break;
       case INT24:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readInts24(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("INT24: " + (end -start));
         break;
       case RUNLEN24:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readRunLen24(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
        // System.out.println("RUNLEN24: " + (end -start));
         break;
       case INT16:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readInts16(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("INT16: " + (end -start));
         break;
       case RUNLEN16:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readRunLen16(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("RUNLEN16: " + (end -start));
         break;
       case INT8:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readInts8(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("INT8: " + (end -start));
         break;
       case RUNLEN8:
-        start = System.nanoTime();
+        //start = System.nanoTime();
         readRunLen8(in, count, docIDs);
-        end = System.nanoTime();
+        //end = System.nanoTime();
         //System.out.println("RUNLEN8: " + (end -start));
         break;
       default:
@@ -369,7 +369,26 @@ class DocIdsWriter {
   }
 
   private static void readInts8(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      docIDs[i] =  (int) (l >>> 56);
+      docIDs[i+1] = (int) (l >>> 48) & 0xff;
+      docIDs[i+2] = (int) (l >>> 40) & 0xff;
+      docIDs[i+3] = (int) (l >>> 32) & 0xff;
+      docIDs[i+4] = (int) (l >>> 24) & 0xff;
+      docIDs[i+5] = (int) (l >>> 16) & 0xff;
+      docIDs[i+6] = (int) (l >>> 8) & 0xff;
+      docIDs[i+7] = (int) (l & 0xff);
+    }
+    for (; i < count - 3; i += 4) {
+      long l = in.readInt();
+      docIDs[i] = (int) (l >>> 24) & 0xff;
+      docIDs[i+1] = (int) (l >>> 16) & 0xff;
+      docIDs[i+2] = (int) (l >>> 8) & 0xff;
+      docIDs[i+3] = (int) (l & 0xff);
+    }
+    for (; i < count; ++i) {
       docIDs[i] = Byte.toUnsignedInt(in.readByte());
     }
   }
@@ -507,7 +526,26 @@ class DocIdsWriter {
   }
 
   private static void readInts8(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 56));
+      visitor.visit((int) (l >>> 48) & 0xff);
+      visitor.visit((int) (l >>> 40) & 0xff);
+      visitor.visit((int) (l >>> 32) & 0xff);
+      visitor.visit((int) (l >>> 24) & 0xff);
+      visitor.visit((int) (l >>> 16) & 0xff);
+      visitor.visit((int) (l >>> 8) & 0xff);
+      visitor.visit((int) (l & 0xff));
+    }
+    for (; i < count - 3; i += 4) {
+      long l = in.readInt();
+      visitor.visit((int) (l >>> 24) & 0xff);
+      visitor.visit((int) (l >>> 16) & 0xff);
+      visitor.visit((int) (l >>> 8) & 0xff);
+      visitor.visit((int) (l & 0xff));
+    }
+    for (; i < count; ++i) {
       visitor.visit(Byte.toUnsignedInt(in.readByte()));
     }
   }
