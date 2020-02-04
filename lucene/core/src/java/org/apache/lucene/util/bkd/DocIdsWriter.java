@@ -92,7 +92,7 @@ class DocIdsWriter {
 //        writeInts24(docIds, start, count, out);
 //      }
 //    } else {
-      if (false) { //(runLenDocs < count / RUNLEN) {
+      if (runLenDocs < count / RUNLEN) {
         writeRunLen32(docIds, start, count, out);
       } else {
         writeInts32(docIds, start, count, out);
