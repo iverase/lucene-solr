@@ -77,7 +77,7 @@ class DocIdsWriter {
         writeDeltaVInts(docIds, start, count, out);
       }
     } else if (max <= 0xffff) {
-      if (false) { // (runLenDocs < count / RUNLEN) {
+      if (runLenDocs < count / RUNLEN) {
         //writeRunLen16(docIds, start, count, out);
         writeRunLen24(docIds, start, count, out);
       } else {
