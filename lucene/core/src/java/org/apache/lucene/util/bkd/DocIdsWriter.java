@@ -132,14 +132,14 @@ class DocIdsWriter {
   }
 
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    int i;
-    int offset = count - 1;
-    for (i = 0; i < offset; ) {
-      long l = in.readLong();
-      docIDs[i++] =  (int) (l >>> 32);
-      docIDs[i++] = (int) l;
-    }
-    for (; i < count; ++i) {
+//    int i;
+//    int offset = count - 1;
+//    for (i = 0; i < offset; ) {
+//      long l = in.readLong();
+//      docIDs[i++] =  (int) (l >>> 32);
+//      docIDs[i++] = (int) l;
+//    }
+    for (int i = 0; i < count; ++i) {
       docIDs[i] = in.readInt();
     }
   }
