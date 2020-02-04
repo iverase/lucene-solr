@@ -132,13 +132,13 @@ class DocIdsWriter {
   }
 
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-//    int i;
-//    for (i = 0; i < count - 1; i += 2) {
-//      long l = in.readLong();
-//      docIDs[i] =  (int) (l >>> 32);
-//      docIDs[i+1] = (int) l;
-//    }
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 1; i += 2) {
+      long l = in.readLong();
+      docIDs[i] =  (int) (l >>> 32);
+      docIDs[i+1] = (int) l;
+    }
+    for (; i < count; ++i) {
       docIDs[i] = in.readInt();
     }
   }
@@ -164,45 +164,45 @@ class DocIdsWriter {
   }
 
   private static void readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
-//    int i;
-//    for (i = 0; i < count - 3; i += 4) {
-//      long l = in.readLong();
-//      docIDs[i] = (int) (l >>> 48);
-//      docIDs[i+1] = (int) (l >>> 32) & 0xffff;
-//      docIDs[i+2] = (int) (l >>> 16) & 0xffff;
-//      docIDs[i+3] = (int) l & 0xffff;
-//    }
-//    for (; i < count - 1; i += 2) {
-//      long l = in.readInt();
-//      docIDs[i] = (int) (l >>> 16) & 0xffff;
-//      docIDs[i+1] = (int) l & 0xffff;
-//    }
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 3; i += 4) {
+      long l = in.readLong();
+      docIDs[i] = (int) (l >>> 48);
+      docIDs[i+1] = (int) (l >>> 32) & 0xffff;
+      docIDs[i+2] = (int) (l >>> 16) & 0xffff;
+      docIDs[i+3] = (int) l & 0xffff;
+    }
+    for (; i < count - 1; i += 2) {
+      long l = in.readInt();
+      docIDs[i] = (int) (l >>> 16) & 0xffff;
+      docIDs[i+1] = (int) l & 0xffff;
+    }
+    for (; i < count; ++i) {
       docIDs[i] = Short.toUnsignedInt(in.readShort());
     }
   }
 
   private static void readInts8(IndexInput in, int count, int[] docIDs) throws IOException {
-//    int i;
-//    for (i = 0; i < count - 7; i += 8) {
-//      long l = in.readLong();
-//      docIDs[i] =  (int) (l >>> 56);
-//      docIDs[i+1] = (int) (l >>> 48) & 0xff;
-//      docIDs[i+2] = (int) (l >>> 40) & 0xff;
-//      docIDs[i+3] = (int) (l >>> 32) & 0xff;
-//      docIDs[i+4] = (int) (l >>> 24) & 0xff;
-//      docIDs[i+5] = (int) (l >>> 16) & 0xff;
-//      docIDs[i+6] = (int) (l >>> 8) & 0xff;
-//      docIDs[i+7] = (int) (l & 0xff);
-//    }
-//    for (; i < count - 3; i += 4) {
-//      long l = in.readInt();
-//      docIDs[i] = (int) (l >>> 24) & 0xff;
-//      docIDs[i+1] = (int) (l >>> 16) & 0xff;
-//      docIDs[i+2] = (int) (l >>> 8) & 0xff;
-//      docIDs[i+3] = (int) (l & 0xff);
-//    }
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      docIDs[i] =  (int) (l >>> 56);
+      docIDs[i+1] = (int) (l >>> 48) & 0xff;
+      docIDs[i+2] = (int) (l >>> 40) & 0xff;
+      docIDs[i+3] = (int) (l >>> 32) & 0xff;
+      docIDs[i+4] = (int) (l >>> 24) & 0xff;
+      docIDs[i+5] = (int) (l >>> 16) & 0xff;
+      docIDs[i+6] = (int) (l >>> 8) & 0xff;
+      docIDs[i+7] = (int) (l & 0xff);
+    }
+    for (; i < count - 3; i += 4) {
+      long l = in.readInt();
+      docIDs[i] = (int) (l >>> 24) & 0xff;
+      docIDs[i+1] = (int) (l >>> 16) & 0xff;
+      docIDs[i+2] = (int) (l >>> 8) & 0xff;
+      docIDs[i+3] = (int) (l & 0xff);
+    }
+    for (; i < count; ++i) {
       docIDs[i] = Byte.toUnsignedInt(in.readByte());
     }
   }
@@ -240,13 +240,13 @@ class DocIdsWriter {
   }
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-//    int i;
-//    for (i = 0; i < count - 1; i += 2) {
-//      long l = in.readLong();
-//      visitor.visit((int) (l >>> 32));
-//      visitor.visit((int) l);
-//    }
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 1; i += 2) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 32));
+      visitor.visit((int) l);
+    }
+    for (; i < count; ++i) {
       visitor.visit(in.readInt());
     }
   }
@@ -272,45 +272,45 @@ class DocIdsWriter {
   }
 
   private static void readInts16(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-//    int i;
-//    for (i = 0; i < count - 3; i += 4) {
-//      long l = in.readLong();
-//      visitor.visit((int) (l >>> 48));
-//      visitor.visit((int) (l >>> 32) & 0xffff);
-//      visitor.visit((int) (l >>> 16) & 0xffff);
-//      visitor.visit((int) l & 0xffff);
-//    }
-//    for (; i < count - 1; i += 2) {
-//      long l = in.readInt();
-//      visitor.visit((int) (l >>> 16) & 0xffff);
-//      visitor.visit((int) l & 0xffff);
-//    }
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 3; i += 4) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 48));
+      visitor.visit((int) (l >>> 32) & 0xffff);
+      visitor.visit((int) (l >>> 16) & 0xffff);
+      visitor.visit((int) l & 0xffff);
+    }
+    for (; i < count - 1; i += 2) {
+      long l = in.readInt();
+      visitor.visit((int) (l >>> 16) & 0xffff);
+      visitor.visit((int) l & 0xffff);
+    }
+    for (; i < count; ++i) {
       visitor.visit(Short.toUnsignedInt(in.readShort()));
     }
   }
 
   private static void readInts8(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-//    int i;
-//    for (i = 0; i < count - 7; i += 8) {
-//      long l = in.readLong();
-//      visitor.visit((int) (l >>> 56));
-//      visitor.visit((int) (l >>> 48) & 0xff);
-//      visitor.visit((int) (l >>> 40) & 0xff);
-//      visitor.visit((int) (l >>> 32) & 0xff);
-//      visitor.visit((int) (l >>> 24) & 0xff);
-//      visitor.visit((int) (l >>> 16) & 0xff);
-//      visitor.visit((int) (l >>> 8) & 0xff);
-//      visitor.visit((int) (l & 0xff));
-//    }
-//    for (; i < count - 3; i += 4) {
-//      long l = in.readInt();
-//      visitor.visit((int) (l >>> 24) & 0xff);
-//      visitor.visit((int) (l >>> 16) & 0xff);
-//      visitor.visit((int) (l >>> 8) & 0xff);
-//      visitor.visit((int) (l & 0xff));
-//    }
-    for (int i = 0; i < count; ++i) {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      long l = in.readLong();
+      visitor.visit((int) (l >>> 56));
+      visitor.visit((int) (l >>> 48) & 0xff);
+      visitor.visit((int) (l >>> 40) & 0xff);
+      visitor.visit((int) (l >>> 32) & 0xff);
+      visitor.visit((int) (l >>> 24) & 0xff);
+      visitor.visit((int) (l >>> 16) & 0xff);
+      visitor.visit((int) (l >>> 8) & 0xff);
+      visitor.visit((int) (l & 0xff));
+    }
+    for (; i < count - 3; i += 4) {
+      long l = in.readInt();
+      visitor.visit((int) (l >>> 24) & 0xff);
+      visitor.visit((int) (l >>> 16) & 0xff);
+      visitor.visit((int) (l >>> 8) & 0xff);
+      visitor.visit((int) (l & 0xff));
+    }
+    for (; i < count; ++i) {
       visitor.visit(Byte.toUnsignedInt(in.readByte()));
     }
   }
