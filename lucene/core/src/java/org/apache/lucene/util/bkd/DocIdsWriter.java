@@ -37,7 +37,6 @@ class DocIdsWriter {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     if (count == 0) {
-      out.writeVInt(0);
       out.writeByte(SORTED);
       return;
     }
@@ -121,17 +120,10 @@ class DocIdsWriter {
         readDeltaVInts(in, count, docIDs);
         break;
       case INT32:
-       // long start = System.nanoTime();
         readInts32(in, count, docIDs);
-       // long end = System.nanoTime();
-       // System.out.println("INT32: " + (end - start));
         break;
       case INT24:
-       //start = System.nanoTime();
         readInts24(in, count, docIDs);
-       // end = System.nanoTime();
-       // System.out.println("INT32: " + (end - start));
-
         break;
       case RUNLEN32:
         readRunLen32(in, count, docIDs);
@@ -151,9 +143,9 @@ class DocIdsWriter {
 
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
-    for (i = 0; i < count -1; i += 2) {
+    for (i = 0; i < count - 1; i += 2) {
       long l = in.readLong();
-      docIDs[i] = (int) l >>> 32;
+      docIDs[i] = (int) (l >>> 32);
       docIDs[i + 1] = (int) l;
     }
     for (; i < count; i ++) {
