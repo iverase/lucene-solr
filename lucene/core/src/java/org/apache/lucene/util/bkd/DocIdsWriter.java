@@ -150,12 +150,13 @@ class DocIdsWriter {
   }
 
   private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count -1; i += 2) {
+    int i;
+    for (i = 0; i < count -1; i += 2) {
       long l = in.readLong();
       docIDs[i] = (int) l >>> 32;
       docIDs[i + 1] = (int) l;
     }
-    for (int i = 0; i < count; i ++) {
+    for (; i < count; i ++) {
       docIDs[i] =  in.readInt();
     }
   }
