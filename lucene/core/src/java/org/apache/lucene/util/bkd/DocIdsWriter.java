@@ -72,12 +72,12 @@ class DocIdsWriter {
 //      }
 //    }
 //    else
-      if (sorted) {
-      if (runLenDocs < count / RUNLEN) {
-        writeRunLenDeltaVInts(docIds, start, count, out);
-      } else {
-        writeDeltaVInts(docIds, start, count, out);
-      }
+//      if (sorted) {
+//      if (runLenDocs < count / RUNLEN) {
+//        writeRunLenDeltaVInts(docIds, start, count, out);
+//      } else {
+//        writeDeltaVInts(docIds, start, count, out);
+//      }
 //    } else if (max <= 0xffff) {
 //      if (runLenDocs < count / RUNLEN) {
 //        writeRunLen16(docIds, start, count, out);
@@ -85,19 +85,19 @@ class DocIdsWriter {
 //      } else {
 //        writeInts16(docIds, start, count, out);
 //      }
-    } else if (max <= 0xffffff) {
-      if (runLenDocs < count / RUNLEN) {
-        writeRunLen24(docIds, start, count, out);
-      } else {
-        writeInts24(docIds, start, count, out);
-      }
-    } else {
+//    } else if (max <= 0xffffff) {
+//      if (runLenDocs < count / RUNLEN) {
+//        writeRunLen24(docIds, start, count, out);
+//      } else {
+//        writeInts24(docIds, start, count, out);
+//      }
+//    } else {
       if (false) { //(runLenDocs < count / RUNLEN) {
         writeRunLen32(docIds, start, count, out);
       } else {
         writeInts32(docIds, start, count, out);
       }
-    }
+//    }
   }
 
   private static void writeDeltaVInts(int[] docIds, int start, int count, DataOutput out) throws IOException {
