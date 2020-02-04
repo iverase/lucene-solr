@@ -64,42 +64,32 @@ class DocIdsWriter {
     }
     if (max <= 0xff) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
         writeRunLen8(docIds, start, count, out, runLenDocs);
       } else {
-        out.writeVInt(count);
         writeInts8(docIds, start, count, out);
       }
     } else if (sorted) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
-        out.writeVInt(count);
         writeDeltaVInts(docIds, start, count, out);
       }
     } else if (max <= 0xffff) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
         writeRunLen16(docIds, start, count, out, runLenDocs);
       } else {
-        out.writeVInt(count);
         writeInts16(docIds, start, count, out);
       }
     } else if (max <= 0xffffff) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(count);
         writeRunLen24(docIds, start, count, out, runLenDocs);
       } else {
-        out.writeVInt(count);
         writeInts24(docIds, start, count, out);
       }
     } else {
       if (runLenDocs < count / 2) {
-        out.writeVInt(count);
         writeRunLen32(docIds, start, count, out, runLenDocs);
       } else {
-        out.writeVInt(count);
         writeInts32(docIds, start, count, out);
       }
     }
@@ -229,69 +219,72 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static int readInts(IndexInput in, int[] docIDs) throws IOException {
-    final int count = in.readVInt();
+  static void readInts(IndexInput in, int[] docIDs, int count) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case SORTED:
-        return readDeltaVInts(in, count, docIDs);
+        readDeltaVInts(in, count, docIDs);
+        break;
       case RUNLENSORTED:
-        return readRunLenDeltaVInts(in, count, docIDs);
+        readRunLenDeltaVInts(in, count, docIDs);
+        break;
       case INT32:
-        return readInts32(in, count, docIDs);
+        readInts32(in, count, docIDs);
+        break;
       case RUNLEN32:
-        return readRunLen32(in, count, docIDs);
+        readRunLen32(in, count, docIDs);
+        break;
       case INT24:
-        return readInts24(in, count, docIDs);
+        readInts24(in, count, docIDs);
+        break;
       case RUNLEN24:
-        return readRunLen24(in, count, docIDs);
+        readRunLen24(in, count, docIDs);
+        break;
       case INT16:
-        return readInts16(in, count, docIDs);
+        readInts16(in, count, docIDs);
+        break;
       case RUNLEN16:
-        return readRunLen16(in, count, docIDs);
+        readRunLen16(in, count, docIDs);
+        break;
       case INT8:
-        return readInts8(in, count, docIDs);
+        readInts8(in, count, docIDs);
+        break;
       case RUNLEN8:
-        return readRunLen8(in, count, docIDs);
+        readRunLen8(in, count, docIDs);
+        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
   }
 
-  private static int readDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
     for (int i = 0; i < count; i++) {
       doc += in.readVInt();
       docIDs[i] = doc;
     }
-    return count;
   }
 
-  private static int readRunLenDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readRunLenDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
-    int index = 0;
-    for (int i = 0; i < count; i++) {
-      Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), doc += in.readVInt());
+    for (int i = 0; i < count; ) {
+      Arrays.fill(docIDs, i, i += Byte.toUnsignedInt(in.readByte()), doc += in.readVInt());
     }
-    return index;
   }
 
-  private static int readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; ++i) {
       docIDs[i] = in.readInt();
     }
-    return count;
   }
 
-  private static int readRunLen32(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readRunLen32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int index = 0; index < count; ) {
       Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), in.readInt());
     }
-    return count;
-
   }
 
-  private static int readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
       long l1 = in.readLong();
@@ -309,51 +302,41 @@ class DocIdsWriter {
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
-    return count;
   }
 
-  private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int index = 0; index < count; ) {
       int l = in.readInt();
       Arrays.fill(docIDs, index,  index += (l >>> 24), l & 0xffffff);
     }
-    return count;
   }
 
-  private static int readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; ++i) {
       docIDs[i] = Short.toUnsignedInt(in.readShort());
     }
-    return count;
   }
 
-  private static int readRunLen16(IndexInput in, int count, int[] docIDs) throws IOException {
-    int index = 0;
-    for (int i = 0; i < count; i++) {
-      Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), Short.toUnsignedInt(in.readShort()));
+  private static void readRunLen16(IndexInput in, int count, int[] docIDs) throws IOException {
+    for (int i = 0; i < count; ) {
+      Arrays.fill(docIDs, i, i += Byte.toUnsignedInt(in.readByte()), Short.toUnsignedInt(in.readShort()));
     }
-    return index;
   }
 
-  private static int readInts8(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readInts8(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; ++i) {
       docIDs[i] = Byte.toUnsignedInt(in.readByte());
     }
-    return count;
   }
 
-  private static int readRunLen8(IndexInput in, int count, int[] docIDs) throws IOException {
-    int index = 0;
-    for (int i = 0; i < count; ++i) {
-      Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), Byte.toUnsignedInt(in.readByte()));
+  private static void readRunLen8(IndexInput in, int count, int[] docIDs) throws IOException {
+    for (int i = 0; i < count; ) {
+      Arrays.fill(docIDs, i, i += Byte.toUnsignedInt(in.readByte()), Byte.toUnsignedInt(in.readByte()));
     }
-    return index;
   }
-
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, IntersectVisitor visitor) throws IOException {
-    final int count = in.readVInt();
+  static void readInts(IndexInput in, IntersectVisitor visitor, int count) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case SORTED:
@@ -401,8 +384,10 @@ class DocIdsWriter {
 
   private static void readRunLenDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int doc = 0;
-    for (int i = 0; i < count; i++) {
-      visit(Byte.toUnsignedInt(in.readByte()), doc += in.readVInt(), visitor);
+    for (int i = 0; i < count; ) {
+      int runLen =  Byte.toUnsignedInt(in.readByte());
+      visit(runLen, doc += in.readVInt(), visitor);
+      i += runLen;
     }
   }
 
@@ -456,8 +441,10 @@ class DocIdsWriter {
   }
 
   private static void readRunLen16(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
-      visit(Byte.toUnsignedInt(in.readByte()), Short.toUnsignedInt(in.readShort()), visitor);
+    for (int i = 0; i < count; ) {
+      int runLen =  Byte.toUnsignedInt(in.readByte());
+      visit(runLen, Short.toUnsignedInt(in.readShort()), visitor);
+      i += runLen;
     }
   }
 
@@ -468,8 +455,10 @@ class DocIdsWriter {
   }
 
   private static void readRunLen8(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
-      visit(Byte.toUnsignedInt(in.readByte()), Byte.toUnsignedInt(in.readByte()), visitor);
+    for (int i = 0; i < count; ) {
+      int runLen =  Byte.toUnsignedInt(in.readByte());
+      visit(runLen, Byte.toUnsignedInt(in.readByte()), visitor);
+      i += runLen;
     }
   }
 

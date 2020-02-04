@@ -188,8 +188,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      int count = DocIdsWriter.readInts(in, read);
-      assertEquals(count, read.length);
+      DocIdsWriter.readInts(in, read, ints.length);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
@@ -212,7 +211,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
           throw new UnsupportedOperationException();
         }
 
-      });
+      }, ints.length);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
