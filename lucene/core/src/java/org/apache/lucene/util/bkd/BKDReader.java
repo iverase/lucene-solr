@@ -570,16 +570,17 @@ public final class BKDReader extends PointValues implements Accountable {
     int count = in.readVInt();
     // No need to call grow(), it has been called up-front
 
-    DocIdsWriter.readInts(in, count, visitor);
+    DocIdsWriter.readInts(in, count, visitor, scratch);
   }
 
+  byte[] scratch = new byte[1024 * 4]; // 4k
   int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    DocIdsWriter.readInts(in, count, iterator.docIDs);
+    DocIdsWriter.readInts(in, count, iterator.docIDs, scratch);
 
     return count;
   }
