@@ -83,7 +83,7 @@ class DocIdsWriter {
         writeInts16(docIds, start, count, out);
       }
     } else if (max <= 0xffffff) {
-      if (false) { //if (runLenDocs < count / RUNLEN) {
+      if (runLenDocs < count / RUNLEN) {
         writeRunLen24(docIds, start, count, out);
       } else {
         writeInts24(docIds, start, count, out);
