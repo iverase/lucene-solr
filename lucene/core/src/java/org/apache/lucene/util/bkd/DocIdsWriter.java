@@ -36,7 +36,7 @@ class DocIdsWriter {
   private static final byte INT32 = (byte) 32;
   private static final byte RUNLEN32 = (byte) 33;
 
-  private static final int RUNLEN = 3;
+  private static final int RUNLEN = 4;
 
   private DocIdsWriter() {}
 
@@ -65,31 +65,31 @@ class DocIdsWriter {
       }
     }
     if (max <= 0xff) {
-      if (runLenDocs < count / RUNLEN) {
+      if (false) { //if (runLenDocs < count / RUNLEN) {
         writeRunLen8(docIds, start, count, out);
       } else {
         writeInts8(docIds, start, count, out);
       }
     } else if (sorted) {
-      if (runLenDocs < count / RUNLEN) {
+      if (false) { //(runLenDocs < count / RUNLEN) {
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
         writeDeltaVInts(docIds, start, count, out);
       }
     } else if (max <= 0xffff) {
-      if (runLenDocs < count / RUNLEN) {
+      if (false) { // (runLenDocs < count / RUNLEN) {
         writeRunLen16(docIds, start, count, out);
       } else {
         writeInts16(docIds, start, count, out);
       }
     } else if (max <= 0xffffff) {
-      if (runLenDocs < count / RUNLEN) {
+      if (false) { //if (runLenDocs < count / RUNLEN) {
         writeRunLen24(docIds, start, count, out);
       } else {
         writeInts24(docIds, start, count, out);
       }
     } else {
-      if (runLenDocs < count / RUNLEN) {
+      if (false) { //(runLenDocs < count / RUNLEN) {
         writeRunLen32(docIds, start, count, out);
       } else {
         writeInts32(docIds, start, count, out);
@@ -225,34 +225,64 @@ class DocIdsWriter {
     final int bpv = in.readByte();
     switch (bpv) {
       case SORTED:
+        long start = System.nanoTime();
         readDeltaVInts(in, count, docIDs);
+        long end = System.nanoTime();
+        //System.out.println("SORTED: " + (end -start));
         break;
       case RUNLENSORTED:
+        start = System.nanoTime();
         readRunLenDeltaVInts(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("RUNLENSORTED: " + (end -start));
         break;
       case INT32:
+        start = System.nanoTime();
         readInts32(in, count, docIDs);
+        end = System.nanoTime();
+       // System.out.println("INT32: " + (end -start));
         break;
       case RUNLEN32:
+        start = System.nanoTime();
         readRunLen32(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("RUNLEN32: " + (end -start));
         break;
       case INT24:
+        start = System.nanoTime();
         readInts24(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("INT24: " + (end -start));
         break;
       case RUNLEN24:
+        start = System.nanoTime();
         readRunLen24(in, count, docIDs);
+        end = System.nanoTime();
+       // System.out.println("RUNLEN24: " + (end -start));
         break;
       case INT16:
+        start = System.nanoTime();
         readInts16(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("INT16: " + (end -start));
         break;
       case RUNLEN16:
+        start = System.nanoTime();
         readRunLen16(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("RUNLEN16: " + (end -start));
         break;
       case INT8:
+        start = System.nanoTime();
         readInts8(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("INT8: " + (end -start));
         break;
       case RUNLEN8:
+        start = System.nanoTime();
         readRunLen8(in, count, docIDs);
+        end = System.nanoTime();
+        //System.out.println("RUNLEN8: " + (end -start));
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -307,9 +337,9 @@ class DocIdsWriter {
   }
 
   private static void readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int index = 0; index < count; ) {
+    for (int i = 0; i < count; ) {
       int l = in.readInt();
-      Arrays.fill(docIDs, index,  index += (l >>> 24), l & 0xffffff);
+      Arrays.fill(docIDs, i,  i += (l >>> 24), l & 0xffffff);
     }
   }
 
