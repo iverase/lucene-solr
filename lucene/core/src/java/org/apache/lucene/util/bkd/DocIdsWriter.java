@@ -36,7 +36,7 @@ class DocIdsWriter {
   private static final byte INT32 = (byte) 32;
   private static final byte RUNLEN32 = (byte) 33;
 
-  private static final int RUNLEN = 4;
+  private static final int RUNLEN = 2;
 
   private DocIdsWriter() {}
 
@@ -64,25 +64,27 @@ class DocIdsWriter {
         prevIndex = i;
       }
     }
-    if (max <= 0xff) {
-      if (false) { //if (runLenDocs < count / RUNLEN) {
-        writeRunLen8(docIds, start, count, out);
-      } else {
-        writeInts8(docIds, start, count, out);
-      }
-    } else if (sorted) {
-      if (false) { //(runLenDocs < count / RUNLEN) {
+//    if (max <= 0xff) {
+//      if (false) { //if (runLenDocs < count / RUNLEN) {
+//        writeRunLen8(docIds, start, count, out);
+//      } else {
+//        writeInts8(docIds, start, count, out);
+//      }
+//    }
+//    else
+      if (sorted) {
+      if (runLenDocs < count / RUNLEN) {
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
         writeDeltaVInts(docIds, start, count, out);
       }
-    } else if (max <= 0xffff) {
-      if (runLenDocs < count / RUNLEN) {
-        writeRunLen16(docIds, start, count, out);
-        //writeRunLen24(docIds, start, count, out);
-      } else {
-        writeInts16(docIds, start, count, out);
-      }
+//    } else if (max <= 0xffff) {
+//      if (runLenDocs < count / RUNLEN) {
+//        writeRunLen16(docIds, start, count, out);
+//        //writeRunLen24(docIds, start, count, out);
+//      } else {
+//        writeInts16(docIds, start, count, out);
+//      }
     } else if (max <= 0xffffff) {
       if (runLenDocs < count / RUNLEN) {
         writeRunLen24(docIds, start, count, out);
