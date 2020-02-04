@@ -88,7 +88,7 @@ class DocIdsWriter {
       }
     } else if (max <= 0xffffff) {
       if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
+        out.writeVInt(count);
         writeRunLen24(docIds, start, count, out, runLenDocs);
       } else {
         out.writeVInt(count);
@@ -96,7 +96,7 @@ class DocIdsWriter {
       }
     } else {
       if (runLenDocs < count / 2) {
-        out.writeVInt(runLenDocs);
+        out.writeVInt(count);
         writeRunLen32(docIds, start, count, out, runLenDocs);
       } else {
         out.writeVInt(count);
@@ -284,11 +284,10 @@ class DocIdsWriter {
   }
 
   private static int readRunLen32(IndexInput in, int count, int[] docIDs) throws IOException {
-    int index = 0;
-    for (int i = 0; i < count; i++) {
+    for (int index = 0; index < count; ) {
       Arrays.fill(docIDs, index, index += Byte.toUnsignedInt(in.readByte()), in.readInt());
     }
-    return index;
+    return count;
 
   }
 
@@ -314,12 +313,11 @@ class DocIdsWriter {
   }
 
   private static int readRunLen24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int index = 0;
-    for (int i = 0; i < count; ++i) {
+    for (int index = 0; index < count; ) {
       int l = in.readInt();
       Arrays.fill(docIDs, index,  index += (l >>> 24), l & 0xffffff);
     }
-    return index;
+    return count;
   }
 
   private static int readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
@@ -415,8 +413,10 @@ class DocIdsWriter {
   }
 
   private static void readRunLen32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
-      visit(Byte.toUnsignedInt(in.readByte()), in.readInt(), visitor);
+    for (int i = 0; i < count;) {
+      int runLen =  Byte.toUnsignedInt(in.readByte());
+      visit(runLen, in.readInt(), visitor);
+      i += runLen;
     }
   }
 
@@ -441,9 +441,11 @@ class DocIdsWriter {
   }
 
   private static void readRunLen24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; ++i) {
+    for (int i = 0; i < count; ) {
       int l = in.readInt();
-      visit((l >>> 24), l & 0xffffff, visitor);
+      int runLen = (l >>> 24);
+      visit( runLen, l & 0xffffff, visitor);
+      i += runLen;
     }
   }
 
