@@ -87,7 +87,7 @@ class DocIdsWriter {
 //      }
 //    } else
     if (max <= 0xffffff) {
-      if (runLenDocs < count / 4) {
+      if (runLenDocs < count / 5) {
         writeRunLen24(docIds, start, count, out);
       } else {
         writeInts24(docIds, start, count, out);
