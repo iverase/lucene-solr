@@ -36,7 +36,7 @@ class DocIdsWriter {
   private static final byte INT32 = (byte) 32;
   private static final byte RUNLEN32 = (byte) 33;
 
-  private static final int RUNLEN = 10;
+  private static final int RUNLEN = 5;
 
   private DocIdsWriter() {}
 
@@ -83,13 +83,12 @@ class DocIdsWriter {
       } else {
         writeInts24(docIds, start, count, out);
       }
-    } else if (sorted) {
-      if (runLenDocs < count / RUNLEN) {
-        writeRunLenDeltaVInts(docIds, start, count, out);
-      } else {
-      writeDeltaVInts(docIds, start, count, out);
-
-      }
+//    } else if (sorted) {
+//      if (runLenDocs < count / RUNLEN) {
+//        writeRunLenDeltaVInts(docIds, start, count, out);
+//      } else {
+//      writeDeltaVInts(docIds, start, count, out);
+//      }
     } else {
       if (runLenDocs < count / RUNLEN) {
         writeRunLen32(docIds, start, count, out);
