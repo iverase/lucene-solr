@@ -78,14 +78,15 @@ class DocIdsWriter {
 //      } else {
 //        writeDeltaVInts(docIds, start, count, out);
 //      }
-//    } else if (max <= 0xffff) {
-//      if (runLenDocs < count / RUNLEN) {
-//        writeRunLen16(docIds, start, count, out);
-//        //writeRunLen24(docIds, start, count, out);
-//      } else {
-//        writeInts16(docIds, start, count, out);
-//      }
 //    } else
+    if (max <= 0xffff) {
+      if (false) { // (runLenDocs < count / RUNLEN) {
+        writeRunLen16(docIds, start, count, out);
+        //writeRunLen24(docIds, start, count, out);
+      } else {
+        writeInts16(docIds, start, count, out);
+      }
+    } else
     if (max <= 0xffffff) {
       if (runLenDocs < count / 5) {
         writeRunLen24(docIds, start, count, out);
