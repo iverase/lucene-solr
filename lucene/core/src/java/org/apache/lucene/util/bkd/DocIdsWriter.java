@@ -36,7 +36,7 @@ class DocIdsWriter {
   private static final byte INT32 = (byte) 32;
   private static final byte RUNLEN32 = (byte) 33;
 
-  private static final int RUNLEN = 5;
+  private static final int RUNLEN = 10;
 
   private DocIdsWriter() {}
 
@@ -49,52 +49,53 @@ class DocIdsWriter {
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
-    //int docId = docIds[start];
+    int docId = docIds[start];
     long max = Integer.toUnsignedLong(docIds[start]);
-//    int runLenDocs = 1;
-//    int prevIndex = 0;
+    int runLenDocs = 1;
+    int prevIndex = 0;
     for (int i = 1; i < count; ++i) {
       if (sorted && docIds[start + i - 1] > docIds[start + i]) {
         sorted = false;
       }
       max |= Integer.toUnsignedLong(docIds[start + i]);
-//      if (docId != docIds[start + i] || (i - prevIndex == 0xff)) {
-//        docId = docIds[start + i];
-//        max |= Integer.toUnsignedLong(docId);
-//        runLenDocs++;
-//        prevIndex = i;
-//      }
+      if (docId != docIds[start + i] || (i - prevIndex == 0xff)) {
+        docId = docIds[start + i];
+        max |= Integer.toUnsignedLong(docId);
+        runLenDocs++;
+        prevIndex = i;
+     }
     }
     if (max <= 0xff) {
-//      if (false) { //if (runLenDocs < count / RUNLEN) {
-//        writeRunLen8(docIds, start, count, out);
-//      } else {
+      if (runLenDocs < count / RUNLEN) {
+        writeRunLen8(docIds, start, count, out);
+      } else {
         writeInts8(docIds, start, count, out);
-   //   }
+      }
     } else if (max <= 0xffff) {
-//      if (false) { //(runLenDocs < count / RUNLEN) {
-//        writeRunLen16(docIds, start, count, out);
-//      } else {
+      if (runLenDocs < count / RUNLEN) {
+        writeRunLen16(docIds, start, count, out);
+      } else {
         writeInts16(docIds, start, count, out);
-//      }
+      }
     } else if (max <= 0xffffff) {
-//      if (false) { //(runLenDocs < count / RUNLEN) {
-//        writeRunLen24(docIds, start, count, out);
-//      } else {
+      if (runLenDocs < count / RUNLEN) {
+        writeRunLen24(docIds, start, count, out);
+      } else {
         writeInts24(docIds, start, count, out);
-//      }
- //   } else if (sorted) {
-//      if (false) { //(runLenDocs < count / RUNLEN) {
-//        writeRunLenDeltaVInts(docIds, start, count, out);
-//      } else {
-//      writeDeltaVInts(docIds, start, count, out);
-      //  }
+      }
+    } else if (sorted) {
+      if (runLenDocs < count / RUNLEN) {
+        writeRunLenDeltaVInts(docIds, start, count, out);
+      } else {
+      writeDeltaVInts(docIds, start, count, out);
+
+      }
     } else {
-//      if (false) { //(runLenDocs < count / RUNLEN) {
-//        writeRunLen32(docIds, start, count, out);
-//      } else {
+      if (runLenDocs < count / RUNLEN) {
+        writeRunLen32(docIds, start, count, out);
+      } else {
         writeInts32(docIds, start, count, out);
-//      }
+      }
     }
   }
 
