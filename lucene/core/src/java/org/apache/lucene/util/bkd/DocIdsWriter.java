@@ -87,12 +87,13 @@ class DocIdsWriter {
 //      }
 //    } else
     if (max <= 0xffffff) {
-      if (false) { //(runLenDocs < count / RUNLEN) {
+      if (runLenDocs < count / 4) {
         writeRunLen24(docIds, start, count, out);
       } else {
         writeInts24(docIds, start, count, out);
       }
-    } else { if (runLenDocs < count / 5) {
+    } else {
+      if (runLenDocs < count / 5) {
         writeRunLen32(docIds, start, count, out);
       } else {
         writeInts32(docIds, start, count, out);
