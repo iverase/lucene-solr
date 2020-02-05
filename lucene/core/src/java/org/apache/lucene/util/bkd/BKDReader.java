@@ -567,21 +567,21 @@ public final class BKDReader extends PointValues implements Accountable {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
-    int count = in.readVInt();
+    //int count = in.readVInt();
     // No need to call grow(), it has been called up-front
 
-    DocIdsWriter.readInts(in, visitor, count);
+    DocIdsWriter.readInts(in, visitor);
   }
 
   int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
-    int count = in.readVInt();
+    //int count = in.readVInt();
 
-    DocIdsWriter.readInts(in, iterator.docIDs, count);
+    return DocIdsWriter.readInts(in, iterator.docIDs);
 
-    return count;
+   // return count;
   }
 
   void visitDocValues(int[] commonPrefixLengths, byte[] scratchDataPackedValue, byte[] scratchMinIndexPackedValue, byte[] scratchMaxIndexPackedValue,

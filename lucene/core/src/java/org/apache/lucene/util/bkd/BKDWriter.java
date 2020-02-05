@@ -1043,7 +1043,7 @@ public class BKDWriter implements Closeable {
 
   private void writeLeafBlockDocs(DataOutput out, int[] docIDs, int start, int count) throws IOException {
     assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
-    out.writeVInt(count);
+    //out.writeVInt(count);
     DocIdsWriter.writeDocIds(docIDs, start, count, out);
   }
 
