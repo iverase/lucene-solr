@@ -83,11 +83,11 @@ class DocIdsWriter {
 //      } else {
         writeInts24(docIds, start, count, out);
 //      }
-    } else if (sorted) {
+ //   } else if (sorted) {
 //      if (false) { //(runLenDocs < count / RUNLEN) {
 //        writeRunLenDeltaVInts(docIds, start, count, out);
 //      } else {
-      writeDeltaVInts(docIds, start, count, out);
+//      writeDeltaVInts(docIds, start, count, out);
       //  }
     } else {
 //      if (false) { //(runLenDocs < count / RUNLEN) {
