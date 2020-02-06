@@ -36,7 +36,7 @@ class DocIdsWriter {
   private static final byte INT32 = (byte) 32;
   private static final byte RUNLEN32 = (byte) 33;
 
-  private static final int RUNLEN = 6;
+  private static final int RUNLEN = 8;
 
   private DocIdsWriter() {}
 
