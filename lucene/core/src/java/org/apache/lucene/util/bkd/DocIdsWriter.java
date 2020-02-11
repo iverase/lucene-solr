@@ -365,7 +365,7 @@ class DocIdsWriter {
       int doc = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
       Arrays.fill(docIDs, index, index += runLen , doc);
     }
-    return count;
+    return index;
   }
 
   private static int readInts16(IndexInput in, int count, int[] docIDs) throws IOException {
