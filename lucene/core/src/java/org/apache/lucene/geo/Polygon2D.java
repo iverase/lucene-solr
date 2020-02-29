@@ -34,27 +34,17 @@ final class Polygon2D implements Component2D {
   final private double minX;
   /** maximum X of this geometry's bounding box area */
   final private double maxX;
-  /** tree of holes, or null */
-  final protected Component2D holes;
   /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
 
-  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
+  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, EdgeTree tree) {
     this.minY = minY;
     this.maxY = maxY;
     this.minX = minX;
     this.maxX = maxX;
-    this.holes = holes;
-    this.tree = EdgeTree.createTree(x, y);
+    this.tree = tree;
   }
 
-  private Polygon2D(XYPolygon polygon, Component2D holes) {
-    this(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()), holes);
-  }
-
-  private Polygon2D(Polygon polygon, Component2D holes) {
-    this(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, polygon.getPolyLons(), polygon.getPolyLats(), holes);
-  }
 
   @Override
   public double getMinX() {
@@ -91,13 +81,7 @@ final class Polygon2D implements Component2D {
   }
 
   private boolean internalContains(double x, double y) {
-    if (tree.contains(x, y)) {
-      if (holes != null && holes.contains(x, y)) {
-        return false;
-      }
-      return true;
-    }
-    return false;
+    return tree.contains(x, y);
   }
 
   @Override
@@ -107,15 +91,6 @@ final class Polygon2D implements Component2D {
     }
     if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_CROSSES_QUERY;
-    }
-    // check any holes
-    if (holes != null) {
-      Relation holeRelation = holes.relate(minX, maxX, minY, maxY);
-      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
-        return Relation.CELL_CROSSES_QUERY;
-      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
-        return Relation.CELL_OUTSIDE_QUERY;
-      }
     }
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minX, maxX, minY, maxY);
@@ -141,15 +116,6 @@ final class Polygon2D implements Component2D {
                                  double ax, double ay, double bx, double by, double cx, double cy) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
-    }
-    // check any holes
-    if (holes != null) {
-      Relation holeRelation = holes.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
-        return Relation.CELL_CROSSES_QUERY;
-      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
-        return Relation.CELL_OUTSIDE_QUERY;
-      }
     }
     if (ax == bx && bx == cx && ay == by && by == cy) {
       // indexed "triangle" is a point: shortcut by checking contains
@@ -317,22 +283,33 @@ final class Polygon2D implements Component2D {
 
   /** Builds a Polygon2D from LatLon polygon */
   static Component2D create(Polygon polygon) {
-    Polygon gonHoles[] = polygon.getHoles();
-    Component2D holes = null;
-    if (gonHoles.length > 0) {
-      holes = LatLonGeometry.create(gonHoles);
+    if (polygon.getHoles().length == 0) {
+      EdgeTree tree = EdgeTree.createTree(polygon.getPolyLons(), polygon.getPolyLats());
+      return new Polygon2D(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, tree);
     }
-    return new Polygon2D(polygon, holes);
+    double[][][] holes = new double[polygon.numHoles()][2][];
+    for (int i = 0; i < polygon.numHoles(); i++) {
+      holes[i][0] = polygon.getHole(i).getPolyLons();
+      holes[i][1] = polygon.getHole(i).getPolyLats();
+    }
+    EdgeTree tree = EdgeTree.createTree(polygon.getPolyLons(), polygon.getPolyLats(), holes);
+    return new Polygon2D(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, tree);
   }
 
   /** Builds a Polygon2D from XY polygon */
   static Component2D create(XYPolygon polygon) {
-    XYPolygon gonHoles[] = polygon.getHoles();
-    Component2D holes = null;
-    if (gonHoles.length > 0) {
-      holes = XYGeometry.create(gonHoles);
+    if (polygon.getHoles().length == 0) {
+      EdgeTree tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()),
+          XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()));
+      return new Polygon2D(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, tree);
     }
-    return new Polygon2D(polygon, holes);
+    double[][][] holes = new double[polygon.numHoles()][2][];
+    for (int i = 0; i < polygon.numHoles(); i++) {
+      holes[i][0] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getHole(i).getPolyX());
+      holes[i][1] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getHole(i).getPolyY());
+    }
+    EdgeTree tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()),
+        XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()), holes);
+    return new Polygon2D(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, tree);
   }
-
 }

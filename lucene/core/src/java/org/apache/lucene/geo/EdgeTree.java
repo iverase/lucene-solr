@@ -311,6 +311,41 @@ final class EdgeTree {
     return createTree(edges, 0, edges.length - 1);
   }
 
+  static EdgeTree createTree(double[] x, double[] y, double[][]... holes) {
+    int length = x.length - 1;
+    for (double[][] hole : holes) {
+      length += hole[0].length - 1;
+    }
+    EdgeTree edges[] = new EdgeTree[length];
+    int i = 1 ;
+    for (; i < x.length; i++) {
+      double x1 = x[i-1];
+      double y1 = y[i-1];
+      double x2 = x[i];
+      double y2 = y[i];
+      edges[i - 1] = new EdgeTree(x1, y1, x2, y2, Math.min(y1, y2), Math.max(y1, y2));
+    }
+    for (double[][] hole : holes) {
+      int j = 1;
+      for (; j < hole[0].length; j++) {
+        double x1 = hole[0][j - 1];
+        double y1 = hole[1][j - 1];
+        double x2 = hole[0][j];
+        double y2 = hole[1][j];
+        edges[i++ - 1] = new EdgeTree(x1, y1, x2, y2, Math.min(y1, y2), Math.max(y1, y2));
+      }
+    }
+    // sort the edges then build a balanced tree from them
+    Arrays.sort(edges, (left, right) -> {
+      int ret = Double.compare(left.low, right.low);
+      if (ret == 0) {
+        ret = Double.compare(left.max, right.max);
+      }
+      return ret;
+    });
+    return createTree(edges, 0, edges.length - 1);
+  }
+
   /** Creates tree from sorted edges (with range low and high inclusive) */
   private static EdgeTree createTree(EdgeTree edges[], int low, int high) {
     if (low > high) {
