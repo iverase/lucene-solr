@@ -21,7 +21,6 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {

@@ -26,7 +26,6 @@ import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYRectangle;
-import org.apache.lucene.index.PointValues.Relation;
 
 /** random cartesian bounding box, line, and polygon query tests for random generated cartesian {@link XYLine} types */
 public class TestXYLineShapeQueries extends BaseXYShapeTestCase {

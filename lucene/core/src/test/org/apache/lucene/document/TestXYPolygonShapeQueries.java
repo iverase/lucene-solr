@@ -24,7 +24,6 @@ import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
-import org.apache.lucene.index.PointValues.Relation;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon} types */
 public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
