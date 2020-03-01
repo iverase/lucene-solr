@@ -381,9 +381,9 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.aY, latEnc);
     assertEquals(encoded.aX, axEnc);
     assertEquals(encoded.bY, latEnc);
-    assertEquals(encoded.bX, axEnc);
+    assertEquals(encoded.bX, bxEnc);
     assertEquals(encoded.cY, latEnc);
-    assertEquals(encoded.cX, bxEnc);
+    assertEquals(encoded.cX, axEnc);
     ShapeField.encodeTriangle(b, latEnc, bxEnc, true, latEnc, axEnc, true, latEnc, axEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, latEnc);
@@ -415,9 +415,9 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
     assertEquals(encoded.aX, lonEnc);
-    assertEquals(encoded.bY, ayEnc);
+    assertEquals(encoded.bY, byEnc);
     assertEquals(encoded.bX, lonEnc);
-    assertEquals(encoded.cY, byEnc);
+    assertEquals(encoded.cY, ayEnc);
     assertEquals(encoded.cX, lonEnc);
     ShapeField.encodeTriangle(b, byEnc, lonEnc, true, ayEnc, lonEnc, true, ayEnc, lonEnc, true);
     ShapeField.decodeTriangle(b, encoded);
@@ -452,10 +452,10 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
     assertEquals(encoded.aX, axEnc);
-    assertEquals(encoded.bY, ayEnc);
-    assertEquals(encoded.bX, axEnc);
-    assertEquals(encoded.cY, byEnc);
-    assertEquals(encoded.cX, bxEnc);
+    assertEquals(encoded.bY, byEnc);
+    assertEquals(encoded.bX, bxEnc);
+    assertEquals(encoded.cY, ayEnc);
+    assertEquals(encoded.cX, axEnc);
     ShapeField.encodeTriangle(b, byEnc, bxEnc, true, ayEnc, axEnc, true, ayEnc, axEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -536,9 +536,12 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
     for (int i =0; i < 100; i ++) {
       Component2D polygon2D = createPolygon2D(nextPolygon());
-      PointValues.Relation originalRelation = polygon2D.relateTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
-      PointValues.Relation encodedRelation = polygon2D.relateTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
-      assertTrue(originalRelation == encodedRelation);
+      boolean originalIntersects = polygon2D.intersectsTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
+      boolean encodedIntersects = polygon2D.intersectsTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
+      assertTrue(originalIntersects == encodedIntersects);
+      boolean originalContains = polygon2D.containsTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
+      boolean encodedContains = polygon2D.containsTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
+      assertTrue(originalContains == encodedContains);
     }
   }
 

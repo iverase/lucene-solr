@@ -107,23 +107,12 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testComponentQuery(Component2D component2D, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       Line line = (Line) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinLine(component2D, (Line) shape);
+        return testWithinLine(query, (Line) shape);
       }
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
-        Relation r = component2D.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
-        } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
-        }
-      }
-      return queryRelation == QueryRelation.INTERSECTS ? false : true;
+      return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", line));
     }
 
     private boolean testWithinLine(Component2D component2D, Line line) {

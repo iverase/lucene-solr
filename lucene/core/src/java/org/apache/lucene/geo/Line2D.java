@@ -96,40 +96,35 @@ final class Line2D implements Component2D {
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                 double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                double ax, double ay, double bx, double by) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
-      return Relation.CELL_OUTSIDE_QUERY;
+      return false;
     }
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      // indexed "triangle" is a point: check if point lies on any line segment
-      if (tree.isPointOnLine(ax, ay)) {
-        return Relation.CELL_INSIDE_QUERY;
-      }
-    } else if (ax == cx && ay == cy) {
-      // indexed "triangle" is a line:
-      if (tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, true)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    } else if (ax == bx && ay == by) {
-      // indexed "triangle" is a line:
-      if (tree.crossesLine(minX, maxX, minY, maxY, bx, by, cx, cy, true)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    } else if (bx == cx && by == cy) {
-      // indexed "triangle" is a line:
-      if (tree.crossesLine(minX, maxX, minY, maxY, cx, cy, ax, ay, true)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) == true ||
-        tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true)) {
-      // indexed "triangle" is a triangle:
-      return Relation.CELL_CROSSES_QUERY;
+    return tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, true);
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double ax, double ay, double bx, double by, double cx, double cy) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
     }
-    return Relation.CELL_OUTSIDE_QUERY;
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) ||
+           tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true);
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                              double ax, double ay, double bx, double by) {
+    // can be improved?
+    return false;
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                  double ax, double ay, double bx, double by, double cx, double cy) {
+    return false;
   }
 
   @Override

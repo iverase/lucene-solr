@@ -69,6 +69,62 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   }
 
   @Override
+  protected boolean queryIntersects(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    switch (scratchTriangle.type) {
+      case POINT: {
+        return rectangle2D.queryContainsPoint(scratchTriangle.aX, scratchTriangle.aY);
+      }
+      case LINE: {
+        int aY = scratchTriangle.aY;
+        int aX = scratchTriangle.aX;
+        int bY = scratchTriangle.bY;
+        int bX = scratchTriangle.bX;
+        return rectangle2D.intersectsTriangle(aX, aY, bX, bY, aX, aY);
+      }
+      case TRIANGLE: {
+        int aY = scratchTriangle.aY;
+        int aX = scratchTriangle.aX;
+        int bY = scratchTriangle.bY;
+        int bX = scratchTriangle.bX;
+        int cY = scratchTriangle.cY;
+        int cX = scratchTriangle.cX;
+        return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+    }
+  }
+
+  @Override
+  protected boolean queryContains(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    switch (scratchTriangle.type) {
+      case POINT: {
+        return rectangle2D.queryContainsPoint(scratchTriangle.aX, scratchTriangle.aY);
+      }
+      case LINE: {
+        int aY = scratchTriangle.aY;
+        int aX = scratchTriangle.aX;
+        int bY = scratchTriangle.bY;
+        int bX = scratchTriangle.bX;
+        return rectangle2D.containsTriangle(aX, aY, bX, bY, aX, aY);
+      }
+      case TRIANGLE: {
+        int aY = scratchTriangle.aY;
+        int aX = scratchTriangle.aX;
+        int bY = scratchTriangle.bY;
+        int bX = scratchTriangle.bX;
+        int cY = scratchTriangle.cY;
+        int cX = scratchTriangle.cX;
+        return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+    }
+  }
+
+  @Override
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);

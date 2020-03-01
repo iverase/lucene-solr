@@ -788,17 +788,69 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   /** validator class used to test query results against "ground truth" */
   protected static abstract class Validator {
     Encoder encoder;
+
     Validator(Encoder encoder) {
       this.encoder = encoder;
     }
 
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
+
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
+
     public abstract boolean testComponentQuery(Component2D line2d, Object shape);
 
     public Validator setRelation(QueryRelation relation) {
       this.queryRelation = relation;
       return this;
+    }
+
+    public boolean testComponentQuery(Component2D query, Field[] fields) {
+      ShapeField.DecodedTriangle decodedTriangle = new ShapeField.DecodedTriangle();
+      for (Field field : fields) {
+        boolean intersects;
+        boolean contains;
+        ShapeField.decodeTriangle(field.binaryValue().bytes, decodedTriangle);
+        switch (decodedTriangle.type) {
+          case POINT: {
+            double y = encoder.decodeY(decodedTriangle.aY);
+            double x = encoder.decodeX(decodedTriangle.aX);
+            intersects = query.contains(x, y);
+            contains = intersects;
+            break;
+          }
+          case LINE: {
+            double alat = encoder.decodeY(decodedTriangle.aY);
+            double alon = encoder.decodeX(decodedTriangle.aX);
+            double blat = encoder.decodeY(decodedTriangle.bY);
+            double blon = encoder.decodeX(decodedTriangle.bX);
+            intersects = query.intersectsLine(alon, alat, blon, blat);
+            contains = query.containsLine(alon, alat, blon, blat);
+            break;
+          }
+          case TRIANGLE: {
+            double alat = encoder.decodeY(decodedTriangle.aY);
+            double alon = encoder.decodeX(decodedTriangle.aX);
+            double blat = encoder.decodeY(decodedTriangle.bY);
+            double blon = encoder.decodeX(decodedTriangle.bX);
+            double clat = encoder.decodeY(decodedTriangle.cY);
+            double clon = encoder.decodeX(decodedTriangle.cX);
+            intersects = query.intersectsTriangle(alon, alat, blon, blat, clon, clat);
+            contains = query.containsTriangle(alon, alat, blon, blat, clon, clat);
+            break;
+          }
+          default:
+            throw new IllegalArgumentException("Unsupported triangle type :[" + decodedTriangle.type + "]");
+        }
+        assertTrue((contains == intersects) || (contains == false && intersects == true));
+        if (queryRelation == QueryRelation.DISJOINT && intersects) {
+          return false;
+        } else if (queryRelation == QueryRelation.WITHIN && contains == false) {
+          return false;
+        } else if (queryRelation == QueryRelation.INTERSECTS && intersects) {
+          return true;
+        }
+      }
+      return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
   }
 }

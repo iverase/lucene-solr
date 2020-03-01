@@ -90,18 +90,7 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
       if (queryRelation == QueryRelation.CONTAINS) {
         return testWithinLine(query, (XYLine) shape);
       }
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Relation r = query.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
-        } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
-        }
-      }
-      return queryRelation == QueryRelation.INTERSECTS ? false : true;
+      return testComponentQuery(query, XYShape.createIndexableFields("dummy", line));
     }
 
     private boolean testWithinLine(Component2D tree, XYLine line) {

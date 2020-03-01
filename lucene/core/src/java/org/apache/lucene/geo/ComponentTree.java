@@ -96,27 +96,87 @@ final class ComponentTree implements Component2D {
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                 double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                    double ax, double ay, double bx, double by) {
     if (minY <= this.maxY && minX <= this.maxX) {
-      Relation relation = component.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        return relation;
+      if(component.intersectsLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+        return true;
       }
       if (left != null) {
-        relation = left.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
+        if (left.intersectsLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+          return true;
         }
       }
       if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
-        relation = right.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-        if (relation != Relation.CELL_OUTSIDE_QUERY) {
-          return relation;
+        if (right.intersectsLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+          return true;
         }
       }
     }
-    return Relation.CELL_OUTSIDE_QUERY;
+    return false;
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                     double ax, double ay, double bx, double by, double cx, double cy) {
+    if (minY <= this.maxY && minX <= this.maxX) {
+      if(component.intersectsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.intersectsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
+        if (right.intersectsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                                double ax, double ay, double bx, double by) {
+    if (minY <= this.maxY && minX <= this.maxX) {
+      if(component.containsLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.containsLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
+        if (right.containsLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double ax, double ay, double bx, double by, double cx, double cy) {
+    if (minY <= this.maxY && minX <= this.maxX) {
+      if(component.containsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.containsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
+        if (right.containsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   @Override

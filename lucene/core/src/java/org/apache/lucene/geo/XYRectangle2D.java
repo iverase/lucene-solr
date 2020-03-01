@@ -76,25 +76,41 @@ final class XYRectangle2D implements Component2D {
   }
 
   @Override
-  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                             double ax, double ay, double bx, double by, double cx, double cy) {
-
-
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                double ax, double ay, double bx, double by) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
+      return false;
     }
-    int edgesContain = numberOfCorners(ax, ay, bx, by, cx, cy);
-    if (edgesContain == 3) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
-    } else if (edgesContain != 0) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
-    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,ax, ay, bx, by, cx, cy)
-        || edgesIntersect(ax, ay, bx, by)
-        || edgesIntersect(bx, by, cx, cy)
-        || edgesIntersect(cx, cy, ax, ay)) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
+    return contains(ax, ay) || contains(bx, by) || edgesIntersect(ax, ay, bx, by);
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double ax, double ay, double bx, double by, double cx, double cy) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
     }
-    return PointValues.Relation.CELL_OUTSIDE_QUERY;
+    return contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
+           Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY, ax, ay, bx, by, cx, cy) ||
+           edgesIntersect(ax, ay, bx, by) || edgesIntersect(bx, by, cx, cy) || edgesIntersect(cx, cy, ax, ay);
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                              double ax, double ay, double bx, double by) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(ax, ay) && contains(bx, by);
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                  double ax, double ay, double bx, double by, double cx, double cy) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(ax, ay) && contains(bx, by) && contains(cx, cy);
   }
 
   @Override
@@ -151,10 +167,6 @@ final class XYRectangle2D implements Component2D {
   }
 
   private  boolean edgesIntersect(double ax, double ay, double bx, double by) {
-    // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
-    if (ax == bx && ay == by) {
-      return false;
-    }
 
     // shortcut: check bboxes of edges are disjoint
     if ( Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
@@ -185,20 +197,6 @@ final class XYRectangle2D implements Component2D {
       return true;
     }
     return false;
-  }
-
-  private int numberOfCorners(double ax, double ay, double bx, double by, double cx, double cy) {
-    int containsCount = 0;
-    if (contains(ax, ay)) {
-      containsCount++;
-    }
-    if (contains(bx, by)) {
-      containsCount++;
-    }
-    if (contains(cx, cy)) {
-      containsCount++;
-    }
-    return containsCount;
   }
 
   @Override

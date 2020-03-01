@@ -99,14 +99,10 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
       if (queryRelation == QueryRelation.CONTAINS) {
         return query.withinTriangle(lon, lat, true, lon, lat, true, lon, lat, true) == Component2D.WithinRelation.CANDIDATE;
       }
-      // for consistency w/ the query we test the point as a triangle
-      Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
-      if (queryRelation == QueryRelation.WITHIN) {
-        return r == Relation.CELL_INSIDE_QUERY;
-      } else if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
+      if (queryRelation == QueryRelation.DISJOINT) {
+        return query.contains(lon, lat) == false;
       }
-      return r != Relation.CELL_OUTSIDE_QUERY;
+      return query.contains(lon, lat);
     }
   }
 }

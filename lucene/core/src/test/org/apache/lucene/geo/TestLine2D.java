@@ -18,6 +18,7 @@
 package org.apache.lucene.geo;
 
 import org.apache.lucene.document.TestLatLonLineShapeQueries;
+import org.apache.lucene.document.XYShape;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -32,7 +33,10 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(5);
     int cx = GeoEncodingUtils.encodeLongitude(5);
     int cy = GeoEncodingUtils.encodeLatitude(4);
-    assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(line2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(line2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(line2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(line2D.containsLine(ax, ay, bx, by));
     assertEquals(Component2D.WithinRelation.DISJOINT, line2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -45,7 +49,10 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(0);
     int cx = GeoEncodingUtils.encodeLongitude(0);
     int cy = GeoEncodingUtils.encodeLatitude(1);
-    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(line2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(line2D.intersectsLine(ax, ay, bx, by));
+    assertFalse(line2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(line2D.containsLine(ax, ay, bx, by));
     assertEquals(Component2D.WithinRelation.NOTWITHIN, line2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -58,7 +65,10 @@ public class TestLine2D extends LuceneTestCase {
     int by = GeoEncodingUtils.encodeLatitude(-10);
     int cx = GeoEncodingUtils.encodeLongitude(4);
     int cy = GeoEncodingUtils.encodeLatitude(30);
-    assertEquals(Relation.CELL_CROSSES_QUERY, line2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertTrue(line2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(line2D.intersectsLine(bx, by, cx, cy));
+    assertFalse(line2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    assertFalse(line2D.containsLine(bx, by, cx, cy));
     assertEquals(Component2D.WithinRelation.CANDIDATE, line2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -81,11 +91,23 @@ public class TestLine2D extends LuceneTestCase {
 
       Relation r = line2D.relate(tMinX, tMaxX, tMinY, tMaxY);
       if (r == Relation.CELL_OUTSIDE_QUERY) {
-        assertEquals(Relation.CELL_OUTSIDE_QUERY, line2D.relateTriangle(ax, ay, bx, by, cx, cy));
+        assertFalse(line2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
+        assertFalse(line2D.intersectsLine(ax, ay, bx, by));
+        assertFalse(line2D.containsTriangle(ax, ay, bx, by , cx, cy));
+        assertFalse(line2D.containsLine(ax, ay, bx, by));
         assertEquals(Component2D.WithinRelation.DISJOINT, line2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
-      } else if (line2D.relateTriangle(ax, ay, bx, by, cx, cy) == Relation.CELL_INSIDE_QUERY) {
+      } else if (line2D.containsTriangle(ax, ay, bx, by, cx, cy)) {
         assertNotEquals(Component2D.WithinRelation.CANDIDATE, line2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }
+  }
+
+  public void testXXX() {
+    float[] x = new float[] {0.5412631f, 0.541263f, 3.402823E38f};
+    float[] y = new float[] {0.6894124f, 0.6894124f, -4.20900688E14f};
+    XYLine line  = new XYLine(x, y);
+    Component2D component2D = XYGeometry.create(line);
+    boolean intersects = component2D.contains(0.5412631,0.6894124);
+    Relation rel = component2D.relate(0.5412631, 0.5412631, 0.6894124, 0.6894124);
   }
 }

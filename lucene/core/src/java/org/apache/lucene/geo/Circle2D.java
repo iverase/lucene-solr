@@ -53,7 +53,7 @@ class Circle2D implements Component2D {
 
   @Override
   public boolean contains(double x, double y) {
-    return calculator.contains(x, y);
+      return calculator.contains(x, y);
   }
 
   @Override
@@ -68,26 +68,43 @@ class Circle2D implements Component2D {
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                 double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
+                                double ax, double ay, double bx, double by) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
-      return Relation.CELL_OUTSIDE_QUERY;
+      return false;
     }
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      // indexed "triangle" is a point: shortcut by checking contains
-      return contains(ax, ay) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
-    } else if (ax == cx && ay == cy) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(ax, ay, bx, by);
-    } else if (ax == bx && ay == by) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(bx, by, cx, cy);
-    } else if (bx == cx && by == cy) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(cx, cy, ax, ay);
+    return contains(ax, ay) || contains(bx, by) || calculator.intersectsLine(ax, ay, bx, by);
+  }
+
+  @Override
+  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double ax, double ay, double bx, double by, double cx, double cy) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return false;
     }
-    // indexed "triangle" is a triangle:
-    return relateIndexedTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
+    return contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
+        Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) ||
+        calculator.intersectsLine(ax, ay, bx, by) ||
+        calculator.intersectsLine(bx, by, cx, cy) ||
+        calculator.intersectsLine(cx, cy, ax, ay);
+  }
+
+  @Override
+  public boolean containsLine(double minX, double maxX, double minY, double maxY,
+                                double ax, double ay, double bx, double by) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(ax, ay) && contains(bx, by);
+  }
+
+  @Override
+  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
+                                    double ax, double ay, double bx, double by, double cx, double cy) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return false;
+    }
+    return contains(ax, ay) && contains(bx, by) && contains(cx, cy);
   }
 
   @Override
@@ -146,68 +163,6 @@ class Circle2D implements Component2D {
       return WithinRelation.CANDIDATE;
     }
     return relation;
-  }
-
-  /** relates an indexed line segment (a "flat triangle") with the polygon */
-  private Relation relateIndexedLineSegment(double a2x, double a2y, double b2x, double b2y) {
-    // check endpoints of the line segment
-    int numCorners = 0;
-    if (contains(a2x, a2y)) {
-      ++numCorners;
-    }
-    if (contains(b2x, b2y)) {
-      ++numCorners;
-    }
-
-    if (numCorners == 2) {
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners == 0) {
-      if (calculator.intersectsLine(a2x, a2y, b2x, b2y)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    return Relation.CELL_CROSSES_QUERY;
-  }
-
-  /** relates an indexed triangle with the polygon */
-  private Relation relateIndexedTriangle(double minX, double maxX, double minY, double maxY,
-                                         double ax, double ay, double bx, double by, double cx, double cy) {
-    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
-    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
-    if (numCorners == 3) {
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners == 0) {
-      if (Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) == true) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (calculator.intersectsLine(ax, ay, bx, by) ||
-          calculator.intersectsLine(bx, by, cx, cy) ||
-          calculator.intersectsLine(cx, cy, ax, ay)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    return Relation.CELL_CROSSES_QUERY;
-  }
-
-  private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
-    int containsCount = 0;
-    if (contains(ax, ay)) {
-      containsCount++;
-    }
-    if (contains(bx, by)) {
-      containsCount++;
-    }
-    if (containsCount == 1) {
-      // if one point is inside and the other outside, we know
-      // already that the triangle intersect.
-      return containsCount;
-    }
-    if (contains(cx, cy)) {
-      containsCount++;
-    }
-    return containsCount;
   }
 
   private static boolean intersectsLine(double centerX, double centerY, double aX, double aY, double bX, double bY, DistanceCalculator calculator) {
@@ -321,9 +276,12 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean contains(double x, double y) {
-      final double diffX = x - this.centerX;
-      final double diffY = y - this.centerY;
-      return diffX * diffX + diffY * diffY <= radiusSquared;
+      if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY)) {
+        final double diffX = x - this.centerX;
+        final double diffY = y - this.centerY;
+        return diffX * diffX + diffY * diffY <= radiusSquared;
+      }
+      return false;
     }
 
     @Override
@@ -397,7 +355,17 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean contains(double x, double y) {
-      return SloppyMath.haversinSortKey(y, x, this.centerLat, this.centerLon) <= sortKey;
+      if (crossesDateline) {
+        if (Component2D.containsPoint(x, y, rectangle.minLon, GeoUtils.MAX_LON_INCL, rectangle.minLat, rectangle.maxLat) ||
+            Component2D.containsPoint(x, y, GeoUtils.MIN_LON_INCL, rectangle.maxLon, rectangle.minLat, rectangle.maxLat)) {
+          return SloppyMath.haversinSortKey(y, x, this.centerLat, this.centerLon) <= sortKey;
+        }
+      } else {
+        if (Component2D.containsPoint(x, y, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat)) {
+          return SloppyMath.haversinSortKey(y, x, this.centerLat, this.centerLon) <= sortKey;
+        }
+      }
+      return false;
     }
 
 
