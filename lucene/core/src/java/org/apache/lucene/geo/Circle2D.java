@@ -271,7 +271,7 @@ class Circle2D implements Component2D {
 
     @Override
     public boolean contains(double x, double y) {
-      if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY)) {
+      if (Component2D.containsPoint(x, y, rectangle.minX, rectangle.maxX, rectangle.minY, rectangle.maxY)) {
         final double diffX = x - this.centerX;
         final double diffY = y - this.centerY;
         return diffX * diffX + diffY * diffY <= radiusSquared;
