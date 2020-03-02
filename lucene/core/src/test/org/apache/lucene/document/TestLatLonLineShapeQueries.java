@@ -110,23 +110,9 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object shape) {
       Line line = (Line) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinLine(query, (Line) shape);
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", line));
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", line));
-    }
-
-    private boolean testWithinLine(Component2D component2D, Line line) {
-      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
-        Component2D.WithinRelation relation = component2D.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
-        if (relation == Component2D.WithinRelation.NOTWITHIN) {
-          return false;
-        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
-          answer = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 }

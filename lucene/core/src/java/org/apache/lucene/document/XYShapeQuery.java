@@ -123,14 +123,30 @@ final class XYShapeQuery extends ShapeQuery {
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double aY = decode(scratchTriangle.aY);
-    double aX = decode(scratchTriangle.aX);
-    double bY = decode(scratchTriangle.bY);
-    double bX = decode(scratchTriangle.bX);
-    double cY = decode(scratchTriangle.cY);
-    double cX = decode(scratchTriangle.cX);
-
-    return component2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+    switch (scratchTriangle.type) {
+      case POINT: {
+        double y = decode(scratchTriangle.aY);
+        double x = decode(scratchTriangle.aX);
+        return component2D.withinPoint(x, y);
+      }
+      case LINE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        return component2D.withinLine(aX, aY, scratchTriangle.ab, bX, bY);
+      }
+      case TRIANGLE: {
+        double aY = decode(scratchTriangle.aY);
+        double aX = decode(scratchTriangle.aX);
+        double bY = decode(scratchTriangle.bY);
+        double bX = decode(scratchTriangle.bX);
+        double cY = decode(scratchTriangle.cY);
+        double cX = decode(scratchTriangle.cX);
+        return component2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+    }
   }
 
   @Override

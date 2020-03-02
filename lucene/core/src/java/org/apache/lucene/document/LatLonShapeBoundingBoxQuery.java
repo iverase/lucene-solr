@@ -128,7 +128,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
-
+    if (scratchTriangle.type != ShapeField.DecodedTriangle.TYPE.TRIANGLE) {
+      return Component2D.WithinRelation.DISJOINT;
+    }
     return rectangle2D.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
                                       scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
                                       scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);

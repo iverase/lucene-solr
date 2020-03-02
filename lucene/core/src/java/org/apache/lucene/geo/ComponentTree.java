@@ -180,6 +180,23 @@ final class ComponentTree implements Component2D {
   }
 
   @Override
+  public WithinRelation withinPoint(double x, double y) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinLine is not supported for shapes with more than one component");
+    }
+    return component.withinPoint(x, y);
+  }
+
+  @Override
+  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                       double aX, double aY, boolean ab, double bX, double bY) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinLine is not supported for shapes with more than one component");
+    }
+    return component.withinLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY);
+  }
+
+  @Override
   public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                        double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (left != null || right != null) {

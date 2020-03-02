@@ -173,10 +173,6 @@ public class Rectangle2D {
     if (this.crossesDateline() == true) {
       throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
     }
-    // Short cut, lines and points cannot contain a bbox
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return Component2D.WithinRelation.DISJOINT;
-    }
     // Compute bounding box of triangle
     int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
     int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);

@@ -819,23 +819,23 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             break;
           }
           case LINE: {
-            double alat = encoder.decodeY(decodedTriangle.aY);
-            double alon = encoder.decodeX(decodedTriangle.aX);
-            double blat = encoder.decodeY(decodedTriangle.bY);
-            double blon = encoder.decodeX(decodedTriangle.bX);
-            intersects = query.intersectsLine(alon, alat, blon, blat);
-            contains = query.containsLine(alon, alat, blon, blat);
+            double aY = encoder.decodeY(decodedTriangle.aY);
+            double aX = encoder.decodeX(decodedTriangle.aX);
+            double bY = encoder.decodeY(decodedTriangle.bY);
+            double bX = encoder.decodeX(decodedTriangle.bX);
+            intersects = query.intersectsLine(aX, aY, bX, bY);
+            contains = query.containsLine(aX, aY, bX, bY);
             break;
           }
           case TRIANGLE: {
-            double alat = encoder.decodeY(decodedTriangle.aY);
-            double alon = encoder.decodeX(decodedTriangle.aX);
-            double blat = encoder.decodeY(decodedTriangle.bY);
-            double blon = encoder.decodeX(decodedTriangle.bX);
-            double clat = encoder.decodeY(decodedTriangle.cY);
-            double clon = encoder.decodeX(decodedTriangle.cX);
-            intersects = query.intersectsTriangle(alon, alat, blon, blat, clon, clat);
-            contains = query.containsTriangle(alon, alat, blon, blat, clon, clat);
+            double aY = encoder.decodeY(decodedTriangle.aY);
+            double aX = encoder.decodeX(decodedTriangle.aX);
+            double bY = encoder.decodeY(decodedTriangle.bY);
+            double bX = encoder.decodeX(decodedTriangle.bX);
+            double cY = encoder.decodeY(decodedTriangle.cY);
+            double cX = encoder.decodeX(decodedTriangle.cX);
+            intersects = query.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+            contains = query.containsTriangle(aX, aY, bX, bY, cX, cY);
             break;
           }
           default:
@@ -851,6 +851,49 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    protected boolean testWithinQuery(Component2D query, Field[] fields) {
+      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
+      ShapeField.DecodedTriangle decodedTriangle = new ShapeField.DecodedTriangle();
+      for (Field field : fields) {
+        ShapeField.decodeTriangle(field.binaryValue().bytes, decodedTriangle);
+        Component2D.WithinRelation relation;
+        switch (decodedTriangle.type) {
+          case POINT: {
+            double y = encoder.decodeY(decodedTriangle.aY);
+            double x = encoder.decodeX(decodedTriangle.aX);
+            relation = query.withinPoint(x, y);
+            break;
+          }
+          case LINE: {
+            double aY = encoder.decodeY(decodedTriangle.aY);
+            double aX = encoder.decodeX(decodedTriangle.aX);
+            double bY = encoder.decodeY(decodedTriangle.bY);
+            double bX = encoder.decodeX(decodedTriangle.bX);
+            relation = query.withinLine(aX, aY, decodedTriangle.ab, bX, bY);
+            break;
+          }
+          case TRIANGLE: {
+            double aY = encoder.decodeY(decodedTriangle.aY);
+            double aX = encoder.decodeX(decodedTriangle.aX);
+            double bY = encoder.decodeY(decodedTriangle.bY);
+            double bX = encoder.decodeX(decodedTriangle.bX);
+            double cY = encoder.decodeY(decodedTriangle.cY);
+            double cX = encoder.decodeX(decodedTriangle.cX);
+            relation = query.withinTriangle(aX, aY, decodedTriangle.ab, bX, bY, decodedTriangle.bc, cX, cY, decodedTriangle.ca);
+            break;
+          }
+          default:
+            throw new IllegalArgumentException("Unsupported triangle type :[" + decodedTriangle.type + "]");
+        }
+        if (relation == Component2D.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+          answer = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 }

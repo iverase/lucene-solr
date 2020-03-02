@@ -19,6 +19,8 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues;
 
+import static org.apache.lucene.geo.GeoUtils.orient;
+
 /**
  * 2D point implementation containing geo spatial logic.
  */
@@ -68,7 +70,8 @@ final class Point2D implements Component2D {
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
                                 double ax, double ay, double bx, double by) {
-    return Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, ax, ay);
+    return Component2D.containsPoint(x, y, minX, maxX, minY, maxY) &&
+           orient(ax, ay, bx, by, x, y) == 0;
   }
 
   @Override
@@ -87,6 +90,18 @@ final class Point2D implements Component2D {
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
                                   double ax, double ay, double bx, double by, double cx, double cy) {
     return false;
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                   double aX, double aY, boolean ab, double bX, double bY) {
+    // can be improved?
+    return intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
   }
 
   @Override

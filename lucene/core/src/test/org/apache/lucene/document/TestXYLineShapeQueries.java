@@ -87,23 +87,9 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object shape) {
       XYLine line = (XYLine) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinLine(query, (XYLine) shape);
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", line));
       }
       return testComponentQuery(query, XYShape.createIndexableFields("dummy", line));
-    }
-
-    private boolean testWithinLine(Component2D tree, XYLine line) {
-      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Component2D.WithinRelation relation = tree.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
-        if (relation == Component2D.WithinRelation.NOTWITHIN) {
-          return false;
-        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
-          answer = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 }

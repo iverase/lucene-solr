@@ -114,13 +114,19 @@ final class XYRectangle2D implements Component2D {
   }
 
   @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                   double aX, double aY, boolean ab, double bX, double bY) {
+    return WithinRelation.DISJOINT;
+  }
+
+  @Override
   public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                        double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    // Short cut, lines and points cannot contain a bbox
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return WithinRelation.DISJOINT;
-    }
-
     // Bounding boxes disjoint?
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;

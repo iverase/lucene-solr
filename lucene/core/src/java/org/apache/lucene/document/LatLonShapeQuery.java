@@ -132,14 +132,30 @@ final class LatLonShapeQuery extends ShapeQuery {
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-
-    return component2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+    switch (scratchTriangle.type) {
+      case POINT: {
+        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+        return component2D.withinPoint(alon, alat);
+      }
+      case LINE: {
+        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+        return component2D.withinLine(alon, alat, scratchTriangle.ab, blon, blat);
+      }
+      case TRIANGLE: {
+        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+        double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+        double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+        return component2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+    }
   }
 
   @Override

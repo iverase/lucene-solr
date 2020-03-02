@@ -63,6 +63,13 @@ public interface Component2D {
   boolean containsTriangle(double minX, double maxX, double minY, double maxY,
                              double aX, double aY, double bX, double bY, double cX, double cY);
 
+  /** Compute the within relation of this component2D with a point **/
+  WithinRelation withinPoint(double x, double y);
+
+  /** Compute the within relation of this component2D with a line **/
+  WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
+                                double aX, double aY, boolean ab, double bX, double bY);
+
   /** Compute the within relation of this component2D with a triangle **/
   WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                 double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca);
@@ -115,6 +122,15 @@ public interface Component2D {
     NOTWITHIN,
     /** The query shape is disjoint with the triangle. */
     DISJOINT
+  }
+
+  /** Compute the within relation of this component2D with a triangle **/
+  default WithinRelation withinLine(double aX, double aY, boolean ab, double bX, double bY) {
+    double minY = StrictMath.min(aY, bY);
+    double minX = StrictMath.min(aX, bX);
+    double maxY = StrictMath.max(aY, bY);
+    double maxX = StrictMath.max(aX, bX);
+    return withinLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY);
   }
 
   /** Compute the within relation of this component2D with a triangle **/
