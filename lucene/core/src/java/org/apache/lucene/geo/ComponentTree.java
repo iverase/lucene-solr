@@ -182,7 +182,7 @@ final class ComponentTree implements Component2D {
   @Override
   public WithinRelation withinPoint(double x, double y) {
     if (left != null || right != null) {
-      throw new IllegalArgumentException("withinLine is not supported for shapes with more than one component");
+      throw new IllegalArgumentException("withinPoint is not supported for shapes with more than one component");
     }
     return component.withinPoint(x, y);
   }
