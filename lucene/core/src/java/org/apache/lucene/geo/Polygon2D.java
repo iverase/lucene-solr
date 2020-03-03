@@ -131,53 +131,53 @@ final class Polygon2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double ax, double ay, double bx, double by) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) || contains(bx, by) ||
-        tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, true)) {
-      return holes == null || holes.containsLine(minX, maxX, minY, maxY, ax, ay, bx, by) == false;
+    if (contains(aX, aY) || contains(bX, bY) ||
+        (ab && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true))) {
+      return holes == null || holes.containsLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY) == false;
     }
     return false;
   }
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double ax, double ay, double bx, double by, double cx, double cy) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
-        Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy)||
-        tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true)) {
-      return holes == null || holes.containsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy) == false;
+    if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
+        Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)||
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true)) {
+      return holes == null || holes.containsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca) == false;
     }
     return false;
   }
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double ax, double ay, double bx, double by) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) && contains(bx, by) &&
-        tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, false) == false) {
-      return holes == null || holes.intersectsLine(minX, maxX, minY, maxY, ax, ay, bx, by) == false;
+    if (contains(aX, aY) && contains(bX, bY) &&
+        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, false) == false) {
+      return holes == null || holes.intersectsLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY) == false;
     }
     return false;
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double ax, double ay, double bx, double by, double cx, double cy) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) && contains(bx, by) && contains(cx, cy) &&
-        tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, false) == false) {
-      return holes == null || holes.intersectsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy) == false;
+    if (contains(aX, aY) && contains(bX, bY) && contains(cX, cY) &&
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false) {
+      return holes == null || holes.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca) == false;
     }
     return false;
   }

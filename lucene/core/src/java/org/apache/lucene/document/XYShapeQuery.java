@@ -74,7 +74,7 @@ final class XYShapeQuery extends ShapeQuery {
         double aX = decode(scratchTriangle.aX);
         double bY = decode(scratchTriangle.bY);
         double bX = decode(scratchTriangle.bX);
-        return component2D.intersectsLine(aX, aY, bX, bY);
+        return component2D.intersectsLine(aX, aY, scratchTriangle.ab, bX, bY);
       }
       case TRIANGLE: {
         double aY = decode(scratchTriangle.aY);
@@ -83,7 +83,7 @@ final class XYShapeQuery extends ShapeQuery {
         double bX = decode(scratchTriangle.bX);
         double cY = decode(scratchTriangle.cY);
         double cX = decode(scratchTriangle.cX);
-        return component2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+        return component2D.intersectsTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }
@@ -104,7 +104,7 @@ final class XYShapeQuery extends ShapeQuery {
         double aX = decode(scratchTriangle.aX);
         double bY = decode(scratchTriangle.bY);
         double bX = decode(scratchTriangle.bX);
-        return component2D.containsLine(aX, aY, bX, bY);
+        return component2D.containsLine(aX, aY, scratchTriangle.ab, bX, bY);
       }
       case TRIANGLE: {
         double aY = decode(scratchTriangle.aY);
@@ -113,7 +113,7 @@ final class XYShapeQuery extends ShapeQuery {
         double bX = decode(scratchTriangle.bX);
         double cY = decode(scratchTriangle.cY);
         double cX = decode(scratchTriangle.cX);
-        return component2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+        return component2D.containsTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }

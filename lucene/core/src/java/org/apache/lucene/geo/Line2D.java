@@ -97,33 +97,33 @@ final class Line2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double ax, double ay, double bx, double by) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, true);
+    return (ab && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true));
   }
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double ax, double ay, double bx, double by, double cx, double cy) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) ||
-           tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true);
+    return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) ||
+           tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true);
   }
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double ax, double ay, double bx, double by) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     // can be improved?
     return false;
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double ax, double ay, double bx, double by, double cx, double cy) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     return false;
   }
 

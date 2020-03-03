@@ -823,8 +823,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             double aX = encoder.decodeX(decodedTriangle.aX);
             double bY = encoder.decodeY(decodedTriangle.bY);
             double bX = encoder.decodeX(decodedTriangle.bX);
-            intersects = query.intersectsLine(aX, aY, bX, bY);
-            contains = query.containsLine(aX, aY, bX, bY);
+            intersects = query.intersectsLine(aX, aY, decodedTriangle.ab, bX, bY);
+            contains = query.containsLine(aX, aY, decodedTriangle.ab, bX, bY);
             break;
           }
           case TRIANGLE: {
@@ -834,8 +834,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             double bX = encoder.decodeX(decodedTriangle.bX);
             double cY = encoder.decodeY(decodedTriangle.cY);
             double cX = encoder.decodeX(decodedTriangle.cX);
-            intersects = query.intersectsTriangle(aX, aY, bX, bY, cX, cY);
-            contains = query.containsTriangle(aX, aY, bX, bY, cX, cY);
+            intersects = query.intersectsTriangle(aX, aY, decodedTriangle.ab, bX, bY, decodedTriangle.bc, cX, cY, decodedTriangle.ca);
+            contains = query.containsTriangle(aX, aY,decodedTriangle.ab, bX, bY, decodedTriangle.bc, cX, cY, decodedTriangle.ca);
             break;
           }
           default:

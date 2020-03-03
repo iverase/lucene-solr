@@ -536,11 +536,11 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
     for (int i =0; i < 100; i ++) {
       Component2D polygon2D = createPolygon2D(nextPolygon());
-      boolean originalIntersects = polygon2D.intersectsTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
-      boolean encodedIntersects = polygon2D.intersectsTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
+      boolean originalIntersects = polygon2D.intersectsTriangle(originalQuantize[1], originalQuantize[0], true, originalQuantize[3], originalQuantize[2], true, originalQuantize[5], originalQuantize[4], true);
+      boolean encodedIntersects = polygon2D.intersectsTriangle(encodedQuantize[1], encodedQuantize[0], true, encodedQuantize[3], encodedQuantize[2], true, encodedQuantize[5], encodedQuantize[4], true);
       assertTrue(originalIntersects == encodedIntersects);
-      boolean originalContains = polygon2D.containsTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
-      boolean encodedContains = polygon2D.containsTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
+      boolean originalContains = polygon2D.containsTriangle(originalQuantize[1], originalQuantize[0], true, originalQuantize[3], originalQuantize[2], true, originalQuantize[5], originalQuantize[4], true);
+      boolean encodedContains = polygon2D.containsTriangle(encodedQuantize[1], encodedQuantize[0], true, encodedQuantize[3], encodedQuantize[2], true, encodedQuantize[5], encodedQuantize[4], true);
       assertTrue(originalContains == encodedContains);
     }
   }

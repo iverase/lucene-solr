@@ -85,43 +85,43 @@ final class Rectangle2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double ax, double ay, double bx, double by) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || contains(bx, by) ||
-        edgesIntersect(ax, ay, bx, by);
+    return contains(aX, aY) || contains(bX, bY) ||
+        edgesIntersect(aX, aY, bX, bY);
   }
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double ax, double ay, double bx, double by, double cx, double cy) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
-        Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,ax, ay, bx, by, cx, cy) ||
-        edgesIntersect(ax, ay, bx, by) ||
-        edgesIntersect(bx, by, cx, cy) ||
-        edgesIntersect(cx, cy, ax, ay);
+    return contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
+        Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,aX, aY, bX, bY, cX, cY) ||
+        (ab && edgesIntersect(aX, aY, bX, bY)) ||
+        (bc && edgesIntersect(bX, bY, cX, cY)) ||
+        (ca && edgesIntersect(cX, cY, aX, aY));
   }
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double ax, double ay, double bx, double by) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) && contains(bx, by);
+    return contains(aX, aY) && contains(bX, bY);
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double ax, double ay, double bx, double by, double cx, double cy) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) && contains(bx, by) && contains(cx, cy);
+    return contains(aX, aY) && contains(bX, bY) && contains(cX, cY);
   }
 
   @Override

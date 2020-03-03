@@ -34,10 +34,10 @@ public class TestRectangle2D extends LuceneTestCase {
     float by = 5f;
     float cx = 5f;
     float cy = 4f;
-    assertFalse(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(rectangle2D.intersectsLine(ax, ay, bx, by));
-    assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(rectangle2D.containsLine(ax, ay, bx, by));
+    assertFalse(rectangle2D.intersectsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertFalse(rectangle2D.intersectsLine(ax, ay, true, bx, by));
+    assertFalse(rectangle2D.containsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertFalse(rectangle2D.containsLine(ax, ay, true, bx, by));
     assertEquals(Component2D.WithinRelation.DISJOINT,
         rectangle2D.withinTriangle(ax, ay, random().nextBoolean(), bx, by, random().nextBoolean(), cx, cy, random().nextBoolean()));
   }
@@ -51,10 +51,10 @@ public class TestRectangle2D extends LuceneTestCase {
     float by = 2f;
     float cx = 0.5f;
     float cy = 2f;
-    assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertTrue(rectangle2D.intersectsLine(ax, ay, bx, by));
-    assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(rectangle2D.containsLine(ax, ay, bx, by));
+    assertTrue(rectangle2D.intersectsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertTrue(rectangle2D.intersectsLine(ax, ay, true, bx, by));
+    assertFalse(rectangle2D.containsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertFalse(rectangle2D.containsLine(ax, ay, true, bx, by));
     assertEquals(Component2D.WithinRelation.NOTWITHIN,
         rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
@@ -68,10 +68,10 @@ public class TestRectangle2D extends LuceneTestCase {
     float by = 0.5f;
     float cx = 0.5f;
     float cy = 0.25f;
-    assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertTrue(rectangle2D.intersectsLine(ax, ay, bx, by));
-    assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertTrue(rectangle2D.containsLine(ax, ay, bx, by));
+    assertTrue(rectangle2D.intersectsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertTrue(rectangle2D.intersectsLine(ax, ay, true, bx, by));
+    assertTrue(rectangle2D.containsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertTrue(rectangle2D.containsLine(ax, ay, true, bx, by));
     assertEquals(Component2D.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
@@ -95,17 +95,17 @@ public class TestRectangle2D extends LuceneTestCase {
 
       PointValues.Relation r = rectangle2D.relate(tMinX, tMaxX, tMinY, tMaxY);
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
-        assertFalse(rectangle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
-        assertFalse(rectangle2D.intersectsLine(ax, ay, bx, by));
-        assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-        assertFalse(rectangle2D.containsLine(ax, ay, bx, by));
+        assertFalse(rectangle2D.intersectsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertFalse(rectangle2D.intersectsLine(ax, ay, true, bx, by));
+        assertFalse(rectangle2D.containsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertFalse(rectangle2D.containsLine(ax, ay, true, bx, by));
         assertEquals(Component2D.WithinRelation.DISJOINT, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
       else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
-        assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by, cx, cy));
-        assertTrue(rectangle2D.intersectsLine(ax, ay, bx, by));
-        assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-        assertTrue(rectangle2D.containsLine(ax, ay, bx, by));
+        assertTrue(rectangle2D.intersectsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertTrue(rectangle2D.intersectsLine(ax, ay, true, bx, by));
+        assertTrue(rectangle2D.containsTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertTrue(rectangle2D.containsLine(ax, ay, true, bx, by));
       }
     }
   }

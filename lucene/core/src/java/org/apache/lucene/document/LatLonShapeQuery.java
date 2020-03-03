@@ -83,7 +83,7 @@ final class LatLonShapeQuery extends ShapeQuery {
         double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
         double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
         double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        return component2D.intersectsLine(alon, alat, blon, blat);
+        return component2D.intersectsLine(alon, alat, scratchTriangle.ab, blon, blat);
       }
       case TRIANGLE: {
         double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
@@ -92,7 +92,7 @@ final class LatLonShapeQuery extends ShapeQuery {
         double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
         double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
         double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.intersectsTriangle(alon, alat, blon, blat, clon, clat);
+        return component2D.intersectsTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }
@@ -113,7 +113,7 @@ final class LatLonShapeQuery extends ShapeQuery {
         double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
         double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
         double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        return component2D.containsLine(alon, alat, blon, blat);
+        return component2D.containsLine(alon, alat, scratchTriangle.ab, blon, blat);
       }
       case TRIANGLE: {
         double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
@@ -122,7 +122,7 @@ final class LatLonShapeQuery extends ShapeQuery {
         double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
         double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
         double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.containsTriangle(alon, alat, blon, blat, clon, clat);
+        return component2D.containsTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }

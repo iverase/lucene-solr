@@ -69,42 +69,42 @@ class Circle2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double ax, double ay, double bx, double by) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || contains(bx, by) || calculator.intersectsLine(ax, ay, bx, by);
+    return contains(aX, aY) || contains(bX, bY) || (ab && calculator.intersectsLine(aX, aY, bX, bY));
   }
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double ax, double ay, double bx, double by, double cx, double cy) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
-        Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) ||
-        calculator.intersectsLine(ax, ay, bx, by) ||
-        calculator.intersectsLine(bx, by, cx, cy) ||
-        calculator.intersectsLine(cx, cy, ax, ay);
+    return contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
+        Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), aX, aY, bX, bY, cX, cY) ||
+        (ab && calculator.intersectsLine(aX, aY, bX, bY)) ||
+        (bc && calculator.intersectsLine(bX, bY, cX, cY)) ||
+        (ca && calculator.intersectsLine(cX, cY, aX, aY));
   }
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                                double ax, double ay, double bx, double by) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) && contains(bx, by);
+    return contains(aX, aY) && contains(bX, bY);
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double ax, double ay, double bx, double by, double cx, double cy) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) && contains(bx, by) && contains(cx, cy);
+    return contains(aX, aY) && contains(bX, bY) && contains(cX, cY);
   }
 
   @Override
