@@ -132,6 +132,10 @@ final class Rectangle2D implements Component2D {
   @Override
   public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
                                    double aX, double aY, boolean ab, double bX, double bY) {
+    if (ab == true && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY) ==false &&
+        edgesIntersect(aX, aY, bX, bY)) {
+      return WithinRelation.NOTWITHIN;
+    }
     return WithinRelation.DISJOINT;
   }
 

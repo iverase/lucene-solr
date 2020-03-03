@@ -115,6 +115,12 @@ class Circle2D implements Component2D {
   @Override
   public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
                                    double aX, double aY, boolean ab, double bX, double bY) {
+    if (calculator.disjoint(minX, maxX, minY, maxY)) {
+      return WithinRelation.DISJOINT;
+    }
+    if (ab == true && calculator.intersectsLine(aX, aY, bX, bY)) {
+      return WithinRelation.NOTWITHIN;
+    }
     return WithinRelation.DISJOINT;
   }
 
