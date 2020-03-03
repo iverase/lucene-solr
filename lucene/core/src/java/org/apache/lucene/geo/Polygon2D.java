@@ -150,7 +150,7 @@ final class Polygon2D implements Component2D {
     }
     if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
         Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)||
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true)) {
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca, true)) {
       return holes == null || holes.containsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca) == false;
     }
     return false;
@@ -176,7 +176,7 @@ final class Polygon2D implements Component2D {
       return false;
     }
     if (contains(aX, aY) && contains(bX, bY) && contains(cX, cY) &&
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false) {
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca, false) == false) {
       return holes == null || holes.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca) == false;
     }
     return false;

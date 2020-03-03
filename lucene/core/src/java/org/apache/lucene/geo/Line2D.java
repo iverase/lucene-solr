@@ -111,7 +111,7 @@ final class Line2D implements Component2D {
       return false;
     }
     return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) ||
-           tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true);
+           tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca, true);
   }
 
   @Override
