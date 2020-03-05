@@ -73,7 +73,7 @@ class Circle2D implements Component2D {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || // contains(bx, by) ||
+    return contains(ax, ay) || contains(bx, by) ||
         calculator.intersectsLine(ax, ay, bx, by);
   }
 
@@ -83,7 +83,7 @@ class Circle2D implements Component2D {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || // contains(bx, by) || contains(cx, cy) ||
+    return contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
         Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), ax, ay, bx, by, cx, cy) ||
         calculator.intersectsLine(ax, ay, bx, by) ||
         calculator.intersectsLine(bx, by, cx, cy) ||
