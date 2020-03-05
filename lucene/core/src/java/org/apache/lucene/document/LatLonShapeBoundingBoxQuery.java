@@ -32,7 +32,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * Finds all previously indexed geo shapes that intersect the specified bounding box.
@@ -384,28 +383,33 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
      **/
     boolean containsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
       if (crossesDateline()) {
-        if (bboxContainsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
-            bboxContainsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
-            bboxContainsPoint(cX, cY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+        // for contains we need to check each box separately
+        if (bboxContainsPoint(aX, aY, minX, MAX_LON_ENCODED, minY, maxY) &&
+            bboxContainsPoint(bX, bY, minX, MAX_LON_ENCODED, minY, maxY) &&
+            bboxContainsPoint(cX, cY, minX, MAX_LON_ENCODED, minY, maxY)) {
           return true;
         }
-        return bboxContainsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
-               bboxContainsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
-               bboxContainsPoint(cX, cY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
+        return bboxContainsPoint(aX, aY, MIN_LON_ENCODED, maxX, minY, maxY) &&
+               bboxContainsPoint(bX, bY, MIN_LON_ENCODED, maxX, minY, maxY) &&
+               bboxContainsPoint(cX, cY, MIN_LON_ENCODED, maxX, minY, maxY);
       }
-      return contains(aX, aY) && contains(bX, bY) && contains(cX, cY);
+      return bboxContainsPoint(aX, aY, minX, maxX, minY, maxY) &&
+             bboxContainsPoint(bX, bY, minX, maxX, minY, maxY) &&
+             bboxContainsPoint(cX, cY, minX, maxX, minY, maxY);
     }
 
     boolean containsLine(int aX, int aY, int bX, int bY) {
       if (crossesDateline()) {
-        if (bboxContainsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
-            bboxContainsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+        // for contains we need to check each box separately
+        if (bboxContainsPoint(aX, aY, minX, MAX_LON_ENCODED, minY, maxY) &&
+            bboxContainsPoint(bX, bY, minX, MAX_LON_ENCODED, minY, maxY)) {
           return true;
         }
-        return bboxContainsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
-               bboxContainsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
+        return bboxContainsPoint(aX, aY, MIN_LON_ENCODED, maxX, minY, maxY) &&
+               bboxContainsPoint(bX, bY, MIN_LON_ENCODED, maxX, minY, maxY);
       }
-      return contains(aX, aY) && contains(bX, bY);
+      return bboxContainsPoint(aX, aY, minX, maxX, minY, maxY) &&
+             bboxContainsPoint(bX, bY, minX, maxX, minY, maxY);
     }
 
     /**
