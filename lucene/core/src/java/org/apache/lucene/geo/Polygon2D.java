@@ -135,7 +135,7 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) || contains(bx, by) ||
+    if (contains(ax, ay) || // contains(bx, by) ||
         tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, true)) {
       return holes == null || holes.containsLine(minX, maxX, minY, maxY, ax, ay, bx, by) == false;
     }
@@ -148,7 +148,7 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy) ||
+    if (contains(ax, ay) || // contains(bx, by) || contains(cx, cy) ||
         Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy)||
         tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true)) {
       return holes == null || holes.containsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy) == false;
@@ -162,7 +162,7 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) && contains(bx, by) &&
+    if (contains(ax, ay) && // contains(bx, by) &&
         tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by, false) == false) {
       return holes == null || holes.intersectsLine(minX, maxX, minY, maxY, ax, ay, bx, by) == false;
     }
@@ -175,7 +175,7 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(ax, ay) && contains(bx, by) && contains(cx, cy) &&
+    if (contains(ax, ay) && // contains(bx, by) && contains(cx, cy) &&
         tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, false) == false) {
       return holes == null || holes.intersectsTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy) == false;
     }

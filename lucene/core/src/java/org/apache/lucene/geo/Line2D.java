@@ -142,11 +142,6 @@ final class Line2D implements Component2D {
   @Override
   public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                        double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-    // short cut, lines and points cannot contain this type of shape
-    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return WithinRelation.DISJOINT;
-    }
-
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
