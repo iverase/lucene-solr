@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
@@ -174,6 +175,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     protected final int maxX;
     protected final int minY;
     protected final int maxY;
+    private final boolean crossesDateline;
 
     EncodedRectangle(double minLat, double maxLat, double minLon, double maxLon) {
       this.bbox = new byte[4 * BYTES];
@@ -205,6 +207,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
         this.maxX = maxXenc;
         encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
       }
+      this.crossesDateline = minX > maxX;
     }
 
     /**
@@ -221,7 +224,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     }
 
     private boolean crossesDateline() {
-      return minX > maxX;
+      return crossesDateline;
     }
 
     /**
@@ -317,11 +320,10 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
                                     int minXOffset, int minYOffset, byte[] minTriangle,
                                     int maxXOffset, int maxYOffset, byte[] maxTriangle) {
       return Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
-          Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
-          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
+             Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
+             Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
+             Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
     }
-
 
     /**
      * Checks if the rectangle contains the provided point
@@ -330,31 +332,30 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       if (y < minY || y > maxY) {
         return false;
       }
-     if (crossesDateline()) {
-       return (x > maxX && x < minX) == false;
-     } else {
-       return (x > maxX || x < minX) == false;
-     }
+      if (crossesDateline()) {
+        return (x > maxX && x < minX) == false;
+      } else {
+        return (x > maxX || x < minX) == false;
+      }
     }
 
     /**
      * Checks if the rectangle intersects the provided triangle
      **/
     boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
-      // 1. query contains any triangle points
+      // query contains any triangle points
       if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
         return true;
       }
-
-      // compute bounding box of triangle
+      // check bounding box of triangle
       int tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
       int tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
       int tMinY = StrictMath.min(StrictMath.min(aY, bY), cY);
       int tMaxY = StrictMath.max(StrictMath.max(aY, bY), cY);
-
-      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY, crossesDateline)) {
         return false;
       }
+      // expensive part
       return Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY) ||
              edgeIntersectsQuery(aX, aY, bX, bY) ||
              edgeIntersectsQuery(bX, bY, cX, cY) ||
@@ -365,16 +366,16 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       if (contains(aX, aY) || contains(bX, bY)) {
         return true;
       }
-
+      // check bounding box of line
       int tMinX = StrictMath.min(aX, bX);
       int tMaxX = StrictMath.max(aX, bX);
       int tMinY = StrictMath.min(aY, bY);
       int tMaxY = StrictMath.max(aY, bY);
-
-      // 2. check bounding boxes are disjoint
-      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+      // check bounding boxes are disjoint
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY, crossesDateline)) {
         return false;
       }
+      // expensive part
       return edgeIntersectsQuery(aX, aY, bX, bY);
     }
 
@@ -383,26 +384,26 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
      **/
     boolean containsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
       if (crossesDateline()) {
-        if (Component2D.containsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
-            Component2D.containsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
-            Component2D.containsPoint(cX, cY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+        if (bboxContainsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
+            bboxContainsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
+            bboxContainsPoint(cX, cY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
           return true;
         }
-        return Component2D.containsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
-               Component2D.containsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
-               Component2D.containsPoint(cX, cY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
+        return bboxContainsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
+               bboxContainsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
+               bboxContainsPoint(cX, cY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
       }
       return contains(aX, aY) && contains(bX, bY) && contains(cX, cY);
     }
 
     boolean containsLine(int aX, int aY, int bX, int bY) {
       if (crossesDateline()) {
-        if (Component2D.containsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
-            Component2D.containsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+        if (bboxContainsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
+            bboxContainsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
           return true;
         }
-        return Component2D.containsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
-            Component2D.containsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
+        return bboxContainsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
+               bboxContainsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
       }
       return contains(aX, aY) && contains(bX, bY);
     }
@@ -432,7 +433,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
       int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
       // Bounding boxes disjoint?
-      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY, crossesDateline)) {
         return Component2D.WithinRelation.DISJOINT;
       }
       // Points belong to the shape so if points are inside the rectangle then it cannot be within.
@@ -487,52 +488,36 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
      */
     private static boolean edgeIntersectsBox(int ax, int ay, int bx, int by,
                                              int minX, int maxX, int minY, int maxY) {
-
       if ( Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
         return false;
       }
-
-      // top
-      if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
-          orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
-        return true;
-      }
-
-      // right
-      if (orient(ax, ay, bx, by, maxX, maxY) * orient(ax, ay, bx, by, maxX, minY) <= 0 &&
-          orient(maxX, maxY, maxX, minY, ax, ay) * orient(maxX, maxY, maxX, minY, bx, by) <= 0) {
-        return true;
-      }
-
-      // bottom
-      if (orient(ax, ay, bx, by, maxX, minY) * orient(ax, ay, bx, by, minX, minY) <= 0 &&
-          orient(maxX, minY, minX, minY, ax, ay) * orient(maxX, minY, minX, minY, bx, by) <= 0) {
-        return true;
-      }
-
-      // left
-      if (orient(ax, ay, bx, by, minX, minY) * orient(ax, ay, bx, by, minX, maxY) <= 0 &&
-          orient(minX, minY, minX, maxY, ax, ay) * orient(minX, minY, minX, maxY, bx, by) <= 0) {
-        return true;
-      }
-      return false;
+      return GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, minX, maxY,  maxX, maxY) || // top
+             GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, maxX, maxY,  maxX, minY) || // bottom
+             GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, maxX, minY,  minX, minY) || // left
+             GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, minX, minY,  minX, maxY);   // right
     }
-
-
 
     /**
      * utility method to check if two boxes are disjoint
      */
     private static boolean boxesAreDisjoint(final int aMinX, final int aMaxX, final int aMinY, final int aMaxY,
-                                            final int bMinX, final int bMaxX, final int bMinY, final int bMaxY) {
+                                            final int bMinX, final int bMaxX, final int bMinY, final int bMaxY,
+                                            boolean crossesDateline) {
       if (aMaxY < bMinY || aMinY > bMaxY) {
         return true;
       }
-      if (bMinX > bMaxX) { // crosses dateline
+      if (crossesDateline) { // crosses dateline
         return aMinX > bMaxX && aMaxX < bMinX;
       } else {
         return aMinX > bMaxX || aMaxX < bMinX;
       }
+    }
+
+    /**
+     * static utility method to check if a bounding box contains a point
+     */
+    private static boolean bboxContainsPoint(int x, int y, int minX, int maxX, int minY, int maxY) {
+      return (x < minX || x > maxX || y < minY || y > maxY) == false;
     }
   }
 }

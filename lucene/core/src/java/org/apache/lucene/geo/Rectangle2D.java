@@ -28,7 +28,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D rectangle implementation containing cartesian spatial logic.
@@ -188,34 +187,13 @@ final class Rectangle2D implements Component2D {
 
   private  boolean edgesIntersect(double ax, double ay, double bx, double by) {
     // shortcut: check bboxes of edges are disjoint
-    if ( Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
+    if (Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
       return false;
     }
-
-    // top
-    if (orient(ax, ay, bx, by, minX, maxY) * orient(ax, ay, bx, by, maxX, maxY) <= 0 &&
-        orient(minX, maxY, maxX, maxY, ax, ay) * orient(minX, maxY, maxX, maxY, bx, by) <= 0) {
-      return true;
-    }
-
-    // right
-    if (orient(ax, ay, bx, by, maxX, maxY) * orient(ax, ay, bx, by, maxX, minY) <= 0 &&
-        orient(maxX, maxY, maxX, minY, ax, ay) * orient(maxX, maxY, maxX, minY, bx, by) <= 0) {
-      return true;
-    }
-
-    // bottom
-    if (orient(ax, ay, bx, by, maxX, minY) * orient(ax, ay, bx, by, minX, minY) <= 0 &&
-        orient(maxX, minY, minX, minY, ax, ay) * orient(maxX, minY, minX, minY, bx, by) <= 0) {
-      return true;
-    }
-
-    // left
-    if (orient(ax, ay, bx, by, minX, minY) * orient(ax, ay, bx, by, minX, maxY) <= 0 &&
-        orient(minX, minY, minX, maxY, ax, ay) * orient(minX, minY, minX, maxY, bx, by) <= 0) {
-      return true;
-    }
-    return false;
+    return GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, minX, maxY,  maxX, maxY) || // top
+           GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, maxX, maxY,  maxX, minY) || // bottom
+           GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, maxX, minY,  minX, minY) || // left
+           GeoUtils.lineCrossesLineWithBoundary(ax, ay, bx, by, minX, minY,  minX, maxY);   // right
   }
 
   @Override
