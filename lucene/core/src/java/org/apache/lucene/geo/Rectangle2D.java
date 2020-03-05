@@ -89,8 +89,7 @@ final class Rectangle2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(ax, ay) || contains(bx, by) ||
-        edgesIntersect(ax, ay, bx, by);
+    return contains(ax, ay) || contains(bx, by) || edgesIntersect(ax, ay, bx, by);
   }
 
   @Override
@@ -188,11 +187,6 @@ final class Rectangle2D implements Component2D {
   }
 
   private  boolean edgesIntersect(double ax, double ay, double bx, double by) {
-    // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
-    if (ax == bx && ay == by) {
-      return false;
-    }
-
     // shortcut: check bboxes of edges are disjoint
     if ( Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
       return false;

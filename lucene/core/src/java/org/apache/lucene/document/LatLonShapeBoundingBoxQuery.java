@@ -21,7 +21,6 @@ import java.util.Arrays;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
@@ -32,6 +31,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
@@ -66,14 +66,14 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
     switch (scratchTriangle.type) {
       case POINT: {
-        return encodedRectangle.queryContainsPoint(scratchTriangle.aX, scratchTriangle.aY);
+        return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY);
       }
       case LINE: {
         int aY = scratchTriangle.aY;
         int aX = scratchTriangle.aX;
         int bY = scratchTriangle.bY;
         int bX = scratchTriangle.bX;
-        return encodedRectangle.intersectsTriangle(aX, aY, bX, bY, aX, aY);
+        return encodedRectangle.intersectsLine(aX, aY, bX, bY);
       }
       case TRIANGLE: {
         int aY = scratchTriangle.aY;
@@ -94,14 +94,14 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
     switch (scratchTriangle.type) {
       case POINT: {
-        return encodedRectangle.queryContainsPoint(scratchTriangle.aX, scratchTriangle.aY);
+        return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY);
       }
       case LINE: {
         int aY = scratchTriangle.aY;
         int aX = scratchTriangle.aX;
         int bY = scratchTriangle.bY;
         int bX = scratchTriangle.bX;
-        return encodedRectangle.containsTriangle(aX, aY, bX, bY, aX, aY);
+        return encodedRectangle.containsLine(aX, aY, bX, bY);
       }
       case TRIANGLE: {
         int aY = scratchTriangle.aY;
@@ -118,15 +118,29 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
   @Override
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    if (encodedRectangle.crossesDateline()) {
+      throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
+    }
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
-    if (scratchTriangle.type != ShapeField.DecodedTriangle.TYPE.TRIANGLE) {
-      return Component2D.WithinRelation.DISJOINT;
+
+    switch (scratchTriangle.type) {
+      case POINT: {
+        return Component2D.WithinRelation.DISJOINT;
+      }
+      case LINE: {
+        return encodedRectangle.withinLine(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
+            scratchTriangle.bX, scratchTriangle.bY);
+      }
+      case TRIANGLE: {
+        return encodedRectangle.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
+            scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
+            scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);
+      }
+      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }
-    return encodedRectangle.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
-        scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
-        scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);
   }
+
   @Override
   protected boolean equalsTo(Object o) {
     return super.equalsTo(o) && rectangle.equals(((LatLonShapeBoundingBoxQuery)o).rectangle);
@@ -194,19 +208,21 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       }
     }
 
-    private boolean crossesDateline() {
-      return minX > maxX;
+    /**
+     * encodes a bounding box into the provided byte array
+     */
+    private static void encode(final int minX, final int maxX, final int minY, final int maxY, byte[] b) {
+      if (b == null) {
+        b = new byte[4 * BYTES];
+      }
+      NumericUtils.intToSortableBytes(minY, b, 0);
+      NumericUtils.intToSortableBytes(minX, b, BYTES);
+      NumericUtils.intToSortableBytes(maxY, b, 2 * BYTES);
+      NumericUtils.intToSortableBytes(maxX, b, 3 * BYTES);
     }
 
-    /**
-     * Checks if the rectangle contains the provided point
-     **/
-    boolean queryContainsPoint(int x, int y) {
-      if (this.crossesDateline() == true) {
-        return bboxContainsPoint(x, y, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
-            || bboxContainsPoint(x, y, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
-      }
-      return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
+    private boolean crossesDateline() {
+      return minX > maxX;
     }
 
     /**
@@ -233,122 +249,6 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
         return intersectBBoxWithRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       }
       return eastRelation;
-    }
-
-    /**
-     * Checks if the rectangle intersects the provided triangle
-     **/
-    boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
-      // 1. query contains any triangle points
-      if (queryContainsPoint(aX, aY) || queryContainsPoint(bX, bY) || queryContainsPoint(cX, cY)) {
-        return true;
-      }
-
-      // compute bounding box of triangle
-      int tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
-      int tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
-      int tMinY = StrictMath.min(StrictMath.min(aY, bY), cY);
-      int tMaxY = StrictMath.max(StrictMath.max(aY, bY), cY);
-
-      // 2. check bounding boxes are disjoint
-      if (this.crossesDateline() == true) {
-        if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
-            && boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, this.minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
-          return false;
-        }
-      } else if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
-        return false;
-      }
-
-      // 3. check triangle contains any query points
-      if (Tessellator.pointInTriangle(minX, minY, aX, aY, bX, bY, cX, cY)) {
-        return true;
-      } else if (Tessellator.pointInTriangle(maxX, minY, aX, aY, bX, bY, cX, cY)) {
-        return true;
-      } else if (Tessellator.pointInTriangle(maxX, maxY, aX, aY, bX, bY, cX, cY)) {
-        return true;
-      } else if (Tessellator.pointInTriangle(minX, maxY, aX, aY, bX, bY, cX, cY)) {
-        return true;
-      }
-
-      // 4. last ditch effort: check crossings
-      if (queryIntersects(aX, aY, bX, bY, cX, cY)) {
-        return true;
-      }
-      return false;
-    }
-
-    /**
-     * Returns the Within relation to the provided triangle
-     */
-    Component2D.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
-      if (this.crossesDateline() == true) {
-        throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
-      }
-      // Short cut, lines and points cannot contain a bbox
-      if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-        return Component2D.WithinRelation.DISJOINT;
-      }
-      // Compute bounding box of triangle
-      int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
-      int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
-      int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
-      int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
-      // Bounding boxes disjoint?
-      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
-        return Component2D.WithinRelation.DISJOINT;
-      }
-      // Points belong to the shape so if points are inside the rectangle then it cannot be within.
-      if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
-          bboxContainsPoint(bx, by, minX, maxX, minY, maxY) ||
-          bboxContainsPoint(cx, cy, minX, maxX, minY, maxY)) {
-        return Component2D.WithinRelation.NOTWITHIN;
-      }
-      // If any of the edges intersects an edge belonging to the shape then it cannot be within.
-      Component2D.WithinRelation relation = Component2D.WithinRelation.DISJOINT;
-      if (edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
-        if (ab == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        } else {
-          relation = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-      if (edgeIntersectsBox(bx, by, cx, cy, minX, maxX, minY, maxY) == true) {
-        if (bc == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        } else {
-          relation = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-
-      if (edgeIntersectsBox(cx, cy, ax, ay, minX, maxX, minY, maxY) == true) {
-        if (ca == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        } else {
-          relation = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-      // If any of the rectangle edges crosses a triangle edge that does not belong to the shape
-      // then it is a candidate for within
-      if (relation == Component2D.WithinRelation.CANDIDATE) {
-        return Component2D.WithinRelation.CANDIDATE;
-      }
-      // Check if shape is within the triangle
-      if (Tessellator.pointInTriangle(minX, minY, ax, ay, bx, by, cx, cy)) {
-        return Component2D.WithinRelation.CANDIDATE;
-      }
-      return relation;
-    }
-
-    /**
-     * Checks if the rectangle contains the provided triangle
-     **/
-    boolean containsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
-      if (this.crossesDateline() == true) {
-        return bboxContainsTriangle(ax, ay, bx, by, cx, cy, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
-            || bboxContainsTriangle(ax, ay, bx, by, cx, cy, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
-      }
-      return bboxContainsTriangle(ax, ay, bx, by, cx, cy, minX, maxX, minY, maxY);
     }
 
     /**
@@ -423,30 +323,153 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
           Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
     }
 
+
     /**
-     * encodes a bounding box into the provided byte array
-     */
-    private static void encode(final int minX, final int maxX, final int minY, final int maxY, byte[] b) {
-      if (b == null) {
-        b = new byte[4 * BYTES];
+     * Checks if the rectangle contains the provided point
+     **/
+    boolean contains(int x, int y) {
+      if (y < minY || y > maxY) {
+        return false;
       }
-      NumericUtils.intToSortableBytes(minY, b, 0);
-      NumericUtils.intToSortableBytes(minX, b, BYTES);
-      NumericUtils.intToSortableBytes(maxY, b, 2 * BYTES);
-      NumericUtils.intToSortableBytes(maxX, b, 3 * BYTES);
+     if (crossesDateline()) {
+       return (x > maxX && x < minX) == false;
+     } else {
+       return (x > maxX || x < minX) == false;
+     }
     }
 
     /**
-     * returns true if the query intersects the provided triangle (in encoded space)
-     */
-    private boolean queryIntersects(int ax, int ay, int bx, int by, int cx, int cy) {
-      // check each edge of the triangle against the query
-      if (edgeIntersectsQuery(ax, ay, bx, by) ||
-          edgeIntersectsQuery(bx, by, cx, cy) ||
-          edgeIntersectsQuery(cx, cy, ax, ay)) {
+     * Checks if the rectangle intersects the provided triangle
+     **/
+    boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
+      // 1. query contains any triangle points
+      if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
         return true;
       }
-      return false;
+
+      // compute bounding box of triangle
+      int tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
+      int tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
+      int tMinY = StrictMath.min(StrictMath.min(aY, bY), cY);
+      int tMaxY = StrictMath.max(StrictMath.max(aY, bY), cY);
+
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+        return false;
+      }
+      return Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY) ||
+             edgeIntersectsQuery(aX, aY, bX, bY) ||
+             edgeIntersectsQuery(bX, bY, cX, cY) ||
+             edgeIntersectsQuery(cX, cY, aX, aY);
+    }
+
+    boolean intersectsLine(int aX, int aY, int bX, int bY) {
+      if (contains(aX, aY) || contains(bX, bY)) {
+        return true;
+      }
+
+      int tMinX = StrictMath.min(aX, bX);
+      int tMaxX = StrictMath.max(aX, bX);
+      int tMinY = StrictMath.min(aY, bY);
+      int tMaxY = StrictMath.max(aY, bY);
+
+      // 2. check bounding boxes are disjoint
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+        return false;
+      }
+      return edgeIntersectsQuery(aX, aY, bX, bY);
+    }
+
+    /**
+     * Checks if the rectangle contains the provided triangle
+     **/
+    boolean containsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
+      if (crossesDateline()) {
+        if (Component2D.containsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
+            Component2D.containsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
+            Component2D.containsPoint(cX, cY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+          return true;
+        }
+        return Component2D.containsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
+               Component2D.containsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
+               Component2D.containsPoint(cX, cY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
+      }
+      return contains(aX, aY) && contains(bX, bY) && contains(cX, cY);
+    }
+
+    boolean containsLine(int aX, int aY, int bX, int bY) {
+      if (crossesDateline()) {
+        if (Component2D.containsPoint(aX, aY, minX, MAX_LON_ENCODED, this.minY, this.maxY) &&
+            Component2D.containsPoint(bX, bY, minX, MAX_LON_ENCODED, this.minY, this.maxY)) {
+          return true;
+        }
+        return Component2D.containsPoint(aX, aY, MIN_LON_ENCODED, maxX, this.minY, this.maxY) &&
+            Component2D.containsPoint(bX, bY, MIN_LON_ENCODED, maxX, this.minY, this.maxY);
+      }
+      return contains(aX, aY) && contains(bX, bY);
+    }
+
+    /**
+     * Returns the Within relation to the provided triangle
+     */
+    Component2D.WithinRelation withinLine(int ax, int ay, boolean ab, int bx, int by) {
+      if (ab == true && edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
+          return Component2D.WithinRelation.NOTWITHIN;
+      }
+      return Component2D.WithinRelation.DISJOINT;
+    }
+
+    /**
+     * Returns the Within relation to the provided triangle
+     */
+    Component2D.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
+      // Points belong to the shape so if points are inside the rectangle then it cannot be within.
+      if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+        return Component2D.WithinRelation.NOTWITHIN;
+      }
+
+      // Compute bounding box of triangle
+      int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+      int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+      int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+      int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+      // Bounding boxes disjoint?
+      if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+        return Component2D.WithinRelation.DISJOINT;
+      }
+      // Points belong to the shape so if points are inside the rectangle then it cannot be within.
+      if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+        return Component2D.WithinRelation.NOTWITHIN;
+      }
+      // If any of the edges intersects an edge belonging to the shape then it cannot be within.
+      Component2D.WithinRelation relation = Component2D.WithinRelation.DISJOINT;
+      if (edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
+        if (ab == true) {
+          return Component2D.WithinRelation.NOTWITHIN;
+        } else {
+          relation = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+      if (edgeIntersectsBox(bx, by, cx, cy, minX, maxX, minY, maxY) == true) {
+        if (bc == true) {
+          return Component2D.WithinRelation.NOTWITHIN;
+        } else {
+          relation = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+
+      if (edgeIntersectsBox(cx, cy, ax, ay, minX, maxX, minY, maxY) == true) {
+        if (ca == true) {
+          return Component2D.WithinRelation.NOTWITHIN;
+        } else {
+          relation = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+      // Check if shape is within the triangle
+      if (relation == Component2D.WithinRelation.CANDIDATE ||
+          Component2D.pointInTriangle(minX, maxX, minY, maxY, minX, minY, ax, ay, bx, by, cx, cy)) {
+        return Component2D.WithinRelation.CANDIDATE;
+      }
+      return relation;
     }
 
     /**
@@ -461,41 +484,12 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     }
 
     /**
-     * static utility method to check if a bounding box contains a point
-     */
-    private static boolean bboxContainsPoint(int x, int y, int minX, int maxX, int minY, int maxY) {
-      return (x < minX || x > maxX || y < minY || y > maxY) == false;
-    }
-
-    /**
-     * static utility method to check if a bounding box contains a triangle
-     */
-    private static boolean bboxContainsTriangle(int ax, int ay, int bx, int by, int cx, int cy,
-                                                int minX, int maxX, int minY, int maxY) {
-      return bboxContainsPoint(ax, ay, minX, maxX, minY, maxY)
-          && bboxContainsPoint(bx, by, minX, maxX, minY, maxY)
-          && bboxContainsPoint(cx, cy, minX, maxX, minY, maxY);
-    }
-
-    /**
      * returns true if the edge (defined by (ax, ay) (bx, by)) intersects the query
      */
     private static boolean edgeIntersectsBox(int ax, int ay, int bx, int by,
                                              int minX, int maxX, int minY, int maxY) {
-      // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
-      if (ax == bx && ay == by) {
-        return Rectangle.containsPoint(ay, ax, minY, maxY, minX, maxX);
-      }
 
-      // shortcut: check if either of the end points fall inside the box
-      if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
-          bboxContainsPoint(bx, by, minX, maxX, minY, maxY)) {
-        return true;
-      }
-
-      // shortcut: check bboxes of edges are disjoint
-      if (boxesAreDisjoint(Math.min(ax, bx), Math.max(ax, bx), Math.min(ay, by), Math.max(ay, by),
-          minX, maxX, minY, maxY)) {
+      if ( Math.max(ax, bx) < minX || Math.min(ax, bx) > maxX || Math.min(ay, by) > maxY || Math.max(ay, by) < minY) {
         return false;
       }
 
@@ -525,12 +519,21 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       return false;
     }
 
+
+
     /**
      * utility method to check if two boxes are disjoint
      */
     private static boolean boxesAreDisjoint(final int aMinX, final int aMaxX, final int aMinY, final int aMaxY,
                                             final int bMinX, final int bMaxX, final int bMinY, final int bMaxY) {
-      return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
+      if (aMaxY < bMinY || aMinY > bMaxY) {
+        return true;
+      }
+      if (bMinX > bMaxX) { // crosses dateline
+        return aMinX > bMaxX && aMaxX < bMinX;
+      } else {
+        return aMinX > bMaxX || aMaxX < bMinX;
+      }
     }
   }
 }
