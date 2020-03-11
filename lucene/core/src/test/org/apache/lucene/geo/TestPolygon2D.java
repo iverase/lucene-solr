@@ -277,25 +277,25 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testIntersectsSameEdge() {
     Component2D poly = Polygon2D.create(new Polygon(new double[] { -2, -2, 2, 2, -2 }, new double[] { -2, 2, 2, -2, -2 }));
     // line inside edge
-    assertTrue(poly.containsTriangle(-1, -1, 1, 1, -1, -1));
-    assertTrue(poly.containsTriangle(-2, -2, 2, 2, -2, -2));
-    assertTrue(poly.intersectsTriangle(-1, -1, 1, 1, -1, -1));
-    assertTrue(poly.intersectsTriangle(-2, -2, 2, 2, -2, -2));
+    assertTrue(poly.containsTriangle(-1, -1, true, 1, 1, true, -1, -1, true));
+    assertTrue(poly.containsTriangle(-2, -2, true, 2, 2, true, -2, -2, true));
+    assertTrue(poly.intersectsTriangle(-1, -1, true, 1, 1, true, -1, -1, true));
+    assertTrue(poly.intersectsTriangle(-2, -2, true, 2, 2, true, -2, -2, true));
     // line over edge
-    assertFalse(poly.containsTriangle(-4, -4, 4, 4, -4, -4));
-    assertFalse(poly.containsTriangle(-2, -2, 4, 4, 4, 4));
-    assertTrue(poly.intersectsTriangle(-4, -4, 4, 4, -4, -4));
-    assertTrue(poly.intersectsTriangle(-2, -2, 4, 4, 4, 4));
+    assertFalse(poly.containsTriangle(-4, -4, true, 4, 4, true, -4, -4, true));
+    assertFalse(poly.containsTriangle(-2, -2, true, 4, 4, true, 4, 4, true));
+    assertTrue(poly.intersectsTriangle(-4, -4, true, 4, 4, true, -4, -4, true));
+    assertTrue(poly.intersectsTriangle(-2, -2, true, 4, 4, true, 4, 4, true));
     // line inside edge
-    assertFalse(poly.containsTriangle(-1, -1, 3, 3, 1, 1));
-    assertFalse(poly.containsTriangle(-2, -2, 3, 3, 2, 2));
-    assertTrue(poly.intersectsTriangle(-1, -1, 3, 3, 1, 1));
-    assertTrue(poly.intersectsTriangle(-2, -2, 3, 3, 2, 2));
+    assertFalse(poly.containsTriangle(-1, -1, true, 3, 3, true, 1, 1, true));
+    assertFalse(poly.containsTriangle(-2, -2, true, 3, 3, true, 2, 2, true));
+    assertTrue(poly.intersectsTriangle(-1, -1, true, 3, 3, true, 1, 1, true));
+    assertTrue(poly.intersectsTriangle(-2, -2, true, 3, 3, true, 2, 2, true));
     // line over edge
-    assertFalse(poly.containsTriangle(-4, -4, 7, 7, 4, 4));
-    assertFalse(poly.containsTriangle(-2, -2, 7, 7, 4, 4));
-    assertTrue(poly.intersectsTriangle(-4, -4, 7, 7, 4, 4));
-    assertTrue(poly.intersectsTriangle(-2, -2, 7, 7, 4, 4));
+    assertFalse(poly.containsTriangle(-4, -4, true, 7, 7, true, 4, 4, true));
+    assertFalse(poly.containsTriangle(-2, -2, true, 7, 7, true, 4, 4, true));
+    assertTrue(poly.intersectsTriangle(-4, -4, true, 7, 7, true, 4, 4, true));
+    assertTrue(poly.intersectsTriangle(-2, -2, true, 7, 7, true, 4, 4, true));
   }
   
   /** Tests current impl against original algorithm */
@@ -333,7 +333,7 @@ public class TestPolygon2D extends LuceneTestCase {
 
         // if the point is within poly, then triangle should not intersect
         if (impl.contains(a[1], a[0]) || impl.contains(b[1], b[0]) || impl.contains(c[1], c[0])) {
-          assertTrue(impl.intersectsTriangle(a[1], a[0], b[1], b[0], c[1], c[0]));
+          assertTrue(impl.intersectsTriangle(a[1], a[0], true, b[1], b[0], true, c[1], c[0], true));
         }
       }
     }
@@ -342,7 +342,7 @@ public class TestPolygon2D extends LuceneTestCase {
   public void testRelateTriangleContainsPolygon() {
     Polygon polygon = new Polygon(new double[]{0, 0, 1, 1, 0}, new double[]{0, 1, 1, 0, 0});
     Component2D impl = Polygon2D.create(polygon);
-    assertTrue(impl.intersectsTriangle(-10 , -1, 2, -1, 10, 10));
+    assertTrue(impl.intersectsTriangle(-10 , -1, true, 2, -1, true, 10, 10, true));
   }
 
   // test
@@ -361,7 +361,7 @@ public class TestPolygon2D extends LuceneTestCase {
         double[] b = new double[] {polygon.getPolyLat(j - 1), polygon.getPolyLon(j - 1)};
         // occassionally test pancake triangles
         double[] c = random().nextBoolean() ? new double[] {polygon.getPolyLat(j), polygon.getPolyLon(j)} : new double[] {a[0], a[1]};
-        assertTrue(impl.intersectsTriangle(a[0], a[1], b[0], b[1], c[0], c[1]));
+        assertTrue(impl.intersectsTriangle(a[0], a[1], true, b[0], b[1], true, c[0], c[1], true));
       }
     }
   }
@@ -371,10 +371,13 @@ public class TestPolygon2D extends LuceneTestCase {
     Component2D polygon2D = Polygon2D.create(p);
     boolean intersects = polygon2D.intersectsTriangle(GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        true,
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(1.5)),
         GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        true,
         GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-1.5)),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)));
+        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(0)),
+        true);
     assertTrue(intersects);
   }
 
@@ -387,10 +390,13 @@ public class TestPolygon2D extends LuceneTestCase {
       boolean intersects =  polygon2D.intersectsTriangle(
           GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
           GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)),
+          true,
           GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(longitude)),
           GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(latitude)),
+          true,
           GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(-longitude)),
-          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)));
+          GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(-latitude)),
+          true);
       assertTrue(intersects);
     }
   }

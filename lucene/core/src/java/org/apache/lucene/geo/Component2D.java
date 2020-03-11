@@ -49,19 +49,19 @@ public interface Component2D {
 
   /** return true if this component2D intersects the provided line **/
   boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                         double aX, double aY, double bX, double bY);
+                         double aX, double aY, boolean ab, double bX, double bY);
 
   /** return true if this component2D intersects the provided triangle **/
   boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                             double aX, double aY, double bX, double bY, double cX, double cY);
+                             double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca);
 
   /** return true if this component2D contains the provided line **/
   boolean containsLine(double minX, double maxX, double minY, double maxY,
-                         double aX, double aY, double bX, double bY);
+                       double aX, double aY, boolean ab, double bX, double bY);
 
   /** return true if this component2D contains the provided triangle **/
   boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                           double aX, double aY, double bX, double bY, double cX, double cY);
+                           double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca);
 
   /** Used by withinTriangle to check the within relationship between a triangle and the query shape
    * (e.g. if the query shape is within the triangle). */
@@ -89,39 +89,39 @@ public interface Component2D {
 
 
   /** return true if this component2D intersects the provided line **/
-  default boolean intersectsLine(double aX, double aY, double bX, double bY) {
+  default boolean intersectsLine(double aX, double aY, boolean ab, double bX, double bY) {
     double minY = StrictMath.min(aY, bY);
     double minX = StrictMath.min(aX, bX);
     double maxY = StrictMath.max(aY, bY);
     double maxX = StrictMath.max(aX, bX);
-    return intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY);
+    return intersectsLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY);
   }
 
   /** return true if this component2D intersects the provided triangle **/
-  default boolean intersectsTriangle(double aX, double aY, double bX, double bY, double cX, double cY) {
+  default boolean intersectsTriangle(double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     double minY = StrictMath.min(StrictMath.min(aY, bY), cY);
     double minX = StrictMath.min(StrictMath.min(aX, bX), cX);
     double maxY = StrictMath.max(StrictMath.max(aY, bY), cY);
     double maxX = StrictMath.max(StrictMath.max(aX, bX), cX);
-    return intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY);
+    return intersectsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca);
   }
 
   /** return true if this component2D contains the provided line **/
-  default boolean containsLine(double aX, double aY, double bX, double bY) {
+  default boolean containsLine(double aX, double aY, boolean ab, double bX, double bY) {
     double minY = StrictMath.min(aY, bY);
     double minX = StrictMath.min(aX, bX);
     double maxY = StrictMath.max(aY, bY);
     double maxX = StrictMath.max(aX, bX);
-    return containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY);
+    return containsLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY);
   }
 
   /** return true if this component2D contains the provided triangle **/
-  default boolean containsTriangle(double aX, double aY, double bX, double bY, double cX, double cY) {
+  default boolean containsTriangle(double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     double minY = StrictMath.min(StrictMath.min(aY, bY), cY);
     double minX = StrictMath.min(StrictMath.min(aX, bX), cX);
     double maxY = StrictMath.max(StrictMath.max(aY, bY), cY);
     double maxX = StrictMath.max(StrictMath.max(aX, bX), cX);
-    return containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY);
+    return containsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca);
   }
 
   /** Compute the within relation of this component2D with a triangle **/

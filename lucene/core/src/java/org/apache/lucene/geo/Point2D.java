@@ -69,26 +69,26 @@ final class Point2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double aX, double aY, double bX, double bY) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     return Component2D.containsPoint(x, y, minX, maxX, minY, maxY) &&
            orient(aX, aY, bX, bY, x, y) == 0;
   }
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     return Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, aX, aY, bX, bY, cX, cY);
   }
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double aX, double aY, double bX, double bY) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     return false;
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     return false;
   }
 
@@ -101,7 +101,7 @@ final class Point2D implements Component2D {
   public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
                                    double aX, double aY, boolean ab, double bX, double bY) {
     // can be improved?
-    return intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
+    return intersectsLine(minX, maxX, minY, maxY, aX, aY, ab, bX, bY) ? WithinRelation.CANDIDATE : WithinRelation.DISJOINT;
   }
 
   @Override

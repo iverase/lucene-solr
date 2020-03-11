@@ -84,35 +84,35 @@ final class Rectangle2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double aX, double aY, double bX, double bY) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(aX, aY) || contains(bX, bY) || edgesIntersect(aX, aY, bX, bY);
+    return contains(aX, aY) || contains(bX, bY) || (ab && edgesIntersect(aX, aY, bX, bY));
   }
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
     return contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
         Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,aX, aY, bX, bY, cX, cY) ||
-        edgesIntersect(aX, aY, bX, bY) ||
-        edgesIntersect(bX, bY, cX, cY) ||
-        edgesIntersect(cX, cY, aX, aY);
+        (ab && edgesIntersect(aX, aY, bX, bY)) ||
+        (bc && edgesIntersect(bX, bY, cX, cY)) ||
+        (ca && edgesIntersect(cX, cY, aX, aY));
   }
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double aX, double aY, double bX, double bY) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     return Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY);
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     return Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY);
   }
 
@@ -125,7 +125,7 @@ final class Rectangle2D implements Component2D {
   public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
                                    double aX, double aY, boolean ab, double bX, double bY) {
     if (ab == true && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY) ==false &&
-        edgesIntersect(aX, aY, bX, bY)) {
+        (ab && edgesIntersect(aX, aY, bX, bY))) {
       return WithinRelation.NOTWITHIN;
     }
     return WithinRelation.DISJOINT;
@@ -144,39 +144,16 @@ final class Rectangle2D implements Component2D {
       return WithinRelation.NOTWITHIN;
     }
     // If any of the edges intersects an edge belonging to the shape then it cannot be within.
-    WithinRelation relation = WithinRelation.DISJOINT;
-    if (edgesIntersect(aX, aY, bX, bY) == true) {
-      if (ab == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (edgesIntersect(bX, bY, cX, cY) == true) {
-      if (bc == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-
-    if (edgesIntersect(cX, cY, aX, aY) == true) {
-      if (ca == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    // If any of the rectangle edges crosses a triangle edge that does not belong to the shape
-    // then it is a candidate for within
-    if (relation == WithinRelation.CANDIDATE) {
-      return WithinRelation.CANDIDATE;
+    if ((ab && edgesIntersect(aX, aY, bX, bY)) ||
+        (bc && edgesIntersect(bX, bY, cX, cY)) ||
+        (ca && edgesIntersect(cX, cY, aX, aY))) {
+      return WithinRelation.NOTWITHIN;
     }
     // Check if shape is within the triangle
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY, aX, aY, bX, bY, cX, cY)) {
       return WithinRelation.CANDIDATE;
     }
-    return relation;
+    return WithinRelation.DISJOINT;
   }
 
   private boolean edgesIntersect(double aX, double aY, double bX, double bY) {

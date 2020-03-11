@@ -97,7 +97,7 @@ final class Line2D implements Component2D {
 
   @Override
   public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double aX, double aY, double bX, double bY) {
+                                double aX, double aY, boolean ab, double bX, double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
@@ -106,7 +106,7 @@ final class Line2D implements Component2D {
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
@@ -116,14 +116,14 @@ final class Line2D implements Component2D {
 
   @Override
   public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double aX, double aY, double bX, double bY) {
+                              double aX, double aY, boolean ab, double bX, double bY) {
     // can be improved?
     return false;
   }
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     return false;
   }
 

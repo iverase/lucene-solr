@@ -515,16 +515,16 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
           encodedContains = polygon2D.contains(encodedQuantize[0], encodedQuantize[1]);
           break;
         case LINE:
-          originalIntersects = polygon2D.intersectsLine(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3]);
-          encodedIntersects = polygon2D.intersectsLine(encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
-          originalContains = polygon2D.containsLine(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3]);
-          encodedContains = polygon2D.containsLine(encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
+          originalIntersects = polygon2D.intersectsLine(originalQuantize[0], originalQuantize[1], true, originalQuantize[2], originalQuantize[3]);
+          encodedIntersects = polygon2D.intersectsLine(encodedQuantize[0], encodedQuantize[1], true,  encodedQuantize[2], encodedQuantize[3]);
+          originalContains = polygon2D.containsLine(originalQuantize[0], originalQuantize[1], true,originalQuantize[2], originalQuantize[3]);
+          encodedContains = polygon2D.containsLine(encodedQuantize[0], encodedQuantize[1], true, encodedQuantize[2], encodedQuantize[3]);
           break;
         case TRIANGLE:
-          originalIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
-          encodedIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
-          originalContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
-          encodedContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
+          originalIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], true, originalQuantize[2], originalQuantize[3], true, originalQuantize[4], originalQuantize[5], true);
+          encodedIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], true, originalQuantize[2], originalQuantize[3], true, originalQuantize[4], originalQuantize[5], true);
+          originalContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], true, originalQuantize[2], originalQuantize[3], true, originalQuantize[4], originalQuantize[5], true);
+          encodedContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], true, originalQuantize[2], originalQuantize[3], true, originalQuantize[4], originalQuantize[5], true);
           break;
       }
       assertTrue(originalIntersects == encodedIntersects);
