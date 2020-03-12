@@ -140,13 +140,9 @@ class Circle2D implements Component2D {
 
     // we only check edges that belong to the original polygon. If we intersect any of them, then
     // we are not within.
-    if (ab == true && calculator.intersectsLine(aX, aY, bX, bY)) {
-      return WithinRelation.NOTWITHIN;
-    }
-    if (bc == true && calculator.intersectsLine(bX, bY, cX, cY)) {
-      return WithinRelation.NOTWITHIN;
-    }
-    if (ca == true && calculator.intersectsLine(cX, cY, aX, aY)) {
+    if ((ab == true && calculator.intersectsLine(aX, aY, bX, bY)) ||
+        (bc == true && calculator.intersectsLine(bX, bY, cX, cY)) ||
+        (ca == true && calculator.intersectsLine(cX, cY, aX, aY))) {
       return WithinRelation.NOTWITHIN;
     }
 

@@ -111,7 +111,9 @@ final class Line2D implements Component2D {
       return false;
     }
     return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) ||
-           tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true);
+           (ab && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) ||
+           (bc && tree.crossesLine(minX, maxX, minY, maxY, bX, bY, cX, cY, true)) ||
+           (ca && tree.crossesLine(minX, maxX, minY, maxY, cX, cY, aX, aY, true));
   }
 
   @Override
@@ -145,44 +147,19 @@ final class Line2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
-
-    WithinRelation relation = WithinRelation.DISJOINT;
     // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
     // if it only intersects edges that do not belong to the shape, then it is a candidate
     // we skip edges at the dateline to support shapes crossing it
-    if (tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
-      if (ab == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
+    if ((ab && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) ||
+        (bc && tree.crossesLine(minX, maxX, minY, maxY, bX, bY, cX, cY, true)) ||
+        (ca && tree.crossesLine(minX, maxX, minY, maxY, cX, cY, aX, aY, true))) {
+      return WithinRelation.NOTWITHIN;
     }
-
-    if (tree.crossesLine(minX, maxX, minY, maxY, bX, bY, cX, cY, true)) {
-      if (bc == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    if (tree.crossesLine(minX, maxX, minY, maxY, cX, cY, aX, aY, true)) {
-      if (ca == true) {
-        return WithinRelation.NOTWITHIN;
-      } else {
-        relation = WithinRelation.CANDIDATE;
-      }
-    }
-    // if any of the edges crosses and edge that does not belong to the shape
-    // then it is a candidate for within
-    if (relation == WithinRelation.CANDIDATE) {
-      return WithinRelation.CANDIDATE;
-    }
-
     // Check if shape is within the triangle
     if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) == true) {
       return WithinRelation.CANDIDATE;
     }
-    return relation;
+    return WithinRelation.DISJOINT;
   }
 
   /** create a Line2D from the provided LatLon Linestring */
