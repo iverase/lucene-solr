@@ -18,7 +18,9 @@ package org.apache.lucene.util.bkd;
 
 import java.util.Arrays;
 
+import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * Utility class to write new points into in-heap arrays.
@@ -110,6 +112,55 @@ public final class HeapPointWriter implements PointWriter {
       }
     }
     return leafCardinality;
+  }
+
+  public void computeCommonPrefix(int from, int to, int numDataDims, int bytesPerDim, int[] commonPrefixLengths, byte[] scratch) {
+    assert packedBytesLength == numDataDims * bytesPerDim;
+    Arrays.fill(commonPrefixLengths, bytesPerDim);
+    final int offset = from * packedBytesDocIDLength;
+    System.arraycopy(block, offset, scratch, 0,  numDataDims * bytesPerDim);
+    for (int i = from + 1; i < to; i++) {
+      final int start = i * packedBytesDocIDLength;
+      for (int dim = 0; dim < numDataDims; dim++) {
+        if (commonPrefixLengths[dim] != 0) {
+          final int dimOffset = dim * bytesPerDim;
+          int j = Arrays.mismatch(scratch, dimOffset, dimOffset + commonPrefixLengths[dim],
+              block, start  + dimOffset, start  + dimOffset + commonPrefixLengths[dim]);
+          if (j != -1) {
+            commonPrefixLengths[dim] = j;
+          }
+        }
+      }
+    }
+  }
+
+  public int computeSortedDim(int from, int to, int numDataDims, int bytesPerDim, int[] commonPrefixLengths) {
+    int sortedDim = 0;
+    int sortedDimCardinality = Integer.MAX_VALUE;
+    FixedBitSet[] usedBytes = new FixedBitSet[numDataDims];
+    for (int dim = 0; dim < numDataDims; ++dim) {
+      if (commonPrefixLengths[dim] < bytesPerDim) {
+        usedBytes[dim] = new FixedBitSet(256);
+      }
+    }
+    // Find the dimension to compress
+    for (int dim = 0; dim < numDataDims; dim++) {
+      int prefix = commonPrefixLengths[dim];
+      if (prefix < bytesPerDim) {
+        final int dimOffset = dim * bytesPerDim;
+        for (int i = from; i < to; ++i) {
+          final int offset = from * packedBytesDocIDLength;
+          int bucket = block[offset + dimOffset + prefix] & 0xff;
+          usedBytes[dim].set(bucket);
+        }
+        int cardinality =usedBytes[dim].cardinality();
+        if (cardinality < sortedDimCardinality) {
+          sortedDim = dim;
+          sortedDimCardinality = cardinality;
+        }
+      }
+    }
+    return sortedDim;
   }
 
   @Override

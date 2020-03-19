@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.IntFunction;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteBuffersDataOutput;
@@ -75,19 +74,19 @@ public class BKDIndexWriter {
   }
 
   /** writes a leaf block in the provided DataOutput */
-  public void writeLeafBlock(DataOutput out, int[] docIDs, int start, int count,
-                             int[] commonPrefixes, byte[] packedValue,
-                             int sortedDim, IntFunction<BytesRef> packedValues, int leafCardinality) throws IOException {
+  public void writeLeafBlock(DataOutput out, BKDLeafBlock leafBlock,
+                             int[] commonPrefixes, int sortedDim, int leafCardinality) throws IOException {
+    int count = leafBlock.count();
     assert count > 0 : "count must be bigger than 0";
     assert count <= maxPointsInLeafNode: "maxPointsInLeafNode=" + maxPointsInLeafNode + " > count=" + count;
     assert scratchOut.size() == 0;
     // Write docIDs first, as their own chunk, so that at intersect time we can add all docIDs w/o
     // loading the values:
-    writeLeafBlockDocs(scratchOut, docIDs, start, count);
+    writeLeafBlockDocs(scratchOut, leafBlock);
     // Write common prefixes:
-    writeCommonPrefixes(scratchOut, commonPrefixes, packedValue);
+    writeCommonPrefixes(scratchOut, commonPrefixes, leafBlock.packedValue(0));
     // Write point values:
-    writeLeafBlockPackedValues(scratchOut, commonPrefixes, count, sortedDim, packedValues, leafCardinality);
+    writeLeafBlockPackedValues(scratchOut, commonPrefixes, sortedDim, leafBlock, leafCardinality);
     scratchOut.copyTo(out);
     scratchOut.reset();
   }
@@ -309,20 +308,21 @@ public class BKDIndexWriter {
     return block.length;
   }
 
-  private void writeLeafBlockDocs(DataOutput out, int[] docIDs, int start, int count) throws IOException {
-    out.writeVInt(count);
-    DocIdsWriter.writeDocIds(docIDs, start, count, out);
+  private void writeLeafBlockDocs(DataOutput out, BKDLeafBlock leafBlock) throws IOException {
+    out.writeVInt(leafBlock.count());
+    DocIdsWriter.writeDocIds(leafBlock, out);
   }
 
-  private void writeCommonPrefixes(DataOutput out, int[] commonPrefixes, byte[] packedValue) throws IOException {
+  private void writeCommonPrefixes(DataOutput out, int[] commonPrefixes, BytesRef packedValue) throws IOException {
     for(int dim=0;dim<numDataDims;dim++) {
       out.writeVInt(commonPrefixes[dim]);
       //System.out.println(commonPrefixes[dim] + " of " + bytesPerDim);
-      out.writeBytes(packedValue, dim*bytesPerDim, commonPrefixes[dim]);
+      out.writeBytes(packedValue.bytes, packedValue.offset + dim*bytesPerDim, commonPrefixes[dim]);
     }
   }
 
-  private void writeLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues, int leafCardinality) throws IOException {
+  private void writeLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int sortedDim, BKDLeafBlock packedValues, int leafCardinality) throws IOException {
+    final int count = packedValues.count();
     int prefixLenSum = Arrays.stream(commonPrefixLengths).sum();
     if (prefixLenSum == packedBytesLength) {
       // all values in this block are equal
@@ -354,19 +354,19 @@ public class BKDIndexWriter {
       }
       if (lowCardinalityCost <= highCardinalityCost) {
         out.writeByte((byte) -2);
-        writeLowCardinalityLeafBlockPackedValues(out, commonPrefixLengths, count, packedValues);
+        writeLowCardinalityLeafBlockPackedValues(out, commonPrefixLengths, packedValues);
       } else {
         out.writeByte((byte) sortedDim);
-        writeHighCardinalityLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, compressedByteOffset);
+        writeHighCardinalityLeafBlockPackedValues(out, commonPrefixLengths, sortedDim, packedValues, compressedByteOffset);
       }
     }
   }
 
-  private static int runLen(IntFunction<BytesRef> packedValues, int start, int end, int byteOffset) {
-    BytesRef first = packedValues.apply(start);
+  private static int runLen(BKDLeafBlock packedValues, int start, int end, int byteOffset) {
+    BytesRef first = packedValues.packedValue(start);
     byte b = first.bytes[first.offset + byteOffset];
     for (int i = start + 1; i < end; ++i) {
-      BytesRef ref = packedValues.apply(i);
+      BytesRef ref = packedValues.packedValue(i);
       byte b2 = ref.bytes[ref.offset + byteOffset];
       assert Byte.toUnsignedInt(b2) >= Byte.toUnsignedInt(b);
       if (b != b2) {
@@ -376,15 +376,16 @@ public class BKDIndexWriter {
     return end - start;
   }
 
-  private void writeLowCardinalityLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, IntFunction<BytesRef> packedValues) throws IOException {
+  private void writeLowCardinalityLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, BKDLeafBlock packedValues) throws IOException {
+    final int count = packedValues.count();
     if (numIndexDims != 1) {
-      writeActualBounds(out, commonPrefixLengths, count, packedValues);
+      writeActualBounds(out, commonPrefixLengths, packedValues);
     }
-    BytesRef value = packedValues.apply(0);
+    BytesRef value = packedValues.packedValue(0);
     System.arraycopy(value.bytes, value.offset, scratch, 0, packedBytesLength);
     int cardinality = 1;
     for (int i = 1; i < count; i++) {
-      value = packedValues.apply(i);
+      value = packedValues.packedValue(i);
       for(int dim = 0; dim < numDataDims; dim++) {
         final int start = dim * bytesPerDim + commonPrefixLengths[dim];
         final int end = dim * bytesPerDim + bytesPerDim;
@@ -407,12 +408,12 @@ public class BKDIndexWriter {
     }
   }
 
-  private void writeActualBounds(DataOutput out, int[] commonPrefixLengths, int count, IntFunction<BytesRef> packedValues) throws IOException {
+  private void writeActualBounds(DataOutput out, int[] commonPrefixLengths, BKDLeafBlock packedValues) throws IOException {
     for (int dim = 0; dim < numIndexDims; ++dim) {
       int commonPrefixLength = commonPrefixLengths[dim];
       int suffixLength = bytesPerDim - commonPrefixLength;
       if (suffixLength > 0) {
-        BytesRef[] minMax = computeMinMax(count, packedValues, dim * bytesPerDim + commonPrefixLength, suffixLength);
+        BytesRef[] minMax = computeMinMax(packedValues, dim * bytesPerDim + commonPrefixLength, suffixLength);
         BytesRef min = minMax[0];
         BytesRef max = minMax[1];
         out.writeBytes(min.bytes, min.offset, min.length);
@@ -423,15 +424,15 @@ public class BKDIndexWriter {
 
   /** Return an array that contains the min and max values for the [offset, offset+length] interval
    *  of the given {@link BytesRef}s. */
-  private static BytesRef[] computeMinMax(int count, IntFunction<BytesRef> packedValues, int offset, int length) {
+  private static BytesRef[] computeMinMax(BKDLeafBlock packedValues, int offset, int length) {
     assert length > 0;
     BytesRefBuilder min = new BytesRefBuilder();
     BytesRefBuilder max = new BytesRefBuilder();
-    BytesRef first = packedValues.apply(0);
+    BytesRef first = packedValues.packedValue(0);
     min.copyBytes(first.bytes, first.offset + offset, length);
     max.copyBytes(first.bytes, first.offset + offset, length);
-    for (int i = 1; i < count; ++i) {
-      BytesRef candidate = packedValues.apply(i);
+    for (int i = 1; i < packedValues.count(); ++i) {
+      BytesRef candidate = packedValues.packedValue(i);
       if (Arrays.compareUnsigned(min.bytes(), 0, length, candidate.bytes, candidate.offset + offset, candidate.offset + offset + length) > 0) {
         min.copyBytes(candidate.bytes, candidate.offset + offset, length);
       } else if (Arrays.compareUnsigned(max.bytes(), 0, length, candidate.bytes, candidate.offset + offset, candidate.offset + offset + length) < 0) {
@@ -441,9 +442,9 @@ public class BKDIndexWriter {
     return new BytesRef[]{min.get(), max.get()};
   }
 
-  private void writeLeafBlockPackedValuesRange(DataOutput out, int[] commonPrefixLengths, int start, int end, IntFunction<BytesRef> packedValues) throws IOException {
+  private void writeLeafBlockPackedValuesRange(DataOutput out, int[] commonPrefixLengths, int start, int end, BKDLeafBlock packedValues) throws IOException {
     for (int i = start; i < end; ++i) {
-      BytesRef ref = packedValues.apply(i);
+      BytesRef ref = packedValues.packedValue(i);
       assert ref.length == packedBytesLength;
 
       for(int dim=0;dim<numDataDims;dim++) {
@@ -453,16 +454,17 @@ public class BKDIndexWriter {
     }
   }
 
-  private void writeHighCardinalityLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues, int compressedByteOffset) throws IOException {
+  private void writeHighCardinalityLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int sortedDim, BKDLeafBlock packedValues, int compressedByteOffset) throws IOException {
     if (numIndexDims != 1) {
-      writeActualBounds(out, commonPrefixLengths, count, packedValues);
+      writeActualBounds(out, commonPrefixLengths, packedValues);
     }
+    final int count = packedValues.count();
     commonPrefixLengths[sortedDim]++;
     for (int i = 0; i < count; ) {
       // do run-length compression on the byte at compressedByteOffset
       int runLen = runLen(packedValues, i, Math.min(i + 0xff, count), compressedByteOffset);
       assert runLen <= 0xff;
-      BytesRef first = packedValues.apply(i);
+      BytesRef first = packedValues.packedValue(i);
       byte prefixByte = first.bytes[first.offset + compressedByteOffset];
       out.writeByte(prefixByte);
       out.writeByte((byte) runLen);

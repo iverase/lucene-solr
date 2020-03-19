@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntroSelector;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.MSBRadixSorter;
@@ -209,5 +210,80 @@ public final class MutablePointsReaderUtils {
         }
       }
     }.select(from, to, mid);
+  }
+
+  /** Compute the number of distinct consecutive points on the reader between from and to. */
+  public static int computeCardinality(int numDataDim, int bytesPerDim, int[] commonPrefixLengths,
+                               MutablePointValues reader, int from, int to, BytesRef scratch1, BytesRef scratch2) {
+    BytesRef comparator = scratch1;
+    BytesRef collector = scratch2;
+    reader.getValue(from, comparator);
+    int leafCardinality = 1;
+    for (int i = from + 1; i < to; ++i) {
+      reader.getValue(i, collector);
+      for (int dim =0; dim < numDataDim; dim++) {
+        final int start = dim * bytesPerDim + commonPrefixLengths[dim];
+        final int end = dim * bytesPerDim + bytesPerDim;
+        if (Arrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
+            comparator.bytes, comparator.offset + start, comparator.offset + end) != -1) {
+          leafCardinality++;
+          BytesRef scratch = collector;
+          collector = comparator;
+          comparator = scratch;
+          break;
+        }
+      }
+    }
+    return leafCardinality;
+  }
+
+  public static void computeCommonPrefix(int numDataDim, int bytesPerDim, int[] commonPrefixLengths,
+                                         MutablePointValues reader, int from, int to, BytesRef scratch1, BytesRef scratch2) {
+    Arrays.fill(commonPrefixLengths, bytesPerDim);
+    reader.getValue(from, scratch1);
+    for (int i = from + 1; i < to; ++i) {
+      reader.getValue(i, scratch2);
+      for (int dim=0;dim<numDataDim;dim++) {
+        final int offset = dim * bytesPerDim;
+        int dimensionPrefixLength = commonPrefixLengths[dim];
+        commonPrefixLengths[dim] = Arrays.mismatch(scratch1.bytes, scratch1.offset + offset,
+            scratch1.offset + offset + dimensionPrefixLength,
+            scratch2.bytes, scratch2.offset + offset,
+            scratch2.offset + offset + dimensionPrefixLength);
+        if (commonPrefixLengths[dim] == -1) {
+          commonPrefixLengths[dim] = dimensionPrefixLength;
+        }
+      }
+    }
+  }
+
+  public static int computeSortedDim(int numDataDim, int bytesPerDim, int[] commonPrefixLengths,
+                                       MutablePointValues reader, int from, int to) {
+    FixedBitSet[] usedBytes = new FixedBitSet[numDataDim];
+    for (int dim = 0; dim < numDataDim; ++dim) {
+      if (commonPrefixLengths[dim] < bytesPerDim) {
+        usedBytes[dim] = new FixedBitSet(256);
+      }
+    }
+    for (int i = from + 1; i < to; ++i) {
+      for (int dim=0;dim<numDataDim;dim++) {
+        if (usedBytes[dim] != null) {
+          byte b = reader.getByteAt(i, dim * bytesPerDim + commonPrefixLengths[dim]);
+          usedBytes[dim].set(Byte.toUnsignedInt(b));
+        }
+      }
+    }
+    int sortedDim = 0;
+    int sortedDimCardinality = Integer.MAX_VALUE;
+    for (int dim = 0; dim < numDataDim; ++dim) {
+      if (usedBytes[dim] != null) {
+        final int cardinality = usedBytes[dim].cardinality();
+        if (cardinality < sortedDimCardinality) {
+          sortedDim = dim;
+          sortedDimCardinality = cardinality;
+        }
+      }
+    }
+    return sortedDim;
   }
 }
