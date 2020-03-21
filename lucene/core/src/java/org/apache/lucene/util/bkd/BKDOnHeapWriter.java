@@ -84,9 +84,9 @@ public class BKDOnHeapWriter {
     /* we recursively pick the split dimension, compute the
     * median value and partition other values around it. */
     final long pointCount = values.size();
-    if (pointCount > maxDoc) {
-      throw new IllegalStateException("pointCount=" + pointCount + " was passed when we were created, but maxDoc= " + maxDoc);
-    }
+//    if (pointCount > maxDoc) {
+//      throw new IllegalStateException("pointCount=" + pointCount + " was passed when we were created, but maxDoc= " + maxDoc);
+//    }
     long countPerLeaf = pointCount;
     long innerNodeCount = 1;
     while (countPerLeaf > config.maxPointsInLeafNode) {
