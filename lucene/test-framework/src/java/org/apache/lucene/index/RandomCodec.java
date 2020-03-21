@@ -49,6 +49,9 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDConfig;
+import org.apache.lucene.util.bkd.BKDDefaultIndexWriter;
+import org.apache.lucene.util.bkd.BKDIndexWriter;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
@@ -97,21 +100,22 @@ public class RandomCodec extends AssertingCodec {
       @Override
       public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
 
-        // Randomize how BKDWriter chooses its splis:
+        // Randomize how BKDWriter chooses its splits:
 
         return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
           @Override
           public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
             PointValues values = reader.getValues(fieldInfo.name);
+            BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+                                             fieldInfo.getPointIndexDimensionCount(),
+                                             fieldInfo.getPointNumBytes(),
+                                             maxPointsInLeafNode);
 
-            try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
+            try (BKDWriter writer = new RandomlySplittingBKDWriter(config,
+                                                                   writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
                                                                    writeState.segmentInfo.name,
-                                                                   fieldInfo.getPointDimensionCount(),
-                                                                   fieldInfo.getPointIndexDimensionCount(),
-                                                                   fieldInfo.getPointNumBytes(),
-                                                                   maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
                                                                    values.size(),
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
@@ -133,7 +137,8 @@ public class RandomCodec extends AssertingCodec {
 
                 // We could have 0 points on merge since all docs with dimensional fields may be deleted:
                 if (writer.getPointCount() > 0) {
-                  indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+                  BKDIndexWriter indexWriter = new BKDDefaultIndexWriter(dataOut);
+                  indexFPs.put(fieldInfo.name, writer.finish(indexWriter));
                 }
               }
           }
@@ -254,10 +259,9 @@ public class RandomCodec extends AssertingCodec {
 
     final Random random;
 
-    public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims,
-                                      int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
-                                      long totalPointCount, int randomSeed) throws IOException {
-      super(maxDoc, tempDir, tempFileNamePrefix, numDataDims, numIndexDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
+    public RandomlySplittingBKDWriter(BKDConfig config, int maxDoc, Directory tempDir, String tempFileNamePrefix,
+                                      double maxMBSortInHeap, long totalPointCount, int randomSeed) throws IOException {
+      super(config, maxDoc, tempDir, tempFileNamePrefix, maxMBSortInHeap, totalPointCount);
       this.random = new Random(randomSeed);
     }
 
@@ -282,7 +286,7 @@ public class RandomCodec extends AssertingCodec {
     @Override
     protected int split(byte[] minPackedValue, byte[] maxPackedValue, int[] parentDims) {
       // BKD normally defaults by the widest dimension, to try to make as squarish cells as possible, but we just pick a random one ;)
-      return random.nextInt(numIndexDims);
+      return random.nextInt(config.numIndexDims);
     }
   }
 }

@@ -36,10 +36,10 @@ public final class MutablePointsReaderUtils {
   MutablePointsReaderUtils() {}
 
   /** Sort the given {@link MutablePointValues} based on its packed value then doc ID. */
-  public static void sort(int maxDoc, int packedBytesLength,
+  public static void sort(BKDConfig config, int maxDoc,
                           MutablePointValues reader, int from, int to) {
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
-    new MSBRadixSorter(packedBytesLength + (bitsPerDocId + 7) / 8) {
+    new MSBRadixSorter(config.packedBytesLength + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected void swap(int i, int j) {
@@ -48,10 +48,10 @@ public final class MutablePointsReaderUtils {
 
       @Override
       protected int byteAt(int i, int k) {
-        if (k < packedBytesLength) {
+        if (k < config.packedBytesLength) {
           return Byte.toUnsignedInt(reader.getByteAt(i, k));
         } else {
-          final int shift = bitsPerDocId - ((k - packedBytesLength + 1) << 3);
+          final int shift = bitsPerDocId - ((k - config.packedBytesLength + 1) << 3);
           return (reader.getDocID(i) >>> Math.max(0, shift)) & 0xff;
         }
       }
@@ -77,10 +77,10 @@ public final class MutablePointsReaderUtils {
 
           @Override
           protected int comparePivot(int j) {
-            if (k < packedBytesLength) {
+            if (k < config.packedBytesLength) {
               reader.getValue(j, scratch);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + packedBytesLength - k,
-                  scratch.bytes, scratch.offset + k, scratch.offset + k + packedBytesLength - k);
+              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + config.packedBytesLength - k,
+                  scratch.bytes, scratch.offset + k, scratch.offset + k + config.packedBytesLength - k);
               if (cmp != 0) {
                 return cmp;
               }
@@ -94,14 +94,14 @@ public final class MutablePointsReaderUtils {
   }
 
   /** Sort points on the given dimension. */
-  public static void sortByDim(int numDataDim, int numIndexDim, int sortedDim, int bytesPerDim, int[] commonPrefixLengths,
+  public static void sortByDim(BKDConfig config, int sortedDim, int[] commonPrefixLengths,
                                MutablePointValues reader, int from, int to,
                                BytesRef scratch1, BytesRef scratch2) {
 
-    final int start = sortedDim * bytesPerDim + commonPrefixLengths[sortedDim];
-    final int dimEnd =  sortedDim * bytesPerDim + bytesPerDim;
-    final int dataStart = numIndexDim * bytesPerDim;
-    final int dataEnd = dataStart + (numDataDim - numIndexDim) * bytesPerDim;
+    final int start = sortedDim * config.bytesPerDim + commonPrefixLengths[sortedDim];
+    final int dimEnd =  sortedDim * config.bytesPerDim + config.bytesPerDim;
+    final int dataStart = config.numIndexDims * config.bytesPerDim;
+    final int dataEnd = dataStart + (config.numDataDims - config.numIndexDims) * config.bytesPerDim;
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
     new IntroSorter() {
@@ -140,20 +140,20 @@ public final class MutablePointsReaderUtils {
   /** Partition points around {@code mid}. All values on the left must be less
    *  than or equal to it and all values on the right must be greater than or
    *  equal to it. */
-  public static void partition(int numDataDim, int numIndexDim, int maxDoc, int splitDim, int bytesPerDim, int commonPrefixLen,
+  public static void partition(BKDConfig config, int maxDoc, int splitDim, int commonPrefixLen,
                                MutablePointValues reader, int from, int to, int mid,
                                BytesRef scratch1, BytesRef scratch2) {
-    final int dimOffset = splitDim * bytesPerDim + commonPrefixLen;
-    final int dimCmpBytes = bytesPerDim - commonPrefixLen;
-    final int dataOffset = numIndexDim * bytesPerDim;
-    final int dataCmpBytes = (numDataDim - numIndexDim) * bytesPerDim + dimCmpBytes;
+    final int dimOffset = splitDim * config.bytesPerDim + commonPrefixLen;
+    final int dimCmpBytes = config.bytesPerDim - commonPrefixLen;
+    final int dataOffset = config.numIndexDims * config.bytesPerDim;
+    final int dataCmpBytes = (config.numDataDims - config.numIndexDims) * config.bytesPerDim + dimCmpBytes;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
     new RadixSelector(dataCmpBytes + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected Selector getFallbackSelector(int k) {
         final int dataStart = (k < dimCmpBytes) ? dataOffset : dataOffset + k - dimCmpBytes;
-        final int dataEnd = numDataDim * bytesPerDim;
+        final int dataEnd = config.numDataDims * config.bytesPerDim;
         return new IntroSelector() {
 
           final BytesRef pivot = scratch1;
@@ -213,7 +213,7 @@ public final class MutablePointsReaderUtils {
   }
 
   /** Compute the number of distinct consecutive points on the reader between from and to. */
-  public static int computeCardinality(int numDataDim, int bytesPerDim, int[] commonPrefixLengths,
+  public static int computeCardinality(BKDConfig config, int[] commonPrefixLengths,
                                MutablePointValues reader, int from, int to, BytesRef scratch1, BytesRef scratch2) {
     BytesRef comparator = scratch1;
     BytesRef collector = scratch2;
@@ -221,9 +221,9 @@ public final class MutablePointsReaderUtils {
     int leafCardinality = 1;
     for (int i = from + 1; i < to; ++i) {
       reader.getValue(i, collector);
-      for (int dim =0; dim < numDataDim; dim++) {
-        final int start = dim * bytesPerDim + commonPrefixLengths[dim];
-        final int end = dim * bytesPerDim + bytesPerDim;
+      for (int dim =0; dim < config.numDataDims; dim++) {
+        final int start = dim * config.bytesPerDim + commonPrefixLengths[dim];
+        final int end = dim * config.bytesPerDim + config.bytesPerDim;
         if (Arrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
             comparator.bytes, comparator.offset + start, comparator.offset + end) != -1) {
           leafCardinality++;
@@ -237,14 +237,14 @@ public final class MutablePointsReaderUtils {
     return leafCardinality;
   }
 
-  public static void computeCommonPrefix(int numDataDim, int bytesPerDim, int[] commonPrefixLengths,
+  public static void computeCommonPrefix(BKDConfig config, int[] commonPrefixLengths,
                                          MutablePointValues reader, int from, int to, BytesRef scratch1, BytesRef scratch2) {
-    Arrays.fill(commonPrefixLengths, bytesPerDim);
+    Arrays.fill(commonPrefixLengths, config.bytesPerDim);
     reader.getValue(from, scratch1);
     for (int i = from + 1; i < to; ++i) {
       reader.getValue(i, scratch2);
-      for (int dim=0;dim<numDataDim;dim++) {
-        final int offset = dim * bytesPerDim;
+      for (int dim = 0; dim < config.numDataDims; dim++) {
+        final int offset = dim * config.bytesPerDim;
         int dimensionPrefixLength = commonPrefixLengths[dim];
         commonPrefixLengths[dim] = Arrays.mismatch(scratch1.bytes, scratch1.offset + offset,
             scratch1.offset + offset + dimensionPrefixLength,
@@ -257,25 +257,25 @@ public final class MutablePointsReaderUtils {
     }
   }
 
-  public static int computeSortedDim(int numDataDim, int bytesPerDim, int[] commonPrefixLengths,
+  public static int computeSortedDim(BKDConfig config, int[] commonPrefixLengths,
                                        MutablePointValues reader, int from, int to) {
-    FixedBitSet[] usedBytes = new FixedBitSet[numDataDim];
-    for (int dim = 0; dim < numDataDim; ++dim) {
-      if (commonPrefixLengths[dim] < bytesPerDim) {
+    FixedBitSet[] usedBytes = new FixedBitSet[config.numDataDims];
+    for (int dim = 0; dim < config.numDataDims; ++dim) {
+      if (commonPrefixLengths[dim] < config.bytesPerDim) {
         usedBytes[dim] = new FixedBitSet(256);
       }
     }
     for (int i = from + 1; i < to; ++i) {
-      for (int dim=0;dim<numDataDim;dim++) {
+      for (int dim = 0; dim < config.numDataDims; dim++) {
         if (usedBytes[dim] != null) {
-          byte b = reader.getByteAt(i, dim * bytesPerDim + commonPrefixLengths[dim]);
+          byte b = reader.getByteAt(i, dim * config.bytesPerDim + commonPrefixLengths[dim]);
           usedBytes[dim].set(Byte.toUnsignedInt(b));
         }
       }
     }
     int sortedDim = 0;
     int sortedDimCardinality = Integer.MAX_VALUE;
-    for (int dim = 0; dim < numDataDim; ++dim) {
+    for (int dim = 0; dim < config.numDataDims; ++dim) {
       if (usedBytes[dim] != null) {
         final int cardinality = usedBytes[dim].cardinality();
         if (cardinality < sortedDimCardinality) {
@@ -285,5 +285,26 @@ public final class MutablePointsReaderUtils {
       }
     }
     return sortedDim;
+  }
+
+  public static void computePackedValueBounds(BKDConfig config, MutablePointValues values, int from, int to, byte[] minPackedValue, byte[] maxPackedValue, BytesRef scratch) {
+    if (from == to) {
+      return;
+    }
+    values.getValue(from, scratch);
+    System.arraycopy(scratch.bytes, scratch.offset, minPackedValue, 0, config.packedIndexBytesLength);
+    System.arraycopy(scratch.bytes, scratch.offset, maxPackedValue, 0, config.packedIndexBytesLength);
+    for (int i = from + 1 ; i < to; ++i) {
+      values.getValue(i, scratch);
+      for(int dim = 0; dim < config.numIndexDims; dim++) {
+        final int startOffset = dim * config.bytesPerDim;
+        final int endOffset = startOffset + config.bytesPerDim;
+        if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + startOffset, scratch.offset + endOffset, minPackedValue, startOffset, endOffset) < 0) {
+          System.arraycopy(scratch.bytes, scratch.offset + startOffset, minPackedValue, startOffset, config.bytesPerDim);
+        } else if (Arrays.compareUnsigned(scratch.bytes, scratch.offset + startOffset, scratch.offset + endOffset, maxPackedValue, startOffset, endOffset) > 0) {
+          System.arraycopy(scratch.bytes, scratch.offset + startOffset, maxPackedValue, startOffset, config.bytesPerDim);
+        }
+      }
+    }
   }
 }

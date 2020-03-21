@@ -32,6 +32,10 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.bkd.BKDConfig;
+import org.apache.lucene.util.bkd.BKDDefaultIndexWriter;
+import org.apache.lucene.util.bkd.BKDIndexWriter;
+import org.apache.lucene.util.bkd.BKDWriter;
 
 class SimpleTextPointsWriter extends PointsWriter {
 
@@ -72,15 +76,14 @@ class SimpleTextPointsWriter extends PointsWriter {
 
     PointValues values = reader.getValues(fieldInfo.name);
 
+    BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(), fieldInfo.getPointIndexDimensionCount(),
+        fieldInfo.getPointNumBytes(), BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+
     // We use our own fork of the BKDWriter to customize how it writes the index and blocks to disk:
-    try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
+    try (BKDWriter writer = new BKDWriter(config, writeState.segmentInfo.maxDoc(),
                                                               writeState.directory,
                                                               writeState.segmentInfo.name,
-                                                              fieldInfo.getPointDimensionCount(),
-                                                              fieldInfo.getPointIndexDimensionCount(),
-                                                              fieldInfo.getPointNumBytes(),
-                                                              SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
-                                                              SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+                                                              BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
                                                               values.size())) {
 
       values.intersect(new IntersectVisitor() {
@@ -101,7 +104,8 @@ class SimpleTextPointsWriter extends PointsWriter {
 
       // We could have 0 points on merge since all docs with points may be deleted:
       if (writer.getPointCount() > 0) {
-        indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+        BKDIndexWriter indexWriter = new SimpleTextBKDIndexWriter(dataOut);
+        indexFPs.put(fieldInfo.name, writer.finish(indexWriter));
       }
     }
   }
