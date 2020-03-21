@@ -125,7 +125,7 @@ public class BKDWriter implements Closeable {
     // total point count is an estimation but the final point count must be equal or lower to that number.
     // We use that to decide whether to create a writer in memory or offline.
     if (totalPointCount > this.maxPointsSortInHeap) {
-      this.pointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, config.packedBytesLength, "spill", 0);
+      this.pointWriter = new OfflinePointWriter(this.tempDir, this.tempFileNamePrefix, config.packedBytesLength, "spill", 0);
       this.tempInput = ((OfflinePointWriter)pointWriter).out;
     } else {
       this.pointWriter = new HeapPointWriter(Math.toIntExact(totalPointCount), config.packedBytesLength);

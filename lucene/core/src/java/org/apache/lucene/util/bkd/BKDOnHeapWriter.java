@@ -66,16 +66,8 @@ public class BKDOnHeapWriter {
   final BytesRef scratchBytesRef2;
   final int[] commonPrefixLengths;
 
-  /** An upper bound on how many points the caller will add (includes deletions) */
-  private final long totalPointCount;
-
-  private final int maxDoc;
-
-  public BKDOnHeapWriter(BKDConfig config, int maxDoc, long totalPointCount)  {
-    verifyParams(totalPointCount);
+  public BKDOnHeapWriter(BKDConfig config)  {
     this.config = config;
-    this.totalPointCount = totalPointCount;
-    this.maxDoc = maxDoc;
     // scratch objects
     this.scratch = new byte[config.packedBytesLength];
     this.commonPrefixLengths = new int[config.numDataDims];
@@ -83,23 +75,17 @@ public class BKDOnHeapWriter {
     this.scratchBytesRef2 = new BytesRef();
   }
 
-  private static void verifyParams(long totalPointCount) {
-    if (totalPointCount < 0) {
-      throw new IllegalArgumentException("totalPointCount must be >=0 (got: " + totalPointCount + ")");
-    }
-  }
-
   /** Write a field from a {@link MutablePointValues}. This way of writing
    *  points is faster than regular writes with {@link BKDWriter#add} since
    *  there is opportunity for reordering points before writing them to
    *  disk. This method does not use transient disk in order to reorder points.
    */
-  public long writeField(BKDIndexWriter out, MutablePointValues values) throws IOException {
+  public long writeField(BKDIndexWriter out, MutablePointValues values, int maxDoc) throws IOException {
     /* we recursively pick the split dimension, compute the
     * median value and partition other values around it. */
     final long pointCount = values.size();
-    if (pointCount > totalPointCount) {
-      throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount+ " values");
+    if (pointCount > maxDoc) {
+      throw new IllegalStateException("pointCount=" + pointCount + " was passed when we were created, but maxDoc= " + maxDoc);
     }
     long countPerLeaf = pointCount;
     long innerNodeCount = 1;
@@ -124,7 +110,7 @@ public class BKDOnHeapWriter {
     final int[] parentSplits = new int[config.numIndexDims];
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
         minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
-        splitPackedValues, leafBlockFPs, leafBlock);
+        splitPackedValues, leafBlockFPs, leafBlock, maxDoc);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
     // write inner nodes
     final long indexFP = out.getFilePointer();
@@ -141,7 +127,8 @@ public class BKDOnHeapWriter {
                      int[] parentSplits,
                      byte[] splitPackedValues,
                      long[] leafBlockFPs,
-                     LeafBlock leafBlock) throws IOException {
+                     LeafBlock leafBlock,
+                     int maxDoc) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
       // leaf node
@@ -209,10 +196,10 @@ public class BKDOnHeapWriter {
       parentSplits[splitDim]++;
       build(nodeID * 2, leafNodeOffset, reader, from, mid, out,
           minPackedValue, maxSplitPackedValue, parentSplits,
-          splitPackedValues, leafBlockFPs, leafBlock);
+          splitPackedValues, leafBlockFPs, leafBlock, maxDoc);
       build(nodeID * 2 + 1, leafNodeOffset, reader, mid, to, out,
           minSplitPackedValue, maxPackedValue, parentSplits,
-          splitPackedValues, leafBlockFPs, leafBlock);
+          splitPackedValues, leafBlockFPs, leafBlock, maxDoc);
       parentSplits[splitDim]--;
     }
   }

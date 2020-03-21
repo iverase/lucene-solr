@@ -94,8 +94,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
     if (config.numDataDims == 1) {
       return OneDimensionBKDWriter.writeField1Dim(config, indexWriter, reader, writeState.segmentInfo.maxDoc(), reader.size());
     } else {
-      BKDOnHeapWriter writer = new BKDOnHeapWriter(config, writeState.segmentInfo.maxDoc(), reader.size());
-      return writer.writeField(indexWriter, reader);
+      BKDOnHeapWriter writer = new BKDOnHeapWriter(config);
+      return writer.writeField(indexWriter, reader, writeState.segmentInfo.maxDoc());
     }
   }
 

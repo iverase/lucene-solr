@@ -711,15 +711,14 @@ public class TestBKD extends LuceneTestCase {
       }
     }
     BKDConfig config = new BKDConfig(numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode);
-    BKDWriter w = new BKDWriter(config, numValues, dir, "_" + seg, maxMB, maxDocs);
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
     BKDIndexWriter indexWriter = new BKDDefaultIndexWriter(out);
     IndexInput in = null;
 
     boolean success = false;
-
+    BKDWriter w = null;
     try {
-
+      w = new BKDWriter(config, numValues, dir, "_" + seg, maxMB, maxDocs);
       byte[] scratch = new byte[numBytesPerDim*numDataDims];
       int lastDocIDBase = 0;
       boolean useMerge = numDataDims == 1 && numValues >= 10 && random().nextBoolean();
@@ -1466,11 +1465,11 @@ public class TestBKD extends LuceneTestCase {
       }
     };
     BKDConfig config = new BKDConfig(1, 1, numBytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    BKDOnHeapWriter w = new BKDOnHeapWriter(config, numValues, numValues);
+    BKDOnHeapWriter w = new BKDOnHeapWriter(config);
     expectThrows(IllegalStateException.class, () -> {
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
         BKDIndexWriter indexWriter = new BKDDefaultIndexWriter(out);
-        w.writeField(indexWriter, reader);
+        w.writeField(indexWriter, reader, numValues);
       } finally {
         dir.close();
       }
@@ -1503,7 +1502,7 @@ public class TestBKD extends LuceneTestCase {
     final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
     final byte[][] pointValue = new byte[11][numBytesPerDim];
     BKDConfig config = new BKDConfig(1, 1, numBytesPerDim, 2);
-    BKDOnHeapWriter w = new BKDOnHeapWriter(config, numValues + 1, numValues);
+    BKDOnHeapWriter w = new BKDOnHeapWriter(config);
     for(int i=0;i<numValues + 1;i++) {
       random().nextBytes(pointValue[i]);
     }
@@ -1581,8 +1580,8 @@ public class TestBKD extends LuceneTestCase {
     };
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
       BKDIndexWriter indexWriter = new BKDDefaultIndexWriter(out);
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(indexWriter, val);});
-      assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
+      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(indexWriter, val, numValues);});
+      assertEquals("pointCount=11 was passed when we were created, but maxDoc= 10", ex.getMessage());
     }
     dir.close();
   }
