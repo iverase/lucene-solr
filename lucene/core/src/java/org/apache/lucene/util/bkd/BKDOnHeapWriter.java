@@ -109,7 +109,7 @@ public class BKDOnHeapWriter {
   public long writeField(BKDIndexWriter out, MutablePointValues values) throws IOException {
     /* we recursively pick the split dimension, compute the
     * median value and partition other values around it. */
-    long pointCount = values.size();
+    final long pointCount = values.size();
     if (pointCount > totalPointCount) {
       throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount+ " values");
     }
@@ -120,7 +120,7 @@ public class BKDOnHeapWriter {
       innerNodeCount *= 2;
     }
 
-    int numLeaves = Math.toIntExact(innerNodeCount);
+    final int numLeaves = Math.toIntExact(innerNodeCount);
 
     checkMaxLeafNodeCount(numLeaves);
 
@@ -129,7 +129,7 @@ public class BKDOnHeapWriter {
 
     // compute the min/max for this slice
     MutablePointsReaderUtils.computePackedValueBounds(config, values, 0, Math.toIntExact(pointCount), minPackedValue, maxPackedValue, scratchBytesRef1);
-    LeafBlock leafBlock = new LeafBlock(values);
+    final LeafBlock leafBlock = new LeafBlock(values);
 
     final int[] parentSplits = new int[config.numIndexDims];
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
@@ -137,7 +137,7 @@ public class BKDOnHeapWriter {
         splitPackedValues, leafBlockFPs, leafBlock);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
-    long indexFP = out.getFilePointer();
+    final long indexFP = out.getFilePointer();
     out.writeIndex(config, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, values.getDocCount());
     return indexFP;
   }
@@ -200,16 +200,16 @@ public class BKDOnHeapWriter {
 
       MutablePointsReaderUtils.partition(config, maxDoc, splitDim, commonPrefixLen, reader, from, to, mid, scratchBytesRef1, scratchBytesRef2);
 
-      // set the split value
+      // set the split dimension
       final int address = nodeID * (1 + config.bytesPerDim);
       splitPackedValues[address] = (byte) splitDim;
-
+      // set the split value
       reader.getValue(mid, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * config.bytesPerDim, splitPackedValues, address + 1, config.bytesPerDim);
-
-      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
-      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
-
+      // build new bounding boxes for each branch, copy current min / max values
+      final byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
+      final byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
+      // update them with the split value
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * config.bytesPerDim,
           minSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * config.bytesPerDim,

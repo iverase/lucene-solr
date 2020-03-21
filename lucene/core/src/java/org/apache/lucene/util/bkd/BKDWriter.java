@@ -199,7 +199,8 @@ public class BKDWriter implements Closeable {
     finished = true;
 
     pointWriter.close();
-    BKDRadixSelector.PathSlice points = new BKDRadixSelector.PathSlice(pointWriter, 0, pointCount);
+    //wrap point writer
+    final BKDRadixSelector.PathSlice points = new BKDRadixSelector.PathSlice(pointWriter, 0, pointCount);
     //clean up pointers
     tempInput = null;
     pointWriter = null;
@@ -212,7 +213,7 @@ public class BKDWriter implements Closeable {
       innerNodeCount *= 2;
     }
 
-    int numLeaves = (int) innerNodeCount;
+    final int numLeaves = (int) innerNodeCount;
 
     checkMaxLeafNodeCount(numLeaves);
 
@@ -220,16 +221,16 @@ public class BKDWriter implements Closeable {
     // step of the recursion to recompute the split dim:
 
     // Indexed by nodeID, but first (root) nodeID is 1.  We do 1+ because the lead byte at each recursion says which dim we split on.
-    byte[] splitPackedValues = new byte[Math.toIntExact(numLeaves * (1 + config.bytesPerDim))];
+    final byte[] splitPackedValues = new byte[Math.toIntExact(numLeaves * (1 + config.bytesPerDim))];
 
     // +1 because leaf count is power of 2 (e.g. 8), and innerNodeCount is power of 2 minus 1 (e.g. 7)
-    long[] leafBlockFPs = new long[numLeaves];
+    final long[] leafBlockFPs = new long[numLeaves];
 
     // Make sure the math above "worked":
     assert pointCount / numLeaves <= config.maxPointsInLeafNode: "pointCount=" + pointCount + " numLeaves=" + numLeaves + " maxPointsInLeafNode=" + config.maxPointsInLeafNode;
 
     //We re-use the selector so we do not need to create an object every time.
-    BKDRadixSelector radixSelector = new BKDRadixSelector(config, maxPointsSortInHeap, tempDir, tempFileNamePrefix);
+    final BKDRadixSelector radixSelector = new BKDRadixSelector(config, maxPointsSortInHeap, tempDir, tempFileNamePrefix);
 
     boolean success = false;
     try {
@@ -254,7 +255,7 @@ public class BKDWriter implements Closeable {
     }
 
     // Write index:
-    long indexFP = out.getFilePointer();
+    final long indexFP = out.getFilePointer();
     out.writeIndex(config, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
     return indexFP;
   }
@@ -298,7 +299,7 @@ public class BKDWriter implements Closeable {
 
   /** Pull a partition back into heap once the point count is low enough while recursing. */
   private HeapPointWriter switchToHeap(PointWriter source) throws IOException {
-    int count = Math.toIntExact(source.count());
+    final int count = Math.toIntExact(source.count());
     try (PointReader reader = source.getReader(0, source.count());
          HeapPointWriter writer = new HeapPointWriter(count, config.packedBytesLength)) {
       for(int i=0;i<count;i++) {
@@ -324,12 +325,11 @@ public class BKDWriter implements Closeable {
                      byte[] splitPackedValues,
                      long[] leafBlockFPs,
                      LeafBlock leafBlock) throws IOException {
-
     if (nodeID >= leafNodeOffset) {
       // Leaf node: write block
       // We can write the block in any order so by default we write it sorted by the dimension that has the
       // least number of unique bytes at commonPrefixLengths[dim], which makes compression more efficient
-      HeapPointWriter heapSource;
+      final HeapPointWriter heapSource;
       if (points.writer instanceof HeapPointWriter == false) {
         // Adversarial cases can cause this, e.g. merging big segments with most of the points deleted
         heapSource = switchToHeap(points.writer);
@@ -375,8 +375,8 @@ public class BKDWriter implements Closeable {
       assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
 
       // How many points will be in the left tree:
-      long rightCount = points.count / 2;
-      long leftCount = points.count - rightCount;
+      final long rightCount = points.count / 2;
+      final long leftCount = points.count - rightCount;
 
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
 
@@ -387,30 +387,29 @@ public class BKDWriter implements Closeable {
         commonPrefixLen = config.bytesPerDim;
       }
 
-      byte[] splitValue = radixSelector.select(points, slices, points.start, points.start + points.count,  points.start + leftCount, splitDim, commonPrefixLen);
-
-      int address = nodeID * (1 + config.bytesPerDim);
+      final byte[] splitValue = radixSelector.select(points, slices, points.start, points.start + points.count,  points.start + leftCount, splitDim, commonPrefixLen);
+      // set the split dimension
+      final int address = nodeID * (1 + config.bytesPerDim);
       splitPackedValues[address] = (byte) splitDim;
-
+      // set the split value
       System.arraycopy(splitValue, 0, splitPackedValues, address + 1, config.bytesPerDim);
-
-      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
-      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
-
+      // build new bounding boxes for each branch, copy current min / max values
+      final byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
+      final byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
+      // update them with the split value
       System.arraycopy(splitValue, 0, minSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
       System.arraycopy(splitValue, 0, maxSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
-
+      // increase splits
       parentSplits[splitDim]++;
       // Recurse on left tree:
       build(2 * nodeID, leafNodeOffset, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
           parentSplits, splitPackedValues, leafBlockFPs, leafBlock);
-
       // Recurse on right tree:
       build(2 * nodeID + 1, leafNodeOffset, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
           , parentSplits, splitPackedValues, leafBlockFPs, leafBlock);
-
+      // decrease splits
       parentSplits[splitDim]--;
     }
   }
