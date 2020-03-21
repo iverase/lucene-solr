@@ -45,7 +45,7 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
   private final IndexOutput out;
 
   // reused when writing leaf blocks
-  private final ByteBuffersDataOutput scratchOut = ByteBuffersDataOutput.newResettableInstance();
+  //private final ByteBuffersDataOutput scratchOut = ByteBuffersDataOutput.newResettableInstance();
 
   public BKDDefaultIndexWriter(IndexOutput out) {
     this.out = out;
@@ -57,16 +57,16 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
     int count = leafBlock.count();
     assert count > 0 : "count must be bigger than 0";
     assert count <= config.maxPointsInLeafNode: "maxPointsInLeafNode=" + config.maxPointsInLeafNode + " > count=" + count;
-    assert scratchOut.size() == 0;
+    //assert scratchOut.size() == 0;
     // Write docIDs first, as their own chunk, so that at intersect time we can add all docIDs w/o
     // loading the values:
-    writeLeafBlockDocs(scratchOut, leafBlock);
+    writeLeafBlockDocs(out, leafBlock);
     // Write common prefixes:
-    writeCommonPrefixes(scratchOut, config, commonPrefixes, leafBlock.packedValue(0));
+    writeCommonPrefixes(out, config, commonPrefixes, leafBlock.packedValue(0));
     // Write point values:
-    writeLeafBlockPackedValues(scratchOut, config, commonPrefixes, sortedDim, leafBlock, leafCardinality, scratch);
-    scratchOut.copyTo(out);
-    scratchOut.reset();
+    writeLeafBlockPackedValues(out, config, commonPrefixes, sortedDim, leafBlock, leafCardinality, scratch);
+    //scratchOut.copyTo(out);
+    //scratchOut.reset();
   }
 
   @Override
@@ -129,9 +129,10 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
     List<byte[]> blocks = new ArrayList<>();
     byte[] lastSplitValues = new byte[config.packedIndexBytesLength];
     //System.out.println("\npack index");
-    assert scratchOut.size() == 0;
+    //assert scratchOut.size() == 0;
+    final ByteBuffersDataOutput scratchOut = ByteBuffersDataOutput.newResettableInstance();
     int totalSize = recursePackIndex(scratchOut,  config, leafBlockFPs, splitPackedValues, 0l, blocks, 1, lastSplitValues, new boolean[config.numIndexDims], false);
-    scratchOut.reset();
+    //scratchOut.reset();
     // Compact the byte[] blocks into single byte index:
     byte[] index = new byte[totalSize];
     int upto = 0;
