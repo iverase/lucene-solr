@@ -391,13 +391,11 @@ public class BKDWriter implements Closeable {
 
       int address = nodeID * (1 + config.bytesPerDim);
       splitPackedValues[address] = (byte) splitDim;
+
       System.arraycopy(splitValue, 0, splitPackedValues, address + 1, config.bytesPerDim);
 
-      byte[] minSplitPackedValue = new byte[config.packedIndexBytesLength];
-      System.arraycopy(minPackedValue, 0, minSplitPackedValue, 0, config.packedIndexBytesLength);
-
-      byte[] maxSplitPackedValue = new byte[config.packedIndexBytesLength];
-      System.arraycopy(maxPackedValue, 0, maxSplitPackedValue, 0, config.packedIndexBytesLength);
+      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
+      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
 
       System.arraycopy(splitValue, 0, minSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
       System.arraycopy(splitValue, 0, maxSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
