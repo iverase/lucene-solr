@@ -233,14 +233,15 @@ public class BKDWriter implements Closeable {
 
     boolean success = false;
     try {
-
+      final LeafBlock leafBlock = new LeafBlock();
       final int[] parentSplits = new int[config.numIndexDims];
       build(1, numLeaves, points,
           out, radixSelector,
           minPackedValue.clone(), maxPackedValue.clone(),
           parentSplits,
           splitPackedValues,
-          leafBlockFPs);
+          leafBlockFPs,
+          leafBlock);
       assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
       // If no exception, we should have cleaned everything up:
@@ -321,7 +322,8 @@ public class BKDWriter implements Closeable {
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs) throws IOException {
+                     long[] leafBlockFPs,
+                     LeafBlock leafBlock) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
       // Leaf node: write block
@@ -351,26 +353,10 @@ public class BKDWriter implements Closeable {
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
 
-      final BKDLeafBlock packedValues = new BKDLeafBlock() {
-        @Override
-        public int count() {
-          return count;
-        }
+      leafBlock.setRange(heapSource, from, count);
 
-        @Override
-        public BytesRef packedValue(int position) {
-          PointValue value = heapSource.getPackedValueSlice(from + position);
-          return value.packedValue();
-        }
-
-        @Override
-        public int docId(int position) {
-          return heapSource.getPackedValueSlice(from + position).docID();
-        }
-      };
-
-      assert BKDLeafBlock.valuesInOrderAndBounds(config, sortedDim, minPackedValue, maxPackedValue, packedValues);
-      out.writeLeafBlock(config, packedValues, commonPrefixLengths, sortedDim,  leafCardinality, scratch);
+      assert BKDLeafBlock.valuesInOrderAndBounds(config, sortedDim, minPackedValue, maxPackedValue, leafBlock);
+      out.writeLeafBlock(config, leafBlock, commonPrefixLengths, sortedDim,  leafCardinality, scratch);
     } else {
       // Inner node: partition/recurse
       final int splitDim;
@@ -420,12 +406,12 @@ public class BKDWriter implements Closeable {
       // Recurse on left tree:
       build(2 * nodeID, leafNodeOffset, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
-          parentSplits, splitPackedValues, leafBlockFPs);
+          parentSplits, splitPackedValues, leafBlockFPs, leafBlock);
 
       // Recurse on right tree:
       build(2 * nodeID + 1, leafNodeOffset, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
-          , parentSplits, splitPackedValues, leafBlockFPs);
+          , parentSplits, splitPackedValues, leafBlockFPs, leafBlock);
 
       parentSplits[splitDim]--;
     }
@@ -469,6 +455,38 @@ public class BKDWriter implements Closeable {
   private void checkMaxLeafNodeCount(int numLeaves) {
     if ((1 + config.bytesPerDim) * (long) numLeaves > ArrayUtil.MAX_ARRAY_LENGTH) {
       throw new IllegalStateException("too many nodes; increase maxPointsInLeafNode (currently " + config.maxPointsInLeafNode + ") and reindex");
+    }
+  }
+
+  private static class LeafBlock implements BKDLeafBlock {
+
+    int count;
+    int from;
+    HeapPointWriter pointWriter;
+
+    LeafBlock() {
+    }
+
+    void setRange(HeapPointWriter pointWriter, int from, int count) {
+      this.count = count;
+      this.from = from;
+      this.pointWriter = pointWriter;
+    }
+
+    @Override
+    public int count() {
+      return count;
+    }
+
+    @Override
+    public BytesRef packedValue(int position) {
+      PointValue value = pointWriter.getPackedValueSlice(from + position);
+      return value.packedValue();
+    }
+
+    @Override
+    public int docId(int position) {
+      return pointWriter.getPackedValueSlice(from + position).docID();
     }
   }
 }

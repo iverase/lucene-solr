@@ -22,7 +22,6 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
 
 // TODO
@@ -69,21 +68,16 @@ public class BKDOnHeapWriter {
   final BytesRef scratchBytesRef2 = new BytesRef();
   final int[] commonPrefixLengths;
 
-  //protected final FixedBitSet docsSeen;
-
   /** Minimum per-dim values, packed */
   protected final byte[] minPackedValue;
 
   /** Maximum per-dim values, packed */
   protected final byte[] maxPackedValue;
 
-  protected long pointCount;
-
   /** An upper bound on how many points the caller will add (includes deletions) */
   private final long totalPointCount;
 
   private final int maxDoc;
-
 
   public BKDOnHeapWriter(BKDConfig config, int maxDoc, long totalPointCount)  {
     verifyParams(totalPointCount);
@@ -115,17 +109,12 @@ public class BKDOnHeapWriter {
   public long writeField(BKDIndexWriter out, MutablePointValues values) throws IOException {
     /* we recursively pick the split dimension, compute the
     * median value and partition other values around it. */
-
-    if (pointCount != 0) {
-      throw new IllegalStateException("cannot mix add and writeField");
-    }
-
-    long countPerLeaf = pointCount = values.size();
+    long pointCount = values.size();
     if (pointCount > totalPointCount) {
       throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount+ " values");
     }
+    long countPerLeaf = pointCount;
     long innerNodeCount = 1;
-
     while (countPerLeaf > config.maxPointsInLeafNode) {
       countPerLeaf = (countPerLeaf+1)/2;
       innerNodeCount *= 2;
@@ -140,12 +129,12 @@ public class BKDOnHeapWriter {
 
     // compute the min/max for this slice
     MutablePointsReaderUtils.computePackedValueBounds(config, values, 0, Math.toIntExact(pointCount), minPackedValue, maxPackedValue, scratchBytesRef1);
-//
+    LeafBlock leafBlock = new LeafBlock(values);
 
     final int[] parentSplits = new int[config.numIndexDims];
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
         minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
-        splitPackedValues, leafBlockFPs);
+        splitPackedValues, leafBlockFPs, leafBlock);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
     long indexFP = out.getFilePointer();
@@ -161,7 +150,8 @@ public class BKDOnHeapWriter {
                      byte[] minPackedValue, byte[] maxPackedValue,
                      int[] parentSplits,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs) throws IOException {
+                     long[] leafBlockFPs,
+                     LeafBlock leafBlock) throws IOException {
 
     if (nodeID >= leafNodeOffset) {
       // leaf node
@@ -178,27 +168,11 @@ public class BKDOnHeapWriter {
       final int leafCardinality = MutablePointsReaderUtils.computeCardinality(config, commonPrefixLengths, reader, from, to, scratchBytesRef1, scratchBytesRef2);
       // Save the block file pointer:
       leafBlockFPs[nodeID - leafNodeOffset] = out.getFilePointer();
+      // reset leaf
+      leafBlock.setRange(from, count);
 
-      final BKDLeafBlock packedValues = new BKDLeafBlock() {
-        @Override
-        public int count() {
-          return count;
-        }
-
-        @Override
-        public BytesRef packedValue(int position) {
-          reader.getValue(from + position, scratchBytesRef1);
-          return scratchBytesRef1;
-        }
-
-        @Override
-        public int docId(int position) {
-          return reader.getDocID(from + position);
-        }
-      };
-
-      assert BKDLeafBlock.valuesInOrderAndBounds(config, sortedDim, minPackedValue, maxPackedValue, packedValues);
-      out.writeLeafBlock(config, packedValues, commonPrefixLengths, sortedDim, leafCardinality, scratch);
+      assert BKDLeafBlock.valuesInOrderAndBounds(config, sortedDim, minPackedValue, maxPackedValue, leafBlock);
+      out.writeLeafBlock(config, leafBlock, commonPrefixLengths, sortedDim, leafCardinality, scratch);
     } else {
       // inner node
       final int splitDim;
@@ -243,10 +217,10 @@ public class BKDOnHeapWriter {
       parentSplits[splitDim]++;
       build(nodeID * 2, leafNodeOffset, reader, from, mid, out,
           minPackedValue, maxSplitPackedValue, parentSplits,
-          splitPackedValues, leafBlockFPs);
+          splitPackedValues, leafBlockFPs, leafBlock);
       build(nodeID * 2 + 1, leafNodeOffset, reader, mid, to, out,
           minSplitPackedValue, maxPackedValue, parentSplits,
-          splitPackedValues, leafBlockFPs);
+          splitPackedValues, leafBlockFPs, leafBlock);
       parentSplits[splitDim]--;
     }
   }
@@ -292,8 +266,35 @@ public class BKDOnHeapWriter {
     return splitDim;
   }
 
-//  public static long writeField(BKDConfig config, BKDIndexWriter out, MutablePointValues values, int maxDoc, long totalPointCount) throws IOException {
-//    BKDOnHeapWriter writer = new BKDOnHeapWriter(config, maxDoc, totalPointCount);
-//    return writer.writeField(out, values);
-//  }
+  private static class LeafBlock implements BKDLeafBlock {
+
+    final MutablePointValues values;
+    int count;
+    int from;
+    final BytesRef scratchBytesRef = new BytesRef();
+
+    LeafBlock(MutablePointValues values) {
+      this.values = values;
+    }
+    void setRange(int from, int count) {
+      this.count = count;
+      this.from = from;
+    }
+
+    @Override
+    public int count() {
+      return count;
+    }
+
+    @Override
+    public BytesRef packedValue(int position) {
+      values.getValue(from + position, scratchBytesRef);
+      return scratchBytesRef;
+    }
+
+    @Override
+    public int docId(int position) {
+      return values.getDocID(from + position);
+    }
+  }
 }
