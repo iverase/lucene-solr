@@ -61,18 +61,10 @@ public class BKDOnHeapWriter {
   /** The configuration of this BKD points */
   protected final BKDConfig config;
 
-  final byte[] scratchDiff;
   final byte[] scratch;
-
-  final BytesRef scratchBytesRef1 = new BytesRef();
-  final BytesRef scratchBytesRef2 = new BytesRef();
+  final BytesRef scratchBytesRef1;
+  final BytesRef scratchBytesRef2;
   final int[] commonPrefixLengths;
-
-  /** Minimum per-dim values, packed */
-  protected final byte[] minPackedValue;
-
-  /** Maximum per-dim values, packed */
-  protected final byte[] maxPackedValue;
 
   /** An upper bound on how many points the caller will add (includes deletions) */
   private final long totalPointCount;
@@ -84,15 +76,11 @@ public class BKDOnHeapWriter {
     this.config = config;
     this.totalPointCount = totalPointCount;
     this.maxDoc = maxDoc;
-
-
-    scratchDiff = new byte[config.bytesPerDim];
-    scratch = new byte[config.packedBytesLength];
-    commonPrefixLengths = new int[config.numDataDims];
-
-    minPackedValue = new byte[config.packedIndexBytesLength];
-    maxPackedValue = new byte[config.packedIndexBytesLength];
-
+    // scratch objects
+    this.scratch = new byte[config.packedBytesLength];
+    this.commonPrefixLengths = new int[config.numDataDims];
+    this.scratchBytesRef1 = new BytesRef();
+    this.scratchBytesRef2 = new BytesRef();
   }
 
   private static void verifyParams(long totalPointCount) {
@@ -121,22 +109,24 @@ public class BKDOnHeapWriter {
     }
 
     final int numLeaves = Math.toIntExact(innerNodeCount);
-
     checkMaxLeafNodeCount(numLeaves);
 
     final byte[] splitPackedValues = new byte[numLeaves * (config.bytesPerDim + 1)];
     final long[] leafBlockFPs = new long[numLeaves];
 
-    // compute the min/max for this slice
+    // compute the min / max for this slice
+    byte[] minPackedValue = new byte[config.packedIndexBytesLength];
+    byte[] maxPackedValue = new byte[config.packedIndexBytesLength];
     MutablePointsReaderUtils.computePackedValueBounds(config, values, 0, Math.toIntExact(pointCount), minPackedValue, maxPackedValue, scratchBytesRef1);
+    // leaf block scratch object
     final LeafBlock leafBlock = new LeafBlock(values);
-
+    // recurse
     final int[] parentSplits = new int[config.numIndexDims];
     build(1, numLeaves, values, 0, Math.toIntExact(pointCount), out,
         minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
         splitPackedValues, leafBlockFPs, leafBlock);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
-
+    // write inner nodes
     final long indexFP = out.getFilePointer();
     out.writeIndex(config, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, values.getDocCount());
     return indexFP;
@@ -259,9 +249,9 @@ public class BKDOnHeapWriter {
     // Find which dim has the largest span so we can split on it:
     int splitDim = -1;
     for(int dim=0; dim < config.numIndexDims; dim++) {
-      NumericUtils.subtract(config.bytesPerDim, dim, maxPackedValue, minPackedValue, scratchDiff);
-      if (splitDim == -1 || Arrays.compareUnsigned(scratchDiff, 0, config.bytesPerDim, scratch, 0, config.bytesPerDim) > 0) {
-        System.arraycopy(scratchDiff, 0, scratch, 0, config.bytesPerDim);
+      NumericUtils.subtract(config.bytesPerDim, dim, maxPackedValue, minPackedValue, scratch);
+      if (splitDim == -1 || Arrays.compareUnsigned(scratch, 0, config.bytesPerDim, scratch, 0, config.bytesPerDim) > 0) {
+        System.arraycopy(scratch, 0, scratch, 0, config.bytesPerDim);
         splitDim = dim;
       }
     }

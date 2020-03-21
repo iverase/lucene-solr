@@ -74,11 +74,9 @@ public class BKDWriter implements Closeable {
 
   final TrackingDirectoryWrapper tempDir;
   final String tempFileNamePrefix;
-  final double maxMBSortInHeap;
 
   final byte[] scratchDiff;
   final byte[] scratch;
-
   final int[] commonPrefixLengths;
 
   protected final FixedBitSet docsSeen;
@@ -103,36 +101,39 @@ public class BKDWriter implements Closeable {
 
   public BKDWriter(BKDConfig config, int maxDoc, Directory tempDir, String tempFileNamePrefix, double maxMBSortInHeap, long totalPointCount) throws IOException {
     verifyParams(maxMBSortInHeap, totalPointCount);
+    this.config = config;
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
     this.tempDir = new TrackingDirectoryWrapper(tempDir);
     this.tempFileNamePrefix = tempFileNamePrefix;
-    this.config = config;
     this.totalPointCount = totalPointCount;
-    docsSeen = new FixedBitSet(maxDoc);
-
-
-    scratchDiff = new byte[config.bytesPerDim];
-    scratch = new byte[config.packedBytesLength];
-    commonPrefixLengths = new int[config.numDataDims];
-
-    minPackedValue = new byte[config.packedIndexBytesLength];
-    maxPackedValue = new byte[config.packedIndexBytesLength];
+    // how many documents are?
+    this.docsSeen = new FixedBitSet(maxDoc);
+    // hold the extent of the tree
+    this.minPackedValue = new byte[config.packedIndexBytesLength];
+    this.maxPackedValue = new byte[config.packedIndexBytesLength];
     Arrays.fill(minPackedValue, (byte) 0xff);
     Arrays.fill(maxPackedValue, (byte) 0);
-
     // Maximum number of points we hold in memory at any time
-    maxPointsSortInHeap = (int) ((maxMBSortInHeap * 1024 * 1024) / (config.bytesPerDoc));
-
+    this.maxPointsSortInHeap = (int) ((maxMBSortInHeap * 1024 * 1024) / (config.bytesPerDoc));
     // Finally, we must be able to hold at least the leaf node in heap during build:
-    if (maxPointsSortInHeap < config.maxPointsInLeafNode) {
+    if (this.maxPointsSortInHeap < config.maxPointsInLeafNode) {
       throw new IllegalArgumentException("maxMBSortInHeap=" + maxMBSortInHeap + " only allows for maxPointsSortInHeap=" +
           maxPointsSortInHeap + ", but this is less than maxPointsInLeafNode=" + config.maxPointsInLeafNode +
           "; either increase maxMBSortInHeap or decrease maxPointsInLeafNode");
     }
-
-    this.maxMBSortInHeap = maxMBSortInHeap;
-    initPointWriter();
+    // total point count is an estimation but the final point count must be equal or lower to that number.
+    // We use that to decide whether to create a writer in memory or offline.
+    if (totalPointCount > this.maxPointsSortInHeap) {
+      this.pointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, config.packedBytesLength, "spill", 0);
+      this.tempInput = ((OfflinePointWriter)pointWriter).out;
+    } else {
+      this.pointWriter = new HeapPointWriter(Math.toIntExact(totalPointCount), config.packedBytesLength);
+    }
+    // scratch objects
+    this.scratchDiff = new byte[config.bytesPerDim];
+    this.scratch = new byte[config.packedBytesLength];
+    this.commonPrefixLengths = new int[config.numDataDims];
   }
 
   private static void verifyParams(double maxMBSortInHeap, long totalPointCount) {
@@ -144,18 +145,6 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private void initPointWriter() throws IOException {
-    assert pointWriter == null : "Point writer is already initialized";
-    //total point count is an estimation but the final point count must be equal or lower to that number.
-    if (totalPointCount > maxPointsSortInHeap) {
-      pointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, config.packedBytesLength, "spill", 0);
-      tempInput = ((OfflinePointWriter)pointWriter).out;
-    } else {
-      pointWriter = new HeapPointWriter(Math.toIntExact(totalPointCount), config.packedBytesLength);
-    }
-  }
-
-
   public void add(byte[] packedValue, int docID) throws IOException {
     if (packedValue.length != config.packedBytesLength) {
       throw new IllegalArgumentException("packedValue should be length=" + config.packedBytesLength + " (got: " + packedValue.length + ")");
@@ -163,7 +152,7 @@ public class BKDWriter implements Closeable {
     if (pointCount >= totalPointCount) {
       throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + (pointCount + 1) + " values");
     }
-
+    // compute min / max values
     for (int dim = 0; dim < config.numIndexDims; dim++) {
       int offset = dim * config.bytesPerDim;
       if (Arrays.compareUnsigned(packedValue, offset, offset + config.bytesPerDim, minPackedValue, offset, offset + config.bytesPerDim) < 0) {
@@ -173,7 +162,7 @@ public class BKDWriter implements Closeable {
         System.arraycopy(packedValue, offset, maxPackedValue, offset, config.bytesPerDim);
       }
     }
-
+    // add doc to this writer
     pointWriter.append(packedValue, docID);
     pointCount++;
     docsSeen.set(docID);
@@ -199,9 +188,9 @@ public class BKDWriter implements Closeable {
     finished = true;
 
     pointWriter.close();
-    //wrap point writer
+    // wrap point writer
     final BKDRadixSelector.PathSlice points = new BKDRadixSelector.PathSlice(pointWriter, 0, pointCount);
-    //clean up pointers
+    // clean up pointers
     tempInput = null;
     pointWriter = null;
 
@@ -229,7 +218,7 @@ public class BKDWriter implements Closeable {
     // Make sure the math above "worked":
     assert pointCount / numLeaves <= config.maxPointsInLeafNode: "pointCount=" + pointCount + " numLeaves=" + numLeaves + " maxPointsInLeafNode=" + config.maxPointsInLeafNode;
 
-    //We re-use the selector so we do not need to create an object every time.
+    // We re-use the selector so we do not need to create an object every time.
     final BKDRadixSelector radixSelector = new BKDRadixSelector(config, maxPointsSortInHeap, tempDir, tempFileNamePrefix);
 
     boolean success = false;
