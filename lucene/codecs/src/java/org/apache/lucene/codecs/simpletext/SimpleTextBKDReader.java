@@ -72,7 +72,7 @@ final class SimpleTextBKDReader extends PointValues implements Accountable {
     this.maxPackedValue = maxPackedValue;
     this.pointCount = pointCount;
     this.docCount = docCount;
-    this.version = SimpleTextBKDWriter.VERSION_CURRENT;
+    this.version = SimpleTextBKDIndexWriter.VERSION_CURRENT;
     assert minPackedValue.length == packedIndexBytesLength;
     assert maxPackedValue.length == packedIndexBytesLength;
   }
