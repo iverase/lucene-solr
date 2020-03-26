@@ -25,7 +25,6 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -1380,96 +1379,6 @@ public class TestBKD extends LuceneTestCase {
     dir.close();
   }
 
-  public void testTotalPointCountValidation() throws IOException {
-    Directory dir = newDirectory();
-    final int numValues = 10;
-    final int numPointsAdded = 50; // exceeds totalPointCount
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final byte[] pointValue = new byte[numBytesPerDim];
-    random().nextBytes(pointValue);
-
-    MutablePointValues reader = new MutablePointValues() {
-
-      @Override
-      public void intersect(IntersectVisitor visitor) throws IOException {
-        for(int i=0;i<numPointsAdded;i++) {
-          visitor.visit(0, pointValue);
-        }
-      }
-
-      @Override
-      public long estimatePointCount(IntersectVisitor visitor) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public byte[] getMinPackedValue() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public byte[] getMaxPackedValue() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int getNumDimensions() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int getNumIndexDimensions() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int getBytesPerDimension() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long size() {
-        return numPointsAdded;
-      }
-
-      @Override
-      public int getDocCount() {
-        return numPointsAdded;
-      }
-
-      @Override
-      public void swap(int i, int j) {
-        // do nothing
-      }
-
-      @Override
-      public int getDocID(int i) {
-        return 0;
-      }
-
-      @Override
-      public void getValue(int i, BytesRef packedValue) {
-        packedValue.bytes = pointValue;
-      }
-
-      @Override
-      public byte getByteAt(int i, int k) {
-        throw new UnsupportedOperationException();
-      }
-    };
-
-    BKDConfig config = new BKDConfig(1, 1, numBytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    BKDWriter w = new BKDWriter(config, numValues, dir, "_temp", BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
-    expectThrows(IllegalStateException.class, () -> {
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        w.writeField(new BKDDefaultIndexWriter(out), reader);
-      } finally {
-        w.close();
-        dir.close();
-      }
-    });
-  }
-
   public void testTooManyPoints() throws Exception {
     Directory dir = newDirectory();
     final int numValues = 10;
@@ -1486,97 +1395,6 @@ public class TestBKD extends LuceneTestCase {
     IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.add(pointValue, numValues);});
     assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
     w.close();
-    dir.close();
-  }
-
-  public void testTooManyPoints1D() throws Exception {
-    Directory dir = newDirectory();
-    final int numValues = 10;
-    final int numPointsAdded = 50; // exceeds totalPointCount
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final byte[][] pointValue = new byte[11][numBytesPerDim];
-    BKDConfig config = new BKDConfig(1, 1, numBytesPerDim, 2);
-    BKDWriter w = new BKDWriter(config, numValues + 1, dir, "_temp", BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
-    for(int i=0;i<numValues + 1;i++) {
-      random().nextBytes(pointValue[i]);
-    }
-    MutablePointValues val = new MutablePointValues() {
-      @Override
-      public void getValue(int i, BytesRef packedValue) {
-        packedValue.bytes = pointValue[i];
-        packedValue.offset = 0;
-        packedValue.length = numBytesPerDim;
-      }
-
-      @Override
-      public byte getByteAt(int i, int k) {
-        return pointValue[i][k];
-      }
-
-      @Override
-      public int getDocID(int i) {
-        return i;
-      }
-
-      @Override
-      public void swap(int i, int j) {
-        byte[] temp = pointValue[i];
-        pointValue[i] = pointValue[j];
-        pointValue[j] = temp;
-      }
-
-      @Override
-      public void intersect(IntersectVisitor visitor) throws IOException {
-        for (int i = 0; i < size(); i++) {
-          visitor.visit(i, pointValue[i]);
-        }
-      }
-
-      @Override
-      public long estimatePointCount(IntersectVisitor visitor) {
-        return 11;
-      }
-
-      @Override
-      public byte[] getMinPackedValue() {
-        return new byte[numBytesPerDim];
-      }
-
-      @Override
-      public byte[] getMaxPackedValue() {
-        return new byte[numBytesPerDim];
-      }
-
-      @Override
-      public int getNumDimensions() {
-        return 1;
-      }
-
-      @Override
-      public int getNumIndexDimensions() {
-        return 1;
-      }
-
-      @Override
-      public int getBytesPerDimension() {
-        return numBytesPerDim;
-      }
-
-      @Override
-      public long size() {
-        return 11;
-      }
-
-      @Override
-      public int getDocCount() {
-        return 11;
-      }
-    };
-    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(new BKDDefaultIndexWriter(out), val);});
-      assertEquals("totalPointCount=10 was passed when we were created, but we just got 11 values", ex.getMessage());
-      w.close();
-    }
     dir.close();
   }
 

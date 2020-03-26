@@ -41,6 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDDefaultIndexWriter;
 import org.apache.lucene.util.bkd.BKDIndexWriter;
+import org.apache.lucene.util.bkd.BKDMutablePointsWriter;
 import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 import org.apache.lucene.util.bkd.OneDimensionBKDWriter;
@@ -100,14 +101,23 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
         fieldInfo.getPointNumBytes(),
         maxPointsInLeafNode);
 
-    if (config.numDims == 1 && values instanceof MutablePointValues) {
-      OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
-      final long fp = OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());;
-      if (fp != -1) {
+    if (values instanceof MutablePointValues) {
+      MutablePointValues mValues = (MutablePointValues) values;
+      if (mValues.size() == 0) {
+        return;
+      }
+      if (config.numDims == 1 && values instanceof MutablePointValues) {
+        OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
+        final long fp = OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
+        indexFPs.put(fieldInfo.name, fp);
+      } else {
+        BKDMutablePointsWriter writer = new BKDMutablePointsWriter(config);
+        final long fp = writer.writeField(indexWriter, mValues,  writeState.segmentInfo.maxDoc());
         indexFPs.put(fieldInfo.name, fp);
       }
       return;
     }
+
 
     try (BKDWriter writer = new BKDWriter(config,
         writeState.segmentInfo.maxDoc(),
@@ -116,13 +126,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
         maxMBSortInHeap,
         values.size())) {
 
-      if (values instanceof MutablePointValues) {
-        final long fp = writer.writeField(indexWriter, (MutablePointValues) values);
-        if (fp != -1) {
-          indexFPs.put(fieldInfo.name, fp);
-        }
-        return;
-      }
       values.intersect(new IntersectVisitor() {
         @Override
         public void visit(int docID) {
