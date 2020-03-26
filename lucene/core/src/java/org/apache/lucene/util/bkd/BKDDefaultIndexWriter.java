@@ -103,32 +103,6 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
   /** Packs the two arrays, representing a balanced binary tree, into a compact byte[] structure. */
   private byte[] packIndex(BKDConfig config, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
 
-    final int numLeaves = leafBlockFPs.length;
-
-    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree (only happens
-    // if it was created by OneDimensionBKDWriter).  In this case the leaf nodes may straddle the two bottom
-    // levels of the binary tree:
-    if (config.numIndexDims == 1 && numLeaves > 1) {
-      int levelCount = 2;
-      while (true) {
-        if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
-          int lastLevel = 2*(numLeaves - levelCount);
-          assert lastLevel >= 0;
-          if (lastLevel != 0) {
-            // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
-            // at read-time, so that we can still delta code them on disk at write:
-            long[] newLeafBlockFPs = new long[numLeaves];
-            System.arraycopy(leafBlockFPs, lastLevel, newLeafBlockFPs, 0, leafBlockFPs.length - lastLevel);
-            System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, leafBlockFPs.length - lastLevel, lastLevel);
-            leafBlockFPs = newLeafBlockFPs;
-          }
-          break;
-        }
-
-        levelCount *= 2;
-      }
-    }
-
     // This is the "file" we append the byte[] to:
     List<byte[]> blocks = new ArrayList<>();
     byte[] lastSplitValues = new byte[config.packedIndexBytesLength];

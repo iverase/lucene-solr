@@ -792,14 +792,14 @@ public class TestBKD extends LuceneTestCase {
         in = dir.openInput("bkd", IOContext.DEFAULT);
         seg++;
         config = new BKDConfig(numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode);
-        w = new BKDWriter(config, numValues, dir, "_" + seg, maxMB, docValues.length);
+        //w = new BKDWriter(config, numValues, dir, "_" + seg, maxMB, docValues.length);
         List<BKDReader> readers = new ArrayList<>();
         for(long fp : toMerge) {
           in.seek(fp);
           readers.add(new BKDReader(in, randomBoolean()));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = w.merge(new BKDDefaultIndexWriter(out), docMaps, readers);
+        indexFP = OneDimensionBKDWriter.merge(config, new BKDDefaultIndexWriter(out), docMaps, readers, docValues.length, numValues);
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);
@@ -1462,7 +1462,7 @@ public class TestBKD extends LuceneTestCase {
     BKDWriter w = new BKDWriter(config, numValues, dir, "_temp", BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
     expectThrows(IllegalStateException.class, () -> {
       try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        w.writeField(new BKDDefaultIndexWriter(out), "test_field_name", reader);
+        w.writeField(new BKDDefaultIndexWriter(out), reader);
       } finally {
         w.close();
         dir.close();
@@ -1573,8 +1573,8 @@ public class TestBKD extends LuceneTestCase {
       }
     };
     try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(new BKDDefaultIndexWriter(out), "", val);});
-      assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
+      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(new BKDDefaultIndexWriter(out), val);});
+      assertEquals("totalPointCount=10 was passed when we were created, but we just got 11 values", ex.getMessage());
       w.close();
     }
     dir.close();
