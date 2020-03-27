@@ -67,6 +67,8 @@ public class BKDMutablePointsWriter {
   /** Maximum per-dim values, packed */
   protected final byte[] maxPackedValue;
 
+  final BytesRef scratchBytesRef = new BytesRef();
+
   public BKDMutablePointsWriter(BKDConfig config) throws IOException {
 
     this.config = config;
@@ -110,7 +112,33 @@ public class BKDMutablePointsWriter {
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
 
     long indexFP = indexWriter.getFilePointer();
-    indexWriter.writeIndex(config, countPerLeaf , leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, values.getDocCount());
+    scratchBytesRef.bytes = splitPackedValues;
+    scratchBytesRef.length = config.bytesPerDim;
+
+    BKDInnerNodes nodes = new BKDInnerNodes() {
+      @Override
+      public int numberOfLeaves() {
+        return leafBlockFPs.length;
+      }
+
+      @Override
+      public int splitDimension(int nodeID) {
+        int address = nodeID * (1 + config.bytesPerDim);
+        return splitPackedValues[address]  & 0xff;
+      }
+
+      @Override
+      public BytesRef splitPackedValue(int nodeID) {
+        scratchBytesRef.offset = nodeID * (1 + config.bytesPerDim) + 1;
+        return scratchBytesRef;
+      }
+
+      @Override
+      public long leafBlockFP(int leafNode) {
+        return leafBlockFPs[leafNode];
+      }
+    };
+    indexWriter.writeIndex(config, nodes, countPerLeaf, minPackedValue, maxPackedValue, pointCount, values.getDocCount());
     return indexFP;
   }
 

@@ -24,6 +24,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDConfig;
 import org.apache.lucene.util.bkd.BKDIndexWriter;
+import org.apache.lucene.util.bkd.BKDInnerNodes;
 import org.apache.lucene.util.bkd.BKDLeafBlock;
 import org.apache.lucene.util.bkd.BKDWriter;
 
@@ -71,7 +72,7 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
   }
 
   @Override
-  public void writeIndex(BKDConfig config, int countPerLeaf, long[] leafBlockFPs, byte[] splitPackedValues, byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int numberDocs) throws IOException {
+  public void writeIndex(BKDConfig config, BKDInnerNodes nodes, int countPerLeaf, byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int numberDocs) throws IOException {
     write(out, NUM_DATA_DIMS);
     writeInt(out, config.numDims);
     newline(out);
@@ -89,7 +90,7 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     newline(out);
 
     write(out, INDEX_COUNT);
-    writeInt(out, leafBlockFPs.length);
+    writeInt(out, nodes.numberOfLeaves());
     newline(out);
 
     write(out, MIN_VALUE);
@@ -110,27 +111,28 @@ public class SimpleTextBKDIndexWriter implements BKDIndexWriter {
     writeInt(out, numberDocs);
     newline(out);
 
-    for(int i=0;i<leafBlockFPs.length;i++) {
+    for(int i=0;i<nodes.numberOfLeaves();i++) {
       write(out, BLOCK_FP);
-      writeLong(out, leafBlockFPs[i]);
+      writeLong(out, nodes.leafBlockFP(i));
       newline(out);
     }
 
-    assert (splitPackedValues.length % (1 + config.bytesPerDim)) == 0;
-    int count = splitPackedValues.length / (1 + config.bytesPerDim);
-    assert count == leafBlockFPs.length;
+    //assert (splitPackedValues.length % (1 + config.bytesPerDim)) == 0;
+    //int count = splitPackedValues.length / (1 + config.bytesPerDim);
+   // assert count == leafBlockFPs.length;
 
     write(out, SPLIT_COUNT);
-    writeInt(out, count);
+    writeInt(out, nodes.numberOfLeaves());
     newline(out);
 
-    for(int i=0;i<count;i++) {
+    for(int i=0;i<nodes.numberOfLeaves();i++) {
       write(out, SPLIT_DIM);
-      writeInt(out, splitPackedValues[i * (1 + config.bytesPerDim)] & 0xff);
+      writeInt(out, nodes.splitDimension(i));
       newline(out);
       write(out, SPLIT_VALUE);
-      br = new BytesRef(splitPackedValues, 1 + (i * (1 + config.bytesPerDim)), config.bytesPerDim);
-      write(out, br.toString());
+      BytesRef splitValue = nodes.splitPackedValue(i);
+     // br = new BytesRef(splitValue.bytes, splitValue.offset, config.bytesPerDim);
+      write(out, splitValue.toString());
       newline(out);
     }
   }

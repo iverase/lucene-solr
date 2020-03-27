@@ -40,10 +40,10 @@ import org.apache.lucene.util.PriorityQueue;
  *  <p>The number of dimensions must be 1, but every byte[] value is fixed length.
  *
  *  <p>This consumes heap during writing: it allocates a <code>Long[numLeaves]</code>,
- *  a <code>byte[numLeaves*(1+bytesPerDim)]</code>.
+ *  a <code>byte[numLeaves*(bytesPerDim)]</code>.
  *
  *  <p>
- *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> / (1+bytesPerDim)
+ *  <b>NOTE</b>: This can write at most Integer.MAX_VALUE * <code>maxPointsInLeafNode</code> / (bytesPerDim)
  *  total points.
  *
  * @lucene.experimental */
@@ -129,12 +129,38 @@ public class OneDimensionBKDWriter {
     long indexFP = indexWriter.getFilePointer();
 
     int numInnerNodes = leafBlockStartValues.size();
-    byte[] index = new byte[(1 + numInnerNodes) * (1 + config.bytesPerDim)];
+    byte[] index = new byte[(1 + numInnerNodes) * config.bytesPerDim];
     rotateToTree(1, 0, numInnerNodes, index, leafBlockStartValues);
 
     long[] newLeafBlockFPs = rotateLeafBlocks(leafBlockFPs);
 
-    indexWriter.writeIndex(config, config.maxPointsInLeafNode, newLeafBlockFPs, index, minPackedValue, maxPackedValue, pointCount, numDocs);
+    scratchBytesRef.bytes = index;
+    scratchBytesRef.length = config.bytesPerDim;
+
+    BKDInnerNodes nodes = new BKDInnerNodes() {
+      @Override
+      public int numberOfLeaves() {
+        return newLeafBlockFPs.length;
+      }
+
+      @Override
+      public int splitDimension(int nodeID) {
+        return 0;
+      }
+
+      @Override
+      public BytesRef splitPackedValue(int nodeID) {
+        scratchBytesRef.offset = nodeID * config.bytesPerDim;
+        return scratchBytesRef;
+      }
+
+      @Override
+      public long leafBlockFP(int leafNode) {
+        return newLeafBlockFPs[leafNode];
+      }
+    };
+
+    indexWriter.writeIndex(config, nodes, config.maxPointsInLeafNode, minPackedValue, maxPackedValue, pointCount, numDocs);
     return indexFP;
   }
 
@@ -229,7 +255,7 @@ public class OneDimensionBKDWriter {
   private void rotateToTree(int nodeID, int offset, int count, byte[] index, List<byte[]> leafBlockStartValues) {
     if (count == 1) {
       // Leaf index node
-      System.arraycopy(leafBlockStartValues.get(offset), 0, index, nodeID * (1 + config.bytesPerDim) + 1, config.bytesPerDim);
+      System.arraycopy(leafBlockStartValues.get(offset), 0, index, nodeID * config.bytesPerDim, config.bytesPerDim);
     } else if (count > 1) {
       // Internal index node: binary partition of count
       int countAtLevel = 1;
@@ -240,11 +266,11 @@ public class OneDimensionBKDWriter {
           // This is the last level, possibly partially filled:
           int lastLeftCount = Math.min(countAtLevel/2, countLeft);
           assert lastLeftCount >= 0;
-          int leftHalf = (totalCount-1)/2 + lastLeftCount;
+          int leftHalf = (totalCount - 1) / 2 + lastLeftCount;
 
           int rootOffset = offset + leftHalf;
 
-          System.arraycopy(leafBlockStartValues.get(rootOffset), 0, index, nodeID * (1 + config.bytesPerDim) + 1, config.bytesPerDim);
+          System.arraycopy(leafBlockStartValues.get(rootOffset), 0, index, nodeID * (config.bytesPerDim), config.bytesPerDim);
 
           // TODO: we could optimize/specialize, when we know it's simply fully balanced binary tree
           // under here, to save this while loop on each recursion
@@ -265,7 +291,7 @@ public class OneDimensionBKDWriter {
   }
 
   private void checkMaxLeafNodeCount(int numLeaves) {
-    if ((1 + config.bytesPerDim) * (long) numLeaves > ArrayUtil.MAX_ARRAY_LENGTH) {
+    if (config.bytesPerDim * (long) numLeaves > ArrayUtil.MAX_ARRAY_LENGTH) {
       throw new IllegalStateException("too many nodes; increase maxPointsInLeafNode (currently " + config.maxPointsInLeafNode + ") and reindex");
     }
   }
@@ -301,7 +327,7 @@ public class OneDimensionBKDWriter {
   }
 
   /** writes a KD-tree from the incoming list of 1-dimension {@link BKDReader}s */
-  public static long merge(BKDConfig config, BKDIndexWriter indexWriter, List<MergeState.DocMap> docMaps, List<BKDReader> readers, long totalPointsCount, int maxDoc) throws IOException {
+  public static long merge(BKDConfig config, BKDIndexWriter indexWriter, List<MergeState.DocMap> docMaps, List<BKDReader> readers, int maxDoc) throws IOException {
     if (config.numDims != 1) {
       throw new IllegalArgumentException("too many dimensions; expected one dimension, got + " + config.numDims);
     }
@@ -309,6 +335,8 @@ public class OneDimensionBKDWriter {
 
     BKDMergeQueue queue = new BKDMergeQueue(config.bytesPerDim, readers.size());
 
+    // Worst case total maximum size (if none of the points are deleted):
+    long totalPointsCount = 0;
     for(int i=0;i<readers.size();i++) {
       BKDReader bkd = readers.get(i);
       MergeState.DocMap docMap;
@@ -317,6 +345,7 @@ public class OneDimensionBKDWriter {
       } else {
         docMap = docMaps.get(i);
       }
+      totalPointsCount += bkd.size();
       MergeReader reader = new MergeReader(bkd, docMap);
       if (reader.next()) {
         queue.add(reader);

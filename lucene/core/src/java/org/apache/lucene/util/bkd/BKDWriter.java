@@ -100,6 +100,8 @@ public class BKDWriter implements Closeable {
 
   protected long pointCount;
 
+  final BytesRef scratchBytesRef = new BytesRef();
+
   /** An upper bound on how many points the caller will add (includes deletions) */
   private final long totalPointCount;
 
@@ -295,7 +297,34 @@ public class BKDWriter implements Closeable {
 
     // Write index:
     long indexFP = indexWriter.getFilePointer();
-    indexWriter.writeIndex(config, Math.toIntExact(countPerLeaf), leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
+
+    scratchBytesRef.bytes = splitPackedValues;
+    scratchBytesRef.length = config.bytesPerDim;
+
+    BKDInnerNodes nodes = new BKDInnerNodes() {
+      @Override
+      public int numberOfLeaves() {
+        return leafBlockFPs.length;
+      }
+
+      @Override
+      public int splitDimension(int nodeID) {
+        int address = nodeID * (1 + config.bytesPerDim);
+        return splitPackedValues[address]  & 0xff;
+      }
+
+      @Override
+      public BytesRef splitPackedValue(int nodeID) {
+        scratchBytesRef.offset = nodeID * (1 + config.bytesPerDim) + 1;
+        return scratchBytesRef;
+      }
+
+      @Override
+      public long leafBlockFP(int leafNode) {
+        return leafBlockFPs[leafNode];
+      }
+    };
+    indexWriter.writeIndex(config, nodes, Math.toIntExact(countPerLeaf), minPackedValue, maxPackedValue, pointCount, docsSeen.cardinality());
     return indexFP;
   }
 

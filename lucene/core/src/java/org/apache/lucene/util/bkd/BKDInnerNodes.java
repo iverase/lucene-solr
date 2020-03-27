@@ -17,23 +17,15 @@
 
 package org.apache.lucene.util.bkd;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
 
-/**
- * Serializes a KD tree in a index.
- *
- * @lucene.experimental */
-public interface BKDIndexWriter {
+public interface BKDInnerNodes {
 
-  /** writes a leaf block in the index */
-  void writeLeafBlock(BKDConfig config, BKDLeafBlock leafBlock,
-                      int[] commonPrefixes, int sortedDim, int leafCardinality) throws IOException;
+  int numberOfLeaves();
 
+  int splitDimension(int nodeID);
 
-  /** writes inner nodes in the index */
-  void writeIndex(BKDConfig config, BKDInnerNodes nodes, int countPerLeaf,
-                  byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int numberDocs) throws IOException;
+  BytesRef splitPackedValue(int nodeID);
 
-  /** return the current position of the index */
-  long getFilePointer();
+  long leafBlockFP(int leafNode);
 }

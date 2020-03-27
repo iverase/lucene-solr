@@ -798,7 +798,7 @@ public class TestBKD extends LuceneTestCase {
           readers.add(new BKDReader(in, randomBoolean()));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        indexFP = OneDimensionBKDWriter.merge(config, new BKDDefaultIndexWriter(out), docMaps, readers, docValues.length, numValues);
+        indexFP = OneDimensionBKDWriter.merge(config, new BKDDefaultIndexWriter(out), docMaps, readers, numValues);
         out.close();
         in.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);

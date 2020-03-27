@@ -107,7 +107,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
         return;
       }
       if (config.numDims == 1 && values instanceof MutablePointValues) {
-        OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
         final long fp = OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
         indexFPs.put(fieldInfo.name, fp);
       } else {
@@ -117,7 +116,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
       }
       return;
     }
-
 
     try (BKDWriter writer = new BKDWriter(config,
         writeState.segmentInfo.maxDoc(),
@@ -172,28 +170,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
       if (fieldInfo.getPointDimensionCount() != 0) {
         if (fieldInfo.getPointDimensionCount() == 1) {
 
-          // Worst case total maximum size (if none of the points are deleted):
-          long totMaxSize = 0;
-          for (int i = 0; i < mergeState.pointsReaders.length; i++) {
-            PointsReader reader = mergeState.pointsReaders[i];
-            if (reader != null) {
-              FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
-              FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
-                PointValues values = reader.getValues(fieldInfo.name);
-                if (values != null) {
-                  totMaxSize += values.size();
-                }
-              }
-            }
-          }
-
-          BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
-                                           fieldInfo.getPointIndexDimensionCount(),
-                                           fieldInfo.getPointNumBytes(),
-                                           maxPointsInLeafNode);
-
-          //System.out.println("MERGE: field=" + fieldInfo.name);
           // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
           // already sorted incoming segments, instead of trying to sort all points again as if
           // we were simply reindexing them:
@@ -224,7 +200,12 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
             }
           }
 
-          long fp = OneDimensionBKDWriter.merge(config, indexWriter, docMaps, bkdReaders, totMaxSize, writeState.segmentInfo.maxDoc());
+          BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+              fieldInfo.getPointIndexDimensionCount(),
+              fieldInfo.getPointNumBytes(),
+              maxPointsInLeafNode);
+
+          long fp = OneDimensionBKDWriter.merge(config, indexWriter, docMaps, bkdReaders, writeState.segmentInfo.maxDoc());
           if (fp != -1) {
             indexFPs.put(fieldInfo.name, fp);
           }
