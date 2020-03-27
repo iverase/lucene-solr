@@ -84,6 +84,10 @@ public class OneDimensionBKDWriter {
     this.lastPackedValue = new byte[config.packedBytesLength];
     this.leafValues = new byte[config.maxPointsInLeafNode * config.packedBytesLength];
     this.leafDocs = new int[config.maxPointsInLeafNode];
+
+    scratchBytesRef.length = config.packedBytesLength;
+    scratchBytesRef.bytes = leafValues;
+
     this.leafBlock = new BKDLeafBlock() {
       @Override
       public int count() {
@@ -207,10 +211,6 @@ public class OneDimensionBKDWriter {
     }
 
     commonPrefixLengths[0] = prefix;
-
-    scratchBytesRef.length = config.packedBytesLength;
-    scratchBytesRef.bytes = leafValues;
-
 
     assert BKDLeafBlock.valuesInOrderAndBounds(config, leafBlock, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
         ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength));
