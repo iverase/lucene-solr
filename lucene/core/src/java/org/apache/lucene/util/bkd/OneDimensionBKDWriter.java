@@ -140,9 +140,12 @@ public class OneDimensionBKDWriter {
 
   public long finish(int numDocs) throws IOException {
     if (leafCount > 0) {
+      System.arraycopy(leafValues, (leafCount - 1) * config.packedBytesLength, maxPackedValue, 0, config.packedIndexBytesLength);
       writeLeafBlock(leafCardinality);
       leafCardinality = 0;
       leafCount = 0;
+    } else {
+      System.arraycopy(leafValues, (config.maxPointsInLeafNode - 1) * config.packedBytesLength, maxPackedValue, 0, config.packedIndexBytesLength);
     }
 
     if (pointCount == 0) {
@@ -191,15 +194,13 @@ public class OneDimensionBKDWriter {
     assert leafCount != 0;
     if (pointCount == 0) {
       System.arraycopy(leafValues, 0, minPackedValue, 0, config.packedIndexBytesLength);
-    }
-    System.arraycopy(leafValues, (leafCount - 1) * config.packedBytesLength, maxPackedValue, 0, config.packedIndexBytesLength);
-
-    pointCount += leafCount;
-
-    if (leafBlockFPs.size() > 0) {
+    } else {
       // Save the first (minimum) value in each leaf block except the first, to build the split value index in the end:
       leafBlockStartValues.add(ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength));
     }
+
+    pointCount += leafCount;
+
     leafBlockFPs.add(indexWriter.getFilePointer());
     checkMaxLeafNodeCount(leafBlockFPs.size());
 
