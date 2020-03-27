@@ -68,6 +68,8 @@ public class OneDimensionBKDWriter {
   /** Maximum per-dim values, packed */
   protected final byte[] maxPackedValue;
 
+  private final BKDLeafBlock leafBlock;
+
   private OneDimensionBKDWriter(BKDConfig config, BKDIndexWriter indexWriter, long totalPointCount) {
     if (config.numIndexDims != 1) {
       throw new UnsupportedOperationException("numIndexDims must be 1 but got " + config.numIndexDims);
@@ -82,6 +84,23 @@ public class OneDimensionBKDWriter {
     this.lastPackedValue = new byte[config.packedBytesLength];
     this.leafValues = new byte[config.maxPointsInLeafNode * config.packedBytesLength];
     this.leafDocs = new int[config.maxPointsInLeafNode];
+    this.leafBlock = new BKDLeafBlock() {
+      @Override
+      public int count() {
+        return leafCount;
+      }
+
+      @Override
+      public BytesRef packedValue(int position) {
+        scratchBytesRef.offset = config.packedBytesLength * position;
+        return scratchBytesRef;
+      }
+
+      @Override
+      public int docId(int position) {
+        return leafDocs[position];
+      }
+    };
   }
 
   // for asserts
@@ -192,28 +211,11 @@ public class OneDimensionBKDWriter {
     scratchBytesRef.length = config.packedBytesLength;
     scratchBytesRef.bytes = leafValues;
 
-    final BKDLeafBlock packedValues = new BKDLeafBlock() {
-      @Override
-      public int count() {
-        return leafCount;
-      }
 
-      @Override
-      public BytesRef packedValue(int position) {
-        scratchBytesRef.offset = config.packedBytesLength * position;
-        return scratchBytesRef;
-      }
-
-      @Override
-      public int docId(int position) {
-        return leafDocs[position];
-      }
-    };
-
-    assert BKDLeafBlock.valuesInOrderAndBounds(config, packedValues, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
+    assert BKDLeafBlock.valuesInOrderAndBounds(config, leafBlock, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
         ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength));
 
-    indexWriter.writeLeafBlock(config, packedValues, commonPrefixLengths,  0, leafCardinality);
+    indexWriter.writeLeafBlock(config, leafBlock, commonPrefixLengths,  0, leafCardinality);
   }
 
   private long[] rotateLeafBlocks(List<Long> leafBlockFPs) {
