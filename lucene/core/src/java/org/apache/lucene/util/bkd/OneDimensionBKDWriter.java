@@ -142,14 +142,11 @@ public class OneDimensionBKDWriter {
     if (leafCount > 0) {
       System.arraycopy(leafValues, (leafCount - 1) * config.packedBytesLength, maxPackedValue, 0, config.packedIndexBytesLength);
       writeLeafBlock(leafCardinality);
-      leafCardinality = 0;
-      leafCount = 0;
     } else {
+      if (pointCount == 0) {
+        return -1;
+      }
       System.arraycopy(leafValues, (config.maxPointsInLeafNode - 1) * config.packedBytesLength, maxPackedValue, 0, config.packedIndexBytesLength);
-    }
-
-    if (pointCount == 0) {
-      return -1;
     }
 
     long indexFP = indexWriter.getFilePointer();
