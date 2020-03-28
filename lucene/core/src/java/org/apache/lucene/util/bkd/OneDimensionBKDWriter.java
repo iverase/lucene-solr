@@ -151,15 +151,17 @@ public class OneDimensionBKDWriter {
 
     long indexFP = indexWriter.getFilePointer();
 
-    int numInnerNodes = leafBlockStartValues.size();
-    byte[] index = new byte[(1 + numInnerNodes) * config.bytesPerDim];
-    rotateToTree(1, 0, numInnerNodes, index, leafBlockStartValues);
-
     int lastLevel = lastLevel(leafBlockFPs);
     int partition = leafBlockFPs.size() - lastLevel;
+
+    //System.out.println("LAST LEVEL: " + lastLevel);
+    int numInnerNodes = leafBlockStartValues.size();
+    //byte[] index = new byte[(1 + numInnerNodes) * config.bytesPerDim];
+    //rotateToTree(1, 0, numInnerNodes, index, leafBlockStartValues);
+
     //long[] newLeafBlockFPs = rotateLeafBlocks(leafBlockFPs);
 
-    scratchBytesRef.bytes = index;
+    //scratchBytesRef.bytes = index;
     scratchBytesRef.offset = 0;
 
     BKDInnerNodes nodes = new BKDInnerNodes() {
@@ -175,7 +177,9 @@ public class OneDimensionBKDWriter {
 
       @Override
       public BytesRef splitPackedValue(int nodeID) {
-        scratchBytesRef.offset = nodeID * config.bytesPerDim;
+        //System.out.println("POS: " + getIndex(1, 0, numInnerNodes, nodeID) + " node: " + nodeID);
+        scratchBytesRef.bytes =leafBlockStartValues.get(getIndex(1, 0, numInnerNodes, nodeID));
+        //    scratchBytesRef.offset = getIndex(1, 0, numInnerNodes, nodeID)  * config.bytesPerDim;
         return scratchBytesRef;
       }
 
@@ -284,7 +288,7 @@ public class OneDimensionBKDWriter {
   private void rotateToTree(int nodeID, int offset, int count, byte[] index, List<byte[]> leafBlockStartValues) {
     if (count == 1) {
       // Leaf index node
-      // System.out.println("LEAF ORIGINL POS: " + offset + " node :" + nodeID);
+      System.out.println("LEAF ORIGINAL POS: " + offset + " node :" + nodeID);
       System.arraycopy(leafBlockStartValues.get(offset), 0, index, nodeID * config.bytesPerDim, config.bytesPerDim);
     } else if (count > 1) {
       // Internal index node: binary partition of count
@@ -300,7 +304,7 @@ public class OneDimensionBKDWriter {
 
           int rootOffset = offset + leftHalf;
 
-          // System.out.println("ROOT ORIGINL POS: " + rootOffset + " node :" + nodeID);
+          System.out.println("ROOT ORIGINAL POS: " + rootOffset + " node :" + nodeID);
           System.arraycopy(leafBlockStartValues.get(rootOffset), 0, index, nodeID * (config.bytesPerDim), config.bytesPerDim);
 
           // TODO: we could optimize/specialize, when we know it's simply fully balanced binary tree
@@ -319,6 +323,50 @@ public class OneDimensionBKDWriter {
     } else {
       assert count == 0;
     }
+  }
+
+  private int getIndex(int nodeID, int offset, int count, int searchNodeID) {
+    if (count == 1) {
+      // Leaf index node
+      if (searchNodeID == nodeID) {
+        return offset;
+      }
+    } else if (count > 1) {
+      // Internal index node: binary partition of count
+      int countAtLevel = 1;
+      int totalCount = 0;
+      while (true) {
+        int countLeft = count - totalCount;
+        if (countLeft <= countAtLevel) {
+          // This is the last level, possibly partially filled:
+          int lastLeftCount = Math.min(countAtLevel/2, countLeft);
+          assert lastLeftCount >= 0;
+          int leftHalf = (totalCount - 1) / 2 + lastLeftCount;
+          if (searchNodeID == nodeID) {
+
+            int rootOffset = offset + leftHalf;
+            return rootOffset;
+          }
+
+          // TODO: we could optimize/specialize, when we know it's simply fully balanced binary tree
+          // under here, to save this while loop on each recursion
+          //int x = searchNodeID / 2;
+          // Recurse left
+          int index = getIndex(2 * nodeID, offset, leftHalf, searchNodeID);
+          if (index != - 1) {
+            return index;
+          }
+          int rootOffset = offset + leftHalf;
+          // Recurse right
+          return getIndex(2 * nodeID + 1, rootOffset + 1, count - leftHalf - 1, searchNodeID);
+        }
+        totalCount += countAtLevel;
+        countAtLevel *= 2;
+      }
+    } else {
+      assert count == 0;
+    }
+    return -1;
   }
 
   private void checkMaxLeafNodeCount(int numLeaves) {
