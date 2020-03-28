@@ -155,15 +155,17 @@ public class OneDimensionBKDWriter {
     byte[] index = new byte[(1 + numInnerNodes) * config.bytesPerDim];
     rotateToTree(1, 0, numInnerNodes, index, leafBlockStartValues);
 
-    long[] newLeafBlockFPs = rotateLeafBlocks(leafBlockFPs);
+    int lastLevel = lastLevel(leafBlockFPs);
+    int partition = leafBlockFPs.size() - lastLevel;
+    //long[] newLeafBlockFPs = rotateLeafBlocks(leafBlockFPs);
 
     scratchBytesRef.bytes = index;
-    scratchBytesRef.length = config.bytesPerDim;
+    scratchBytesRef.offset = 0;
 
     BKDInnerNodes nodes = new BKDInnerNodes() {
       @Override
       public int numberOfLeaves() {
-        return newLeafBlockFPs.length;
+        return leafBlockFPs.size();
       }
 
       @Override
@@ -179,7 +181,12 @@ public class OneDimensionBKDWriter {
 
       @Override
       public long leafBlockFP(int leafNode) {
-        return newLeafBlockFPs[leafNode];
+       // System.out.println("LEAF: " + leafNode);
+        if (leafNode < partition) {
+          return leafBlockFPs.get(lastLevel + leafNode);
+        } else {
+          return leafBlockFPs.get(leafNode - partition);
+        }
       }
     };
 
@@ -214,6 +221,28 @@ public class OneDimensionBKDWriter {
         ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength));
 
     indexWriter.writeLeafBlock(config, leafBlock, commonPrefixLengths,  0, leafCardinality);
+  }
+
+  private int lastLevel(List<Long> leafBlockFPs) {
+    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree .
+    // In this case the leaf nodes may straddle the two bottom levels of the binary tree:
+    int numLeaves = leafBlockFPs.size();
+    if (numLeaves > 1) {
+      int levelCount = 2;
+      while (true) {
+        if (numLeaves >= levelCount && numLeaves <= 2 * levelCount) {
+          //if (2 * levelCount - numLeaves != 0) {
+            int lastLevel = 2 * (numLeaves - levelCount);
+            assert lastLevel >= 0;
+            // Last level is partially filled, so we must rotate the leaf FPs to match.
+            return lastLevel;
+          //}
+          //break;
+        }
+        levelCount *= 2;
+      }
+    }
+    return 0;
   }
 
   private long[] rotateLeafBlocks(List<Long> leafBlockFPs) {
@@ -255,6 +284,7 @@ public class OneDimensionBKDWriter {
   private void rotateToTree(int nodeID, int offset, int count, byte[] index, List<byte[]> leafBlockStartValues) {
     if (count == 1) {
       // Leaf index node
+      // System.out.println("LEAF ORIGINL POS: " + offset + " node :" + nodeID);
       System.arraycopy(leafBlockStartValues.get(offset), 0, index, nodeID * config.bytesPerDim, config.bytesPerDim);
     } else if (count > 1) {
       // Internal index node: binary partition of count
@@ -270,6 +300,7 @@ public class OneDimensionBKDWriter {
 
           int rootOffset = offset + leftHalf;
 
+          // System.out.println("ROOT ORIGINL POS: " + rootOffset + " node :" + nodeID);
           System.arraycopy(leafBlockStartValues.get(rootOffset), 0, index, nodeID * (config.bytesPerDim), config.bytesPerDim);
 
           // TODO: we could optimize/specialize, when we know it's simply fully balanced binary tree
