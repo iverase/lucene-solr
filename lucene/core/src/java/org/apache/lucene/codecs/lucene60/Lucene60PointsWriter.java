@@ -101,7 +101,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
         maxPointsInLeafNode);
 
     if (config.numDims == 1 && values instanceof MutablePointValues) {
-      OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
       final long fp = OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());;
       if (fp != -1) {
         indexFPs.put(fieldInfo.name, fp);
