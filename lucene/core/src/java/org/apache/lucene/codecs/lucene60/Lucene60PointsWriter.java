@@ -106,14 +106,14 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
       if (mValues.size() == 0) {
         return;
       }
-//      if (config.numDims == 1 && values instanceof MutablePointValues) {
-//        final long fp = OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
-//        indexFPs.put(fieldInfo.name, fp);
-//      } else {
+      if (config.numDims == 1 && values instanceof MutablePointValues) {
+        final long fp = OneDimensionBKDWriter.writeField(config, indexWriter, (MutablePointValues) values, writeState.segmentInfo.maxDoc());
+        indexFPs.put(fieldInfo.name, fp);
+      } else {
         BKDMutablePointsWriter writer = new BKDMutablePointsWriter(config);
         final long fp = writer.writeField(indexWriter, mValues,  writeState.segmentInfo.maxDoc());
         indexFPs.put(fieldInfo.name, fp);
-//      }
+      }
       return;
     }
 
@@ -168,50 +168,50 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
       if (fieldInfo.getPointDimensionCount() != 0) {
-//        if (fieldInfo.getPointDimensionCount() == 1) {
-//
-//          // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
-//          // already sorted incoming segments, instead of trying to sort all points again as if
-//          // we were simply reindexing them:
-//          List<BKDReader> bkdReaders = new ArrayList<>();
-//          List<MergeState.DocMap> docMaps = new ArrayList<>();
-//          for (int i = 0; i < mergeState.pointsReaders.length; i++) {
-//            PointsReader reader = mergeState.pointsReaders[i];
-//
-//            if (reader != null) {
-//
-//              // we confirmed this up above
-//              assert reader instanceof Lucene60PointsReader;
-//              Lucene60PointsReader reader60 = (Lucene60PointsReader) reader;
-//
-//              // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to this
-//              // reader's FieldInfo as we do below) because field numbers can easily be different
-//              // when addIndexes(Directory...) copies over segments from another index:
-//
-//              FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
-//              FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
-//              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
-//                BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
-//                if (bkdReader != null) {
-//                  bkdReaders.add(bkdReader);
-//                  docMaps.add(mergeState.docMaps[i]);
-//                }
-//              }
-//            }
-//          }
-//
-//          BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
-//              fieldInfo.getPointIndexDimensionCount(),
-//              fieldInfo.getPointNumBytes(),
-//              maxPointsInLeafNode);
-//
-//          long fp = OneDimensionBKDWriter.merge(config, indexWriter, docMaps, bkdReaders, writeState.segmentInfo.maxDoc());
-//          if (fp != -1) {
-//            indexFPs.put(fieldInfo.name, fp);
-//          }
-//        } else {
+        if (fieldInfo.getPointDimensionCount() == 1) {
+
+          // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
+          // already sorted incoming segments, instead of trying to sort all points again as if
+          // we were simply reindexing them:
+          List<BKDReader> bkdReaders = new ArrayList<>();
+          List<MergeState.DocMap> docMaps = new ArrayList<>();
+          for (int i = 0; i < mergeState.pointsReaders.length; i++) {
+            PointsReader reader = mergeState.pointsReaders[i];
+
+            if (reader != null) {
+
+              // we confirmed this up above
+              assert reader instanceof Lucene60PointsReader;
+              Lucene60PointsReader reader60 = (Lucene60PointsReader) reader;
+
+              // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to this
+              // reader's FieldInfo as we do below) because field numbers can easily be different
+              // when addIndexes(Directory...) copies over segments from another index:
+
+              FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
+              FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
+              if (readerFieldInfo != null && readerFieldInfo.getPointDimensionCount() > 0) {
+                BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
+                if (bkdReader != null) {
+                  bkdReaders.add(bkdReader);
+                  docMaps.add(mergeState.docMaps[i]);
+                }
+              }
+            }
+          }
+
+          BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
+              fieldInfo.getPointIndexDimensionCount(),
+              fieldInfo.getPointNumBytes(),
+              maxPointsInLeafNode);
+
+          long fp = OneDimensionBKDWriter.merge(config, indexWriter, docMaps, bkdReaders, writeState.segmentInfo.maxDoc());
+          if (fp != -1) {
+            indexFPs.put(fieldInfo.name, fp);
+          }
+        } else {
           mergeOneField(mergeState, fieldInfo);
-//        }
+        }
       }
     }
 
