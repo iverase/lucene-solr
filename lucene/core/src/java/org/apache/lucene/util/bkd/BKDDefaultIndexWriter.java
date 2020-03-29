@@ -129,21 +129,16 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
                                int nodeID, byte[] lastSplitValues, boolean[] negativeDeltas, boolean isLeft) throws IOException {
     if (nodeID >= leafBlockFPs.length) {
       int leafID = nodeID - leafBlockFPs.length;
-      //System.out.println("recursePack leaf nodeID=" + nodeID);
 
       // In the unbalanced case it's possible the left most node only has one child:
-      if (leafID < leafBlockFPs.length) {
-        long delta = leafBlockFPs[leafID] - minBlockFP;
-        if (isLeft) {
-          assert delta == 0;
-          return 0;
-        } else {
-          assert nodeID == 1 || delta > 0: "nodeID=" + nodeID;
-          writeBuffer.writeVLong(delta);
-          return appendBlock(writeBuffer, blocks);
-        }
-      } else {
+      if (isLeft || leafID >= leafBlockFPs.length) {
+        assert leafID >= leafBlockFPs.length || leafBlockFPs[leafID] - minBlockFP == 0;
         return 0;
+      } else {
+        long delta = leafBlockFPs[leafID] - minBlockFP;
+        assert nodeID == 1 || delta > 0: "nodeID=" + nodeID;
+        writeBuffer.writeVLong(delta);
+        return appendBlock(writeBuffer, blocks);
       }
     } else {
       long leftBlockFP;
