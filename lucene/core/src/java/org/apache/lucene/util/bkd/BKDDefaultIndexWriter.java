@@ -194,7 +194,9 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
         writeBuffer.writeBytes(splitPackedValues, address+prefix+1, suffix-1);
       }
 
-      byte[] cmp = lastSplitValues.clone();
+      // only for assert
+      byte[] cmp = null;
+      assert (cmp = lastSplitValues.clone()) != null;
 
       System.arraycopy(lastSplitValues, splitDim * config.bytesPerDim + prefix, savSplitValue, 0, suffix);
 
@@ -249,6 +251,7 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
       nodeID *= 2;
     }
     int leafID = nodeID - leafBlockFPs.length;
+    System.out.println(nodeID + " " + leafID);
     long result = leafBlockFPs[leafID];
     if (result < 0) {
       throw new AssertionError(result + " for leaf " + leafID);
