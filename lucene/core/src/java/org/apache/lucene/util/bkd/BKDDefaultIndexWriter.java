@@ -251,7 +251,6 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
       nodeID *= 2;
     }
     int leafID = nodeID - leafBlockFPs.length;
-    System.out.println(nodeID + " " + leafID);
     long result = leafBlockFPs[leafID];
     if (result < 0) {
       throw new AssertionError(result + " for leaf " + leafID);
