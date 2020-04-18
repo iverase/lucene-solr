@@ -351,13 +351,19 @@ class DocIdsWriter {
 //      int j = in.readInt();
 //      Arrays.fill(docIDs, index, index += (j >>> 24), j & 0xffffff);
 //    }
-    for (i = 0; i < count - 3; i += 4) {
-      long l = in.readLong();
-      Arrays.fill(docIDs, index, index += (int) (l >>> 56), (int) (l >>> 32) & 0xffffff);
-      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) (l & 0xffffff));
-      l = in.readLong();
-      Arrays.fill(docIDs, index, index += (int) (l >>> 56), (int) (l >>> 32) & 0xffffff);
-      Arrays.fill(docIDs, index, index += (int) (l >>> 24) & 0xff, (int) (l & 0xffffff));
+    for (i = 0; i < count - 7; i += 8) {
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
+      long l4 = in.readLong();
+      Arrays.fill(docIDs, index, index += (int) (l1 >>> 56), (int) (l1 >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l1 >>> 24) & 0xff, (int) (l1 & 0xffffff));
+      Arrays.fill(docIDs, index, index += (int) (l2 >>> 56), (int) (l2 >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l2 >>> 24) & 0xff, (int) (l2 & 0xffffff));
+      Arrays.fill(docIDs, index, index += (int) (l3 >>> 56), (int) (l3 >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l3 >>> 24) & 0xff, (int) (l3 & 0xffffff));
+      Arrays.fill(docIDs, index, index += (int) (l4 >>> 56), (int) (l4 >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l4 >>> 24) & 0xff, (int) (l4 & 0xffffff));
     }
     for (; i < count; ++i) {
       int j = in.readInt();
