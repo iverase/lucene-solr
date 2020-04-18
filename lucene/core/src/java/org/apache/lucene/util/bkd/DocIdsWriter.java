@@ -348,18 +348,10 @@ class DocIdsWriter {
       long l1 = in.readLong();
       long l2 = in.readLong();
       long l3 = in.readLong();
-      int runLen1 =  (int) (l1 >>> 40);
-      int doc1 = (int) (l1 >>> 16) & 0xffffff;
-      int runLen2 = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      int doc2 = (int) (l2 >>> 32) & 0xffffff;
-      int runLen3 = (int) (l2 >>> 8) & 0xffffff;
-      int doc3 = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      int runLen4 = (int) (l3 >>> 24) & 0xffffff;
-      int doc4 = (int) l3 & 0xffffff;
-      Arrays.fill(docIDs, index, index += runLen1 , doc1);
-      Arrays.fill(docIDs, index, index += runLen2 , doc2);
-      Arrays.fill(docIDs, index, index += runLen3 , doc3);
-      Arrays.fill(docIDs, index, index += runLen4 , doc4);
+      Arrays.fill(docIDs, index, index += (int) (l1 >>> 40), (int) (l1 >>> 16) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (((l1 & 0xffff) << 8) | (l2 >>> 56)), (int) (l2 >>> 32) & 0xffffff);
+      Arrays.fill(docIDs, index, index += (int) (l2 >>> 8) & 0xffffff, (int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
+      Arrays.fill(docIDs, index, index += (int) (l3 >>> 24) & 0xffffff, (int) l3 & 0xffffff);
     }
     for (; i < count; ++i) {
       int runLen =(Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
@@ -398,7 +390,7 @@ class DocIdsWriter {
       long l3 = in.readLong();
       Arrays.fill(docIDs, index, index += (int) (l1 >>> 56), (int) (l1 >>> 40) & 0xffff);
       Arrays.fill(docIDs, index, index += (int) (l1 >>> 32) & 0xff, (int) (l1 >>> 16) & 0xffff);
-      Arrays.fill(docIDs, index, index +=  (int) (l1 >>> 8) & 0xff, (int) (((l1 & 0xff) << 8) | (l2 >>> 56)));
+      Arrays.fill(docIDs, index, index += (int) (l1 >>> 8) & 0xff, (int) (((l1 & 0xff) << 8) | (l2 >>> 56)));
       Arrays.fill(docIDs, index, index += (int) (l2 >>> 48) & 0xff, (int) (l2 >>> 32) & 0xffff);
       Arrays.fill(docIDs, index, index += (int) (l2 >>> 24) & 0xff, (int) (l2 >>> 8) & 0xffff);
       Arrays.fill(docIDs, index, index += (int) l2 & 0xff, (int) (l3 >>> 48) & 0xffff);
