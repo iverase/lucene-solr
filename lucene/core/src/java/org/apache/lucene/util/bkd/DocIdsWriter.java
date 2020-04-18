@@ -63,7 +63,7 @@ class DocIdsWriter {
       }
     }
     if (max <= 0xff) {
-      if (runLenDocs > count * 2) {
+      if (runLenDocs * 2 < count) {
         out.writeVInt(runLenDocs);
         writeRunLen8(docIds, start, count, out, runLenDocs);
       } else {
@@ -72,7 +72,7 @@ class DocIdsWriter {
       }
     } else
       if (sorted) {
-      if (runLenDocs * 3 / 2 < count) {
+      if (runLenDocs * 3 < count * 2) {
         out.writeVInt(runLenDocs);
         writeRunLenDeltaVInts(docIds, start, count, out);
       } else {
@@ -80,7 +80,7 @@ class DocIdsWriter {
         writeDeltaVInts(docIds, start, count, out);
       }
     } else if (max <= 0xffff) {
-      if (runLenDocs * 3 / 2 < count) {
+      if (runLenDocs * 3 < count * 2) {
         out.writeVInt(runLenDocs);
         writeRunLen16(docIds, start, count, out, runLenDocs);
       } else {
@@ -88,7 +88,7 @@ class DocIdsWriter {
         writeInts16(docIds, start, count, out);
       }
     } else if (max <= 0xffffff) {
-      if (runLenDocs * 4 / 3 < count) {
+      if (runLenDocs * 4 < count * 3) {
         out.writeVInt(runLenDocs);
         writeRunLen24(docIds, start, count, out, runLenDocs);
       } else {
@@ -96,7 +96,7 @@ class DocIdsWriter {
         writeInts24(docIds, start, count, out);
       }
     } else {
-      if (runLenDocs * 5 / 4 < count / 2) {
+      if (runLenDocs * 5 < count * 4) {
         out.writeVInt(runLenDocs);
         writeRunLen32(docIds, start, count, out, runLenDocs);
       } else {
@@ -679,8 +679,8 @@ class DocIdsWriter {
   }
 
   private static void visit(int len, int doc, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < len; i++) {
+    //for (int i = 0; i < len; i++) {
       visitor.visit(doc);
-    }
+    //}
   }
 }
