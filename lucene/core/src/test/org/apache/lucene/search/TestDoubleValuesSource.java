@@ -55,7 +55,7 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     if (TEST_NIGHTLY) {
       numDocs = TestUtil.nextInt(random(), 2049, 4000);
     } else {
-      numDocs = atLeast(545);
+      numDocs = atLeast(546);
     }
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
@@ -274,7 +274,17 @@ public class TestDoubleValuesSource extends LuceneTestCase {
   }
 
   public void testQueryDoubleValuesSource() throws Exception {
-    Query q = new TermQuery(new Term("english", "two"));
+    Query iteratingQuery = new TermQuery(new Term("english", "two"));
+    Query approximatingQuery = new PhraseQuery.Builder()
+      .add(new Term("english", "hundred"), 0)
+      .add(new Term("english", "one"), 1)
+      .build();
+
+    doTestQueryDoubleValuesSources(iteratingQuery);
+    doTestQueryDoubleValuesSources(approximatingQuery);
+  }
+
+  private void doTestQueryDoubleValuesSources(Query q) throws Exception {
     DoubleValuesSource vs = DoubleValuesSource.fromQuery(q).rewrite(searcher);
     searcher.search(q, new SimpleCollector() {
 

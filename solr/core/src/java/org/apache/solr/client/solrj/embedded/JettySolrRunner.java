@@ -49,7 +49,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -411,7 +411,7 @@ public class JettySolrRunner {
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
-    gzipHandler.setMinGzipSize(0);
+    gzipHandler.setMinGzipSize(23); // https://github.com/eclipse/jetty.project/issues/4191
     gzipHandler.setCheckGzExists(false);
     gzipHandler.setCompressionLevel(-1);
     gzipHandler.setExcludedAgentPatterns(".*MSIE.6\\.0.*");
@@ -616,7 +616,7 @@ public class JettySolrRunner {
       SolrDispatchFilter sdf = getSolrDispatchFilter();
       ExecutorService customThreadPool = null;
       if (sdf != null) {
-        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jettyShutDown"));
+        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
 
         sdf.closeOnDestroy(false);
 //        customThreadPool.submit(() -> {
