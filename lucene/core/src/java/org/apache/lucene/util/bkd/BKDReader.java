@@ -619,7 +619,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
       if (r == Relation.CELL_INSIDE_QUERY) {
         for (int i = 0; i < count; ++i) {
-          visitor.visit(scratchIterator.docIDs[i]);
+          visitor.visit(scratchIterator.nextDoc());
         }
         return;
       }
@@ -669,7 +669,7 @@ public final class BKDReader extends PointValues implements Accountable {
 
         if (r == Relation.CELL_INSIDE_QUERY) {
           for (int i = 0; i < count; ++i) {
-            visitor.visit(scratchIterator.docIDs[i]);
+            visitor.visit(scratchIterator.nextDoc());
           }
           return;
         }
@@ -714,7 +714,6 @@ public final class BKDReader extends PointValues implements Accountable {
 
   // point is under commonPrefix
   private void visitUniqueRawDocValues(byte[] scratchPackedValue, BKDReaderDocIDSetIterator scratchIterator, int count, IntersectVisitor visitor) throws IOException {
-    scratchIterator.reset(0, count);
     visitor.visit(scratchIterator, scratchPackedValue);
   }
 
@@ -732,7 +731,7 @@ public final class BKDReader extends PointValues implements Accountable {
           int prefix = commonPrefixLengths[dim];
           in.readBytes(scratchPackedValue, dim*bytesPerDim + prefix, bytesPerDim - prefix);
         }
-        visitor.visit(scratchIterator.docIDs[i+j], scratchPackedValue);
+        visitor.visit(scratchIterator.nextDoc(), scratchPackedValue);
       }
       i += runLen;
     }
@@ -785,7 +784,7 @@ public final class BKDReader extends PointValues implements Accountable {
       if (state.index.nodeExists()) {
         // Leaf node; scan and filter all points in this block:
         int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchIterator);
-
+        state.scratchIterator.reset(0, count);
         // Again, this time reading values and checking with the visitor
         visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
       }
@@ -933,6 +932,7 @@ public final class BKDReader extends PointValues implements Accountable {
     private int offset;
     private int docID;
     final int[] docIDs;
+    private int prevDoc;
 
     public BKDReaderDocIDSetIterator(int maxPointsInLeafNode) {
       this.docIDs = new int[maxPointsInLeafNode];
@@ -957,6 +957,11 @@ public final class BKDReader extends PointValues implements Accountable {
         docID = DocIdSetIterator.NO_MORE_DOCS;
       } else {
         docID = docIDs[offset + idx];
+        if (docID == -1) {
+          docID = prevDoc;
+        } else {
+          prevDoc = docID;
+        }
         idx++;
       }
       return docID;
