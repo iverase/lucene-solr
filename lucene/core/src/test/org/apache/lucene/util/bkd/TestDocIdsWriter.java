@@ -59,6 +59,45 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
+  public void testRandom8() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = TestUtil.nextInt(random(), 0, 0xff);
+        }
+        test(dir, docIDs);
+      }
+    }
+  }
+
+  public void testRandom16() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = TestUtil.nextInt(random(), 0, 0xffff);
+        }
+        test(dir, docIDs);
+      }
+    }
+  }
+
+  public void testAllEquals() throws Exception {
+    int numIters = atLeast(10);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[random().nextInt(5000)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        final int value = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+        Arrays.fill(docIDs, value);
+        test(dir, docIDs);
+      }
+    }
+  }
+
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
