@@ -34,26 +34,15 @@ final class Polygon2D implements Component2D {
   final private double minX;
   /** maximum X of this geometry's bounding box area */
   final private double maxX;
-  /** tree of holes, or null */
-  final protected Component2D holes;
   /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
 
-  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
+  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y) {
     this.minY = minY;
     this.maxY = maxY;
     this.minX = minX;
     this.maxX = maxX;
-    this.holes = holes;
     this.tree = EdgeTree.createTree(x, y);
-  }
-
-  private Polygon2D(XYPolygon polygon, Component2D holes) {
-    this(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()), holes);
-  }
-
-  private Polygon2D(Polygon polygon, Component2D holes) {
-    this(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, polygon.getPolyLons(), polygon.getPolyLats(), holes);
   }
 
   @Override
@@ -84,10 +73,7 @@ final class Polygon2D implements Component2D {
    */
   @Override
   public boolean contains(double x, double y) {
-    if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY) && tree.contains(x, y)) {
-      return holes == null || holes.contains(x, y) == false;
-    }
-    return false;
+    return Component2D.containsPoint(x, y, minX, maxX, minY, maxY) && tree.contains(x, y);
   }
 
   @Override
@@ -97,15 +83,6 @@ final class Polygon2D implements Component2D {
     }
     if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_CROSSES_QUERY;
-    }
-    // check any holes
-    if (holes != null) {
-      Relation holeRelation = holes.relate(minX, maxX, minY, maxY);
-      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
-        return Relation.CELL_CROSSES_QUERY;
-      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
-        return Relation.CELL_OUTSIDE_QUERY;
-      }
     }
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minX, maxX, minY, maxY);
@@ -132,11 +109,8 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) || contains(bX, bY) ||
-        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
-      return holes == null || holes.containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) == false;
-    }
-    return false;
+    return contains(aX, aY) || contains(bX, bY) ||
+        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true);
   }
 
   @Override
@@ -145,12 +119,9 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
+    return contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
         Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)||
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true)) {
-      return holes == null || holes.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
-    }
-    return false;
+        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true);
   }
 
   @Override
@@ -159,11 +130,8 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) && contains(bX, bY) &&
-        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, false) == false) {
-      return holes == null || holes.intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) == false;
-    }
-    return false;
+    return contains(aX, aY) && contains(bX, bY) &&
+           tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, false) == false;
   }
 
   @Override
@@ -172,11 +140,8 @@ final class Polygon2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) && contains(bX, bY) && contains(cX, cY) &&
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false) {
-      return holes == null || holes.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
-    }
-    return false;
+    return contains(aX, aY) && contains(bX, bY) && contains(cX, cY) &&
+           tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false;
   }
 
   @Override
@@ -273,22 +238,53 @@ final class Polygon2D implements Component2D {
 
   /** Builds a Polygon2D from LatLon polygon */
   static Component2D create(Polygon polygon) {
+    int numPoints = polygon.numPoints();
     Polygon gonHoles[] = polygon.getHoles();
-    Component2D holes = null;
     if (gonHoles.length > 0) {
-      holes = LatLonGeometry.create(gonHoles);
+      for (int i = 0; i < gonHoles.length; i++) {
+        numPoints += gonHoles[i].numPoints();
+      }
     }
-    return new Polygon2D(polygon, holes);
+    double[] xs = new double[numPoints];
+    double[] ys = new double[numPoints];
+    int index = 0;
+    System.arraycopy(polygon.getPolyLons(), 0, xs, 0, polygon.numPoints());
+    System.arraycopy(polygon.getPolyLats(), 0, ys, 0, polygon.numPoints());
+    index += polygon.numPoints();
+    if (gonHoles.length > 0) {
+      for (int i = 0; i < gonHoles.length; i++) {
+        Polygon hole = gonHoles[i];
+        System.arraycopy(hole.getPolyLons(), 0, xs, index, hole.numPoints());
+        System.arraycopy(hole.getPolyLats(), 0, ys, index, hole.numPoints());
+        index += hole.numPoints();
+      }
+    }
+    return new Polygon2D(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, xs, ys);
   }
 
   /** Builds a Polygon2D from XY polygon */
   static Component2D create(XYPolygon polygon) {
+    int numPoints = polygon.numPoints();
     XYPolygon gonHoles[] = polygon.getHoles();
-    Component2D holes = null;
     if (gonHoles.length > 0) {
-      holes = XYGeometry.create(gonHoles);
+      for (int i = 0; i < gonHoles.length; i++) {
+        numPoints += gonHoles[i].numPoints();
+      }
     }
-    return new Polygon2D(polygon, holes);
+    double[] xs = new double[numPoints];
+    double[] ys = new double[numPoints];
+    int index = 0;
+    System.arraycopy(polygon.getPolyX(), 0, xs, 0, polygon.numPoints());
+    System.arraycopy(polygon.getPolyY(), 0, ys, 0, polygon.numPoints());
+    index += polygon.numPoints();
+    if (gonHoles.length > 0) {
+      for (int i = 0; i < gonHoles.length; i++) {
+        XYPolygon hole = gonHoles[i];
+        System.arraycopy(hole.getPolyX(), 0, xs, index, hole.numPoints());
+        System.arraycopy(hole.getPolyY(), 0, ys, index, hole.numPoints());
+        index += hole.numPoints();
+      }
+    }
+    return new Polygon2D(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, xs, ys);
   }
-
 }
