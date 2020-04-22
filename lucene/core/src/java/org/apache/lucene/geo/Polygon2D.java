@@ -37,12 +37,12 @@ final class Polygon2D implements Component2D {
   /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
 
-  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y) {
+  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, EdgeTree tree) {
     this.minY = minY;
     this.maxY = maxY;
     this.minX = minX;
     this.maxX = maxX;
-    this.tree = EdgeTree.createTree(x, y);
+    this.tree = tree;
   }
 
   @Override
@@ -238,53 +238,33 @@ final class Polygon2D implements Component2D {
 
   /** Builds a Polygon2D from LatLon polygon */
   static Component2D create(Polygon polygon) {
-    int numPoints = polygon.numPoints();
-    Polygon gonHoles[] = polygon.getHoles();
-    if (gonHoles.length > 0) {
-      for (int i = 0; i < gonHoles.length; i++) {
-        numPoints += gonHoles[i].numPoints();
-      }
+    if (polygon.getHoles().length == 0) {
+      EdgeTree tree = EdgeTree.createTree(polygon.getPolyLons(), polygon.getPolyLats());
+      return new Polygon2D(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, tree);
     }
-    double[] xs = new double[numPoints];
-    double[] ys = new double[numPoints];
-    int index = 0;
-    System.arraycopy(polygon.getPolyLons(), 0, xs, 0, polygon.numPoints());
-    System.arraycopy(polygon.getPolyLats(), 0, ys, 0, polygon.numPoints());
-    index += polygon.numPoints();
-    if (gonHoles.length > 0) {
-      for (int i = 0; i < gonHoles.length; i++) {
-        Polygon hole = gonHoles[i];
-        System.arraycopy(hole.getPolyLons(), 0, xs, index, hole.numPoints());
-        System.arraycopy(hole.getPolyLats(), 0, ys, index, hole.numPoints());
-        index += hole.numPoints();
-      }
+    double[][][] holes = new double[polygon.numHoles()][2][];
+    for (int i = 0; i < polygon.numHoles(); i++) {
+      holes[i][0] = polygon.getHole(i).getPolyLons();
+      holes[i][1] = polygon.getHole(i).getPolyLats();
     }
-    return new Polygon2D(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, xs, ys);
+    EdgeTree tree = EdgeTree.createTree(polygon.getPolyLons(), polygon.getPolyLats(), holes);
+    return new Polygon2D(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, tree);
   }
 
   /** Builds a Polygon2D from XY polygon */
   static Component2D create(XYPolygon polygon) {
-    int numPoints = polygon.numPoints();
-    XYPolygon gonHoles[] = polygon.getHoles();
-    if (gonHoles.length > 0) {
-      for (int i = 0; i < gonHoles.length; i++) {
-        numPoints += gonHoles[i].numPoints();
-      }
+    if (polygon.getHoles().length == 0) {
+      EdgeTree tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()),
+          XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()));
+      return new Polygon2D(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, tree);
     }
-    double[] xs = new double[numPoints];
-    double[] ys = new double[numPoints];
-    int index = 0;
-    System.arraycopy(polygon.getPolyX(), 0, xs, 0, polygon.numPoints());
-    System.arraycopy(polygon.getPolyY(), 0, ys, 0, polygon.numPoints());
-    index += polygon.numPoints();
-    if (gonHoles.length > 0) {
-      for (int i = 0; i < gonHoles.length; i++) {
-        XYPolygon hole = gonHoles[i];
-        System.arraycopy(hole.getPolyX(), 0, xs, index, hole.numPoints());
-        System.arraycopy(hole.getPolyY(), 0, ys, index, hole.numPoints());
-        index += hole.numPoints();
-      }
+    double[][][] holes = new double[polygon.numHoles()][2][];
+    for (int i = 0; i < polygon.numHoles(); i++) {
+      holes[i][0] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getHole(i).getPolyX());
+      holes[i][1] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getHole(i).getPolyY());
     }
-    return new Polygon2D(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, xs, ys);
+    EdgeTree tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()),
+        XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()), holes);
+    return new Polygon2D(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, tree);
   }
 }
