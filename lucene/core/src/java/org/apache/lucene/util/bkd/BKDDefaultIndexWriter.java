@@ -108,7 +108,7 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
     // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree (only happens
     // if it was created by OneDimensionBKDWriter).  In this case the leaf nodes may straddle the two bottom
     // levels of the binary tree:
-    if (config.numIndexDims == 1 && numLeaves > 1) {
+    if (numLeaves > 1) {
       int levelCount = 2;
       while (true) {
         if (numLeaves >= levelCount && numLeaves <= 2*levelCount) {
@@ -185,6 +185,7 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
 
       int address = nodeID * (1 + config.bytesPerDim);
       int splitDim = splitPackedValues[address++] & 0xff;
+      //System.out.println(splitDim);
 
       //System.out.println("recursePack inner nodeID=" + nodeID + " splitDim=" + splitDim + " splitValue=" + new BytesRef(splitPackedValues, address, bytesPerDim));
 
@@ -195,11 +196,11 @@ public class BKDDefaultIndexWriter implements BKDIndexWriter {
         prefix = config.bytesPerDim;
       }
 
-      //System.out.println("writeNodeData nodeID=" + nodeID + " splitDim=" + splitDim + " numDims=" + numDims + " bytesPerDim=" + bytesPerDim + " prefix=" + prefix);
+      //System.out.println("writeNodeData nodeID=" + nodeID + " splitDim=" + splitDim + " numDims=" + config.numDims + " bytesPerDim=" + config.bytesPerDim + " prefix=" + prefix);
 
       int firstDiffByteDelta;
       if (prefix < config.bytesPerDim) {
-        //System.out.println("  delta byte cur=" + Integer.toHexString(splitPackedValues[address+prefix]&0xFF) + " prev=" + Integer.toHexString(lastSplitValues[splitDim * bytesPerDim + prefix]&0xFF) + " negated?=" + negativeDeltas[splitDim]);
+        //System.out.println("  delta byte cur=" + Integer.toHexString(splitPackedValues[address+prefix]&0xFF) + " prev=" + Integer.toHexString(lastSplitValues[splitDim * config.bytesPerDim + prefix]&0xFF) + " negated?=" + negativeDeltas[splitDim]);
         firstDiffByteDelta = (splitPackedValues[address+prefix]&0xFF) - (lastSplitValues[splitDim * config.bytesPerDim + prefix]&0xFF);
         if (negativeDeltas[splitDim]) {
           firstDiffByteDelta = -firstDiffByteDelta;
