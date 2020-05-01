@@ -839,35 +839,27 @@ public class BKDWriter implements Closeable {
    */
   private int recursePackIndex(ByteBuffersDataOutput writeBuffer, long[] leafBlockFPs, byte[] splitPackedValues, long minBlockFP, List<byte[]> blocks,
                                int nodeID, byte[] lastSplitValues, boolean[] negativeDeltas, boolean isLeft, int leavesOffset, int numLeaves) throws IOException {
-    if (nodeID >= leafBlockFPs.length) {
-      int leafID = nodeID - leafBlockFPs.length;
-      //System.out.println("recursePack leaf nodeID=" + nodeID);
-
-      // In the unbalanced case it's possible the left most node only has one child:
-      if (leafID < leafBlockFPs.length) {
-        long delta =  leafBlockFPs[leavesOffset] - minBlockFP;
-        if (isLeft) {
-          assert delta == 0;
-          return 0;
-        } else {
-          assert nodeID == 1 || delta > 0: "nodeID=" + nodeID;
-          writeBuffer.writeVLong(delta);
-          return appendBlock(writeBuffer, blocks);
-        }
-      } else {
+    if (numLeaves == 1) {
+      if (isLeft) {
+        assert leafBlockFPs[leavesOffset] - minBlockFP == 0;
         return 0;
+      } else {
+        long delta = leafBlockFPs[leavesOffset] - minBlockFP;
+        assert nodeID == 1 || delta > 0 : "nodeID=" + nodeID;
+        writeBuffer.writeVLong(delta);
+        return appendBlock(writeBuffer, blocks);
       }
     } else {
       long leftBlockFP;
-      if (isLeft == false) {
+      if (isLeft) {
+        // The left tree's left most leaf block FP is always the minimal FP:
+        assert leafBlockFPs[leavesOffset] == minBlockFP;
+        leftBlockFP = minBlockFP;
+      } else {
         leftBlockFP = leafBlockFPs[leavesOffset];
         long delta = leftBlockFP - minBlockFP;
         assert nodeID == 1 || delta > 0 : "expected nodeID=1 or delta > 0; got nodeID=" + nodeID + " and delta=" + delta;
         writeBuffer.writeVLong(delta);
-      } else {
-        // The left tree's left most leaf block FP is always the minimal FP:
-        assert leafBlockFPs[leavesOffset] == minBlockFP;
-        leftBlockFP = minBlockFP;
       }
 
       int address = nodeID * (1+bytesPerDim);
