@@ -437,7 +437,7 @@ public class BKDWriter implements Closeable {
     }
 
     final int[] parentSplits = new int[numIndexDims];
-    build(1, 0, numLeaves, values, 0, Math.toIntExact(pointCount), out,
+    build(0, numLeaves, values, 0, Math.toIntExact(pointCount), out,
           minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
           splitPackedValues, leafBlockFPs,
           new int[maxPointsInLeafNode]);
@@ -445,6 +445,7 @@ public class BKDWriter implements Closeable {
 
     scratchBytesRef1.length = bytesPerDim;
     scratchBytesRef1.bytes = splitPackedValues;
+    int offset = 1 + bytesPerDim;
 
     BKDTreeNodes nodes  = new BKDTreeNodes() {
       @Override
@@ -454,13 +455,13 @@ public class BKDWriter implements Closeable {
 
       @Override
       public BytesRef getSplitValue(int index) {
-        scratchBytesRef1.offset = index * (1 + bytesPerDim) + 1;
+        scratchBytesRef1.offset = index * offset + 1;
         return scratchBytesRef1;
       }
 
       @Override
       public int getSplitDimension(int index) {
-        return splitPackedValues[index * (1 + bytesPerDim)] & 0xff;
+        return splitPackedValues[index * offset] & 0xff;
       }
 
       @Override
@@ -792,7 +793,7 @@ public class BKDWriter implements Closeable {
     try {
 
       final int[] parentSplits = new int[numIndexDims];
-      build(1, 0, numLeaves, points,
+      build(0, numLeaves, points,
              out, radixSelector,
             minPackedValue.clone(), maxPackedValue.clone(),
             parentSplits,
@@ -887,7 +888,7 @@ public class BKDWriter implements Closeable {
         return 0;
       } else {
         long delta = nodes.getLeafLP(leavesOffset) - minBlockFP;
-        assert delta >= 0 : "leaveOffset =" + leavesOffset;
+        assert (leavesOffset == 0 && delta == 0) || delta > 0 : "leaveOffset =" + leavesOffset;
         writeBuffer.writeVLong(delta);
         return appendBlock(writeBuffer, blocks);
       }
@@ -1293,7 +1294,7 @@ public class BKDWriter implements Closeable {
 
   /* Recursively reorders the provided reader and writes the bkd-tree on the fly; this method is used
    * when we are writing a new segment directly from IndexWriter's indexing buffer (MutablePointsReader). */
-  private void build(int nodeID, int leavesOffset, int numLeaves,
+  private void build(int leavesOffset, int numLeaves,
                      MutablePointValues reader, int from, int to,
                      IndexOutput out,
                      byte[] minPackedValue, byte[] maxPackedValue,
@@ -1417,7 +1418,7 @@ public class BKDWriter implements Closeable {
         // for dimensions > 2 we recompute the bounds for the current inner node to help the algorithm choose best
         // split dimensions. Because it is an expensive operation, the frequency we recompute the bounds is given
         // by SPLITS_BEFORE_EXACT_BOUNDS.
-        if (nodeID > 1 && numIndexDims > 2 && Arrays.stream(parentSplits).sum() % SPLITS_BEFORE_EXACT_BOUNDS == 0) {
+        if (numLeaves != leafBlockFPs.length && numIndexDims > 2 && Arrays.stream(parentSplits).sum() % SPLITS_BEFORE_EXACT_BOUNDS == 0) {
           computePackedValueBounds(reader, from, to, minPackedValue, maxPackedValue, scratchBytesRef1);
         }
         splitDim = split(minPackedValue, maxPackedValue, parentSplits);
@@ -1454,10 +1455,10 @@ public class BKDWriter implements Closeable {
 
       // recurse
       parentSplits[splitDim]++;
-      build(nodeID * 2, leavesOffset, numLeftLeafNodes, reader, from, mid, out,
+      build(leavesOffset, numLeftLeafNodes, reader, from, mid, out,
           minPackedValue, maxSplitPackedValue, parentSplits,
           splitPackedValues, leafBlockFPs, spareDocIds);
-      build(nodeID * 2 + 1, nodeOffset, numLeaves - numLeftLeafNodes, reader, mid, to, out,
+      build(nodeOffset, numLeaves - numLeftLeafNodes, reader, mid, to, out,
           minSplitPackedValue, maxPackedValue, parentSplits,
           splitPackedValues, leafBlockFPs, spareDocIds);
       parentSplits[splitDim]--;
@@ -1490,7 +1491,7 @@ public class BKDWriter implements Closeable {
 
   /** The point writer contains the data that is going to be splitted using radix selection.
   /*  This method is used when we are merging previously written segments, in the numDims > 1 case. */
-  private void build(int nodeID, int leavesOffset, int numLeaves,
+  private void build(int leavesOffset, int numLeaves,
                      BKDRadixSelector.PathSlice points,
                      IndexOutput out,
                      BKDRadixSelector radixSelector,
@@ -1557,7 +1558,7 @@ public class BKDWriter implements Closeable {
       // Write docIDs first, as their own chunk, so that at intersect time we can add all docIDs w/o
       // loading the values:
       int count = to - from;
-      assert count > 0: "nodeID=" + nodeID + " leavesOffset=" + leavesOffset;
+      assert count > 0: "numLeaves=" + numLeaves + " leavesOffset=" + leavesOffset;
       assert count <= spareDocIds.length : "count=" + count + " > length=" + spareDocIds.length;
       // Write doc IDs
       int[] docIDs = spareDocIds;
@@ -1600,13 +1601,13 @@ public class BKDWriter implements Closeable {
         // for dimensions > 2 we recompute the bounds for the current inner node to help the algorithm choose best
         // split dimensions. Because it is an expensive operation, the frequency we recompute the bounds is given
         // by SPLITS_BEFORE_EXACT_BOUNDS.
-        if (nodeID > 1 && numIndexDims > 2 && Arrays.stream(parentSplits).sum() % SPLITS_BEFORE_EXACT_BOUNDS == 0) {
+        if (numLeaves != leafBlockFPs.length && numIndexDims > 2 && Arrays.stream(parentSplits).sum() % SPLITS_BEFORE_EXACT_BOUNDS == 0) {
           computePackedValueBounds(points, minPackedValue, maxPackedValue);
         }
         splitDim = split(minPackedValue, maxPackedValue, parentSplits);
       }
 
-      assert nodeID < splitPackedValues.length : "nodeID=" + nodeID + " splitValues.length=" + splitPackedValues.length;
+      assert numLeaves <= leafBlockFPs.length : "numLeaves=" + numLeaves + " leafBlockFPs.length=" + leafBlockFPs.length;
 
       // How many leaves will be in the left tree:
       int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
@@ -1641,12 +1642,12 @@ public class BKDWriter implements Closeable {
 
       parentSplits[splitDim]++;
       // Recurse on left tree:
-      build(2 * nodeID, leavesOffset, numLeftLeafNodes, slices[0],
+      build(leavesOffset, numLeftLeafNodes, slices[0],
           out, radixSelector, minPackedValue, maxSplitPackedValue,
           parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
       // Recurse on right tree:
-      build(2 * nodeID + 1, nodeOffset, numLeaves - numLeftLeafNodes, slices[1],
+      build(nodeOffset, numLeaves - numLeftLeafNodes, slices[1],
           out, radixSelector, minSplitPackedValue, maxPackedValue
           , parentSplits, splitPackedValues, leafBlockFPs, spareDocIds);
 
