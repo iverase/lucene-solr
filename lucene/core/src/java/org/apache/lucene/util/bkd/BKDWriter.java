@@ -804,21 +804,6 @@ public class BKDWriter implements Closeable {
 
   /** Packs the two arrays, representing a semi-balanced binary tree, into a compact byte[] structure. */
   private byte[] packIndex(long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
-    int numLeaves = leafBlockFPs.length;
-    // Possibly rotate the leaf block FPs, if the index not fully balanced binary tree.
-    // In this case the leaf nodes may straddle the two bottom
-    // levels of the binary tree:
-    int lastFullLevel = 31 - Integer.numberOfLeadingZeros(numLeaves);
-    int leavesFullLevel = 1 << lastFullLevel;
-    int leavesPartialLevel = 2 * (numLeaves - leavesFullLevel);
-    if (leavesPartialLevel != 0) {
-      // Last level is partially filled, so we must rotate the leaf FPs to match.  We do this here, after loading
-      // at read-time, so that we can still delta code them on disk at write:
-      long[] newLeafBlockFPs = new long[numLeaves];
-      System.arraycopy(leafBlockFPs, leavesPartialLevel, newLeafBlockFPs, 0, numLeaves - leavesPartialLevel);
-      System.arraycopy(leafBlockFPs, 0, newLeafBlockFPs, numLeaves - leavesPartialLevel, leavesPartialLevel);
-      leafBlockFPs = newLeafBlockFPs;
-    }
     /** Reused while packing the index */
     ByteBuffersDataOutput writeBuffer = ByteBuffersDataOutput.newResettableInstance();
 
@@ -826,7 +811,8 @@ public class BKDWriter implements Closeable {
     List<byte[]> blocks = new ArrayList<>();
     byte[] lastSplitValues = new byte[bytesPerDim * numIndexDims];
     //System.out.println("\npack index");
-    int totalSize = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, 0l, blocks, 1, lastSplitValues, new boolean[numIndexDims], false);
+    int totalSize = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, 0l, blocks, 1, lastSplitValues, new boolean[numIndexDims], false,
+        0, leafBlockFPs.length);
 
     // Compact the byte[] blocks into single byte index:
     byte[] index = new byte[totalSize];
@@ -852,14 +838,14 @@ public class BKDWriter implements Closeable {
    * lastSplitValues is per-dimension split value previously seen; we use this to prefix-code the split byte[] on each inner node
    */
   private int recursePackIndex(ByteBuffersDataOutput writeBuffer, long[] leafBlockFPs, byte[] splitPackedValues, long minBlockFP, List<byte[]> blocks,
-                               int nodeID, byte[] lastSplitValues, boolean[] negativeDeltas, boolean isLeft) throws IOException {
+                               int nodeID, byte[] lastSplitValues, boolean[] negativeDeltas, boolean isLeft, int leavesOffset, int numLeaves) throws IOException {
     if (nodeID >= leafBlockFPs.length) {
       int leafID = nodeID - leafBlockFPs.length;
       //System.out.println("recursePack leaf nodeID=" + nodeID);
 
       // In the unbalanced case it's possible the left most node only has one child:
       if (leafID < leafBlockFPs.length) {
-        long delta = leafBlockFPs[leafID] - minBlockFP;
+        long delta =  leafBlockFPs[leavesOffset] - minBlockFP;
         if (isLeft) {
           assert delta == 0;
           return 0;
@@ -874,12 +860,13 @@ public class BKDWriter implements Closeable {
     } else {
       long leftBlockFP;
       if (isLeft == false) {
-        leftBlockFP = getLeftMostLeafBlockFP(leafBlockFPs, nodeID);
+        leftBlockFP = leafBlockFPs[leavesOffset];
         long delta = leftBlockFP - minBlockFP;
         assert nodeID == 1 || delta > 0 : "expected nodeID=1 or delta > 0; got nodeID=" + nodeID + " and delta=" + delta;
         writeBuffer.writeVLong(delta);
       } else {
         // The left tree's left most leaf block FP is always the minimal FP:
+        assert leafBlockFPs[leavesOffset] == minBlockFP;
         leftBlockFP = minBlockFP;
       }
 
@@ -942,7 +929,10 @@ public class BKDWriter implements Closeable {
       boolean savNegativeDelta = negativeDeltas[splitDim];
       negativeDeltas[splitDim] = true;
 
-      int leftNumBytes = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, leftBlockFP, blocks, 2*nodeID, lastSplitValues, negativeDeltas, true);
+      int numLeftLeafNodes = getNumLeftLeafNodes(numLeaves);
+
+      int leftNumBytes = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, leftBlockFP, blocks, 2*nodeID, lastSplitValues, negativeDeltas, true,
+          leavesOffset, numLeftLeafNodes);
 
       if (nodeID * 2 < leafBlockFPs.length) {
         writeBuffer.writeVInt(leftNumBytes);
@@ -956,7 +946,8 @@ public class BKDWriter implements Closeable {
       blocks.set(idxSav, bytes2);
 
       negativeDeltas[splitDim] = false;
-      int rightNumBytes = recursePackIndex(writeBuffer, leafBlockFPs, splitPackedValues, leftBlockFP, blocks, 2*nodeID+1, lastSplitValues, negativeDeltas, false);
+      int rightNumBytes = recursePackIndex(writeBuffer,  leafBlockFPs, splitPackedValues, leftBlockFP, blocks, 2*nodeID+1, lastSplitValues, negativeDeltas, false,
+          leavesOffset + numLeftLeafNodes, numLeaves - numLeftLeafNodes);
 
       negativeDeltas[splitDim] = savNegativeDelta;
 
@@ -967,24 +958,6 @@ public class BKDWriter implements Closeable {
       
       return numBytes + bytes2.length + leftNumBytes + rightNumBytes;
     }
-  }
-
-  private long getLeftMostLeafBlockFP(long[] leafBlockFPs, int nodeID) {
-    // TODO: can we do this cheaper, e.g. a closed form solution instead of while loop?  Or
-    // change the recursion while packing the index to return this left-most leaf block FP
-    // from each recursion instead?
-    //
-    // Still, the overall cost here is minor: this method's cost is O(log(N)), and while writing
-    // we call it O(N) times (N = number of leaf blocks)
-    while (nodeID < leafBlockFPs.length) {
-      nodeID *= 2;
-    }
-    int leafID = nodeID - leafBlockFPs.length;
-    long result = leafBlockFPs[leafID];
-    if (result < 0) {
-      throw new AssertionError(result + " for leaf " + leafID);
-    }
-    return result;
   }
 
   private void writeIndex(IndexOutput out, int countPerLeaf, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
