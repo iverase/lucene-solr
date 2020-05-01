@@ -61,9 +61,8 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    final long[] tmp = new long[ForUtilCheck.BLOCK_SIZE / 2];
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
-      DocIdsWriter.writeDocIds(ints, 0, ints.length, out, tmp);
+      DocIdsWriter.writeDocIds(ints, 0, ints.length, out);
       len = out.getFilePointer();
       if (random().nextBoolean()) {
         out.writeLong(0); // garbage
@@ -71,7 +70,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      DocIdsWriter.readInts(in, ints.length, read, tmp);
+      DocIdsWriter.readInts(in, ints.length, read);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }

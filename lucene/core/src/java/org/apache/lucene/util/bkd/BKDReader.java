@@ -484,8 +484,6 @@ public final class BKDReader extends PointValues implements Accountable {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
-    final long[] scratchLongs = new long[ForUtilCheck.BLOCK_SIZE];
-
     public IntersectState(IndexInput in, int numDims,
                           int packedBytesLength,
                           int packedIndexBytesLength,
@@ -558,7 +556,7 @@ public final class BKDReader extends PointValues implements Accountable {
   public void visitLeafBlockValues(IndexTree index, IntersectState state) throws IOException {
 
     // Leaf node; scan and filter all points in this block:
-    int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchIterator, state.scratchLongs);
+    int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchIterator);
 
     // Again, this time reading values and checking with the visitor
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
@@ -575,13 +573,13 @@ public final class BKDReader extends PointValues implements Accountable {
     DocIdsWriter.readInts(in, count, visitor);
   }
 
-  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, long[] scratchLongs) throws IOException {
+  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    DocIdsWriter.readInts(in, count, iterator.docIDs, scratchLongs);
+    DocIdsWriter.readInts(in, count, iterator.docIDs);
 
     return count;
   }
@@ -786,7 +784,7 @@ public final class BKDReader extends PointValues implements Accountable {
       // In the unbalanced case it's possible the left most node only has one child:
       if (state.index.nodeExists()) {
         // Leaf node; scan and filter all points in this block:
-        int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchIterator, state.scratchLongs);
+        int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchIterator);
 
         // Again, this time reading values and checking with the visitor
         visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
