@@ -151,7 +151,7 @@ public class BKDWriter implements Closeable {
   private final int maxDoc;
 
   public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDataDims, int numIndexDims, int bytesPerDim,
-                      int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) throws IOException {
+                   int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) throws IOException {
     verifyParams(numDataDims, numIndexDims, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
@@ -280,12 +280,12 @@ public class BKDWriter implements Closeable {
     public MergeReader(BKDReader bkd, MergeState.DocMap docMap) throws IOException {
       this.bkd = bkd;
       state = new BKDReader.IntersectState(bkd.in.clone(),
-                                           bkd.numDataDims,
-                                           bkd.packedBytesLength,
-                                           bkd.packedIndexBytesLength,
-                                           bkd.maxPointsInLeafNode,
-                                           null,
-                                           null);
+          bkd.numDataDims,
+          bkd.packedBytesLength,
+          bkd.packedIndexBytesLength,
+          bkd.maxPointsInLeafNode,
+          null,
+          null);
       this.docMap = docMap;
       state.in.seek(bkd.getMinLeafBlockFP());
       this.packedValues = new byte[bkd.maxPointsInLeafNode * bkd.packedBytesLength];
@@ -451,9 +451,9 @@ public class BKDWriter implements Closeable {
 
     final int[] parentSplits = new int[numIndexDims];
     build(0, numLeaves, values, 0, Math.toIntExact(pointCount), out,
-          minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
-          splitPackedValues, splitDimensionValues, leafBlockFPs,
-          new int[maxPointsInLeafNode]);
+        minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
+        splitPackedValues, splitDimensionValues, leafBlockFPs,
+        new int[maxPointsInLeafNode]);
     assert Arrays.equals(parentSplits, new int[numIndexDims]);
 
     scratchBytesRef1.length = bytesPerDim;
@@ -697,7 +697,7 @@ public class BKDWriter implements Closeable {
 
       scratchBytesRef1.length = packedBytesLength;
       scratchBytesRef1.bytes = leafValues;
-      
+
       final IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
         @Override
         public BytesRef apply(int i) {
@@ -737,7 +737,7 @@ public class BKDWriter implements Closeable {
   // useful for debugging:
   /*
   private void printPathSlice(String desc, PathSlice slice, int dim) throws IOException {
-    System.out.println("    " + desc + " dim=" + dim + " count=" + slice.count + ":");    
+    System.out.println("    " + desc + " dim=" + dim + " count=" + slice.count + ":");
     try(PointReader r = slice.writer.getReader(slice.start, slice.count)) {
       int count = 0;
       while (r.next()) {
@@ -808,13 +808,13 @@ public class BKDWriter implements Closeable {
 
       final int[] parentSplits = new int[numIndexDims];
       build(0, numLeaves, points,
-             out, radixSelector,
-            minPackedValue.clone(), maxPackedValue.clone(),
-            parentSplits,
-            splitPackedValues,
-            splitDimensionValues,
-            leafBlockFPs,
-            new int[maxPointsInLeafNode]);
+          out, radixSelector,
+          minPackedValue.clone(), maxPackedValue.clone(),
+          parentSplits,
+          splitPackedValues,
+          splitDimensionValues,
+          leafBlockFPs,
+          new int[maxPointsInLeafNode]);
       assert Arrays.equals(parentSplits, new int[numIndexDims]);
 
       // If no exception, we should have cleaned everything up:
@@ -992,7 +992,7 @@ public class BKDWriter implements Closeable {
       } else {
         assert leftNumBytes == 0: "leftNumBytes=" + leftNumBytes;
       }
-      
+
       byte[] bytes2 = writeBuffer.toArrayCopy();
       writeBuffer.reset();
       // replace our placeholder:
@@ -1008,7 +1008,7 @@ public class BKDWriter implements Closeable {
       System.arraycopy(savSplitValue, 0, lastSplitValues, splitDim * bytesPerDim + prefix, suffix);
 
       assert Arrays.equals(lastSplitValues, cmp);
-      
+
       return numBytes + bytes2.length + leftNumBytes + rightNumBytes;
     }
   }
@@ -1017,9 +1017,9 @@ public class BKDWriter implements Closeable {
     byte[] packedIndex = packIndex(nodes);
     writeIndex(out, countPerLeaf, nodes.numLeaves(), packedIndex);
   }
-  
+
   private void writeIndex(IndexOutput out, int countPerLeaf, int numLeaves, byte[] packedIndex) throws IOException {
-    
+
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
     out.writeVInt(numDataDims);
     out.writeVInt(numIndexDims);
@@ -1233,7 +1233,7 @@ public class BKDWriter implements Closeable {
         }
       }
     }
-    
+
     // We are reading from heap; nothing to add:
     throw IOUtils.rethrowAlways(priorException);
   }
@@ -1294,7 +1294,7 @@ public class BKDWriter implements Closeable {
   private HeapPointWriter switchToHeap(PointWriter source) throws IOException {
     int count = Math.toIntExact(source.count());
     try (PointReader reader = source.getReader(0, source.count());
-        HeapPointWriter writer = new HeapPointWriter(count, packedBytesLength)) {
+         HeapPointWriter writer = new HeapPointWriter(count, packedBytesLength)) {
       for(int i=0;i<count;i++) {
         boolean hasNext = reader.next();
         assert hasNext;
@@ -1507,7 +1507,7 @@ public class BKDWriter implements Closeable {
   }
 
   /** The point writer contains the data that is going to be splitted using radix selection.
-  /*  This method is used when we are merging previously written segments, in the numDims > 1 case. */
+   /*  This method is used when we are merging previously written segments, in the numDims > 1 case. */
   private void build(int leavesOffset, int numLeaves,
                      BKDRadixSelector.PathSlice points,
                      IndexOutput out,
@@ -1697,7 +1697,7 @@ public class BKDWriter implements Closeable {
 
   // only called from assert
   private boolean valuesInOrderAndBounds(int count, int sortedDim, byte[] minPackedValue, byte[] maxPackedValue,
-      IntFunction<BytesRef> values, int[] docs, int docsOffset) throws IOException {
+                                         IntFunction<BytesRef> values, int[] docs, int docsOffset) throws IOException {
     byte[] lastPackedValue = new byte[packedBytesLength];
     int lastDoc = -1;
     for (int i=0;i<count;i++) {
@@ -1715,7 +1715,7 @@ public class BKDWriter implements Closeable {
 
   // only called from assert
   private boolean valueInOrder(long ord, int sortedDim, byte[] lastPackedValue, byte[] packedValue, int packedValueOffset,
-      int doc, int lastDoc) {
+                               int doc, int lastDoc) {
     int dimOffset = sortedDim * bytesPerDim;
     if (ord > 0) {
       int cmp = Arrays.compareUnsigned(lastPackedValue, dimOffset, dimOffset + bytesPerDim, packedValue, packedValueOffset + dimOffset, packedValueOffset + dimOffset + bytesPerDim);
