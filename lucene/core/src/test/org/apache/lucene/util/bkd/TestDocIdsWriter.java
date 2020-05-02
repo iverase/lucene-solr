@@ -61,8 +61,10 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
+    final long[] tmp1 = new long[ForUtilCheck.BLOCK_SIZE / 2];
+    final long[] tmp2 = new long[ForUtilCheck.BLOCK_SIZE / 2];
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
-      DocIdsWriter.writeDocIds(ints, 0, ints.length, out);
+      DocIdsWriter.writeDocIds(ints, 0, ints.length, out, tmp1);
       len = out.getFilePointer();
       if (random().nextBoolean()) {
         out.writeLong(0); // garbage
@@ -70,7 +72,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      DocIdsWriter.readInts(in, ints.length, read);
+      DocIdsWriter.readInts(in, ints.length, read, tmp1, tmp2);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
@@ -93,7 +95,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
           throw new UnsupportedOperationException();
         }
 
-      });
+      }, tmp1, tmp2);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }

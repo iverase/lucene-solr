@@ -300,7 +300,7 @@ public class BKDWriter implements Closeable {
             return false;
           }
           //System.out.println("  new block @ fp=" + state.in.getFilePointer());
-          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchIterator);
+          docsInBlock = bkd.readDocIDs(state.in, state.in.getFilePointer(), state.scratchIterator, state.scratchLongs1, state.scratchLongs2);
           assert docsInBlock > 0;
           docBlockUpto = 0;
           bkd.visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, docsInBlock, new IntersectVisitor() {
@@ -1010,11 +1010,11 @@ public class BKDWriter implements Closeable {
     out.writeVInt(packedIndex.length);
     out.writeBytes(packedIndex, 0, packedIndex.length);
   }
-
+  long[] scratchLon = new long[ForUtilCheck.BLOCK_SIZE / 2];
   private void writeLeafBlockDocs(DataOutput out, int[] docIDs, int start, int count) throws IOException {
     assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;
     out.writeVInt(count);
-    DocIdsWriter.writeDocIds(docIDs, start, count, out);
+    DocIdsWriter.writeDocIds(docIDs, start, count, out, scratchLon);
   }
 
   private void writeLeafBlockPackedValues(DataOutput out, int[] commonPrefixLengths, int count, int sortedDim, IntFunction<BytesRef> packedValues, int leafCardinality) throws IOException {
