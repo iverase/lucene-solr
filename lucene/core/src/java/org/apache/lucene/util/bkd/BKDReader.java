@@ -530,7 +530,7 @@ public final class BKDReader extends PointValues implements Accountable {
       assert grown;
       //System.out.println("ADDALL");
       if (state.index.nodeExists()) {
-        visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor, state.scratchLongs1, state.scratchLongs2);
+        visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor, state.scratchLongs1, state.scratchLongs2, state.scratchIterator.docIDs);
       }
       // TODO: we can assert that the first value here in fact matches what the index claimed?
     } else {
@@ -565,15 +565,18 @@ public final class BKDReader extends PointValues implements Accountable {
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
   }
 
-  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, long[] scratchLongs1, long[] scratchLongs2) throws IOException {
+  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, long[] scratchLongs1, long[] scratchLongs2, int[] docIDs) throws IOException {
     // Leaf node
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
     // No need to call grow(), it has been called up-front
-
-    DocIdsWriter.readInts(in, count, visitor, scratchLongs1, scratchLongs2);
+    DocIdsWriter.readInts(in, count, docIDs, scratchLongs1, scratchLongs2);
+    for (int i = 0; i < count; i++) {
+      visitor.visit(docIDs[i]);
+    }
+   // DocIdsWriter.readInts(in, count, visitor, scratchLongs1, scratchLongs2);
   }
 
   int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, long[] scratchLongs1, long[] scratchLongs2) throws IOException {
