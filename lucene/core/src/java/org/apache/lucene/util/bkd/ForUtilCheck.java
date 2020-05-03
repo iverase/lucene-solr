@@ -40,6 +40,7 @@ import java.io.IOException;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.packed.PackedInts;
 
 // Inspired from https://fulmicoton.com/posts/bitpacking/
 // Encodes multiple integers in a long to get SIMD-like speedups.
@@ -124,6 +125,41 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand8Delta(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException{
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 56) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 48) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base +=(int) ((l >>> 40) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base +=(int) ((l >>> 32) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base +=(int) ((l >>> 24) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base +=(int) ((l >>> 16) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base +=(int) ((l >>> 8) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base +=(int) (l & 0xFFL));
+    }
+  }
+
   private static void expand8To32(long[] arr) {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
@@ -169,6 +205,25 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand16Delta(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 48) & 0xFFFFL));
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 32) & 0xFFFFL));
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 16) & 0xFFFFL));
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) (l & 0xFFFFL));
+    }
+  }
+
   private static void expand16To32(long[] arr) {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
@@ -195,7 +250,7 @@ final class ForUtilCheck {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       ints[offset+i] = (int) (l >>> 32);
-      ints[offset+64 + i] = (int) (l & 0xFFFFFFFFL);
+      ints[offset+64+i] = (int) (l & 0xFFFFFFFFL);
     }
   }
 
@@ -210,30 +265,41 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand32Delta(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) (l >>> 32));
+    }
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) (l & 0xFFFFFFFFL));
+    }
+  }
+
   private static void collapse32(long[] arr) {
     for (int i = 0; i < 64; ++i) {
       arr[i] = (arr[i] << 32) | arr[64+i];
     }
   }
 
-  private static void prefixSum8(long[] arr, long base) {
+  private static void prefixSum8(long[] arr, long base, int[] ints, int offset) {
     expand8To32(arr);
-    prefixSum32(arr, base);
+    prefixSum32(arr, base, ints, offset);
   }
 
-  private static void prefixSum16(long[] arr, long base) {
+  private static void prefixSum16(long[] arr, long base, int[] ints, int offset) {
     // We need to move to the next primitive size to avoid overflows
     expand16To32(arr);
-    prefixSum32(arr, base);
+    prefixSum32(arr, base, ints, offset);
   }
 
-  private static void prefixSum32(long[] arr, long base) {
+  private static void prefixSum32(long[] arr, long base, int[] ints, int offset) {
     arr[0] += base << 32;
     innerPrefixSum32(arr);
-    expand32(arr);
-    final long l = arr[BLOCK_SIZE/2-1];
+    expand32(arr, ints, offset);
+    final int l = ints[offset+BLOCK_SIZE/2-1];
     for (int i = BLOCK_SIZE/2; i < BLOCK_SIZE; ++i) {
-      arr[i] += l;
+      ints[i] += l;
     }
   }
 
@@ -304,37 +370,63 @@ final class ForUtilCheck {
     arr[63] += arr[62];
   }
 
-  private final long[] tmp = new long[BLOCK_SIZE/2];
+  /**
+   * Encode 128 integers from {@code longs} into {@code out}.
+   */
+  static void encodeDelta(int[] ints, int offset, DataOutput out, long[] tmp1, long[] tmp2) throws IOException {
+    int base = ints[offset];
+    out.writeVInt(base);
+    tmp1[0] = 0;
+    long max = tmp1[0];
+    for (int i = 1; i < BLOCK_SIZE; i++) {
+      tmp1[i] = ints[offset + i] - ints[offset + i - 1];
+      max |=  tmp1[i];
+    }
+    final int bpv = PackedInts.bitsRequired(max);
+    out.writeByte((byte) bpv);
+    encode(bpv, out, tmp1, tmp2);
+  }
 
   /**
    * Encode 128 integers from {@code longs} into {@code out}.
    */
-  static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
+  static void encode(int[] ints, int offset, DataOutput out, long[] tmp1, long[] tmp2) throws IOException {
+    long max = 0;
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+      tmp1[i] = ints[offset + i];
+      max |=  tmp1[i];
+    }
+    final int bpv = PackedInts.bitsRequired(max);
+    out.writeByte((byte) bpv);
+    encode(bpv, out, tmp1, tmp2);
+  }
+
+  private static void encode(int bitsPerValue, DataOutput out, long[] tmp1, long[] tmp2) throws IOException {
     final int nextPrimitive;
     final int numLongs;
     if (bitsPerValue <= 8) {
       nextPrimitive = 8;
       numLongs = BLOCK_SIZE / 8;
-      collapse8(longs);
+      collapse8(tmp1);
     } else if (bitsPerValue <= 16) {
       nextPrimitive = 16;
       numLongs = BLOCK_SIZE / 4;
-      collapse16(longs);
+      collapse16(tmp1);
     } else {
       nextPrimitive = 32;
       numLongs = BLOCK_SIZE / 2;
-      collapse32(longs);
+      collapse32(tmp1);
     }
 
     final int numLongsPerShift = bitsPerValue * 2;
     int idx = 0;
     int shift = nextPrimitive - bitsPerValue;
     for (int i = 0; i < numLongsPerShift; ++i) {
-      tmp[i] = longs[idx++] << shift;
+      tmp2[i] = tmp1[idx++] << shift;
     }
     for (shift = shift - bitsPerValue; shift >= 0; shift -= bitsPerValue) {
       for (int i = 0; i < numLongsPerShift; ++i) {
-        tmp[i] |= longs[idx++] << shift;
+        tmp2[i] |= tmp1[idx++] << shift;
       }
     }
 
@@ -353,7 +445,7 @@ final class ForUtilCheck {
     while (idx < numLongs) {
       if (remainingBitsPerValue > remainingBitsPerLong) {
         remainingBitsPerValue -= remainingBitsPerLong;
-        tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskRemainingBitsPerLong;
+        tmp2[tmpIdx++] |= (tmp1[idx] >>> remainingBitsPerValue) & maskRemainingBitsPerLong;
         if (remainingBitsPerValue == 0) {
           idx++;
           remainingBitsPerValue = bitsPerValue;
@@ -370,15 +462,15 @@ final class ForUtilCheck {
           mask1 = mask32(remainingBitsPerValue);
           mask2 = mask32(remainingBitsPerLong - remainingBitsPerValue);
         }
-        tmp[tmpIdx] |= (longs[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
+        tmp2[tmpIdx] |= (tmp1[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
         remainingBitsPerValue = bitsPerValue - remainingBitsPerLong + remainingBitsPerValue;
-        tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & mask2;
+        tmp2[tmpIdx++] |= (tmp1[idx] >>> remainingBitsPerValue) & mask2;
       }
     }
 
     for (int i = 0; i < numLongsPerShift; ++i) {
       // Java longs are big endian and we want to read little endian longs, so we need to reverse bytes
-      long l = Long.reverseBytes(tmp[i]);
+      long l = Long.reverseBytes(tmp2[i]);
       out.writeLong(l);
     }
   }
@@ -481,107 +573,108 @@ final class ForUtilCheck {
   /**
    * Decode 128 integers into {@code longs}.
    */
-  static void decode(int bitsPerValue, DataInput in, long[] longs, long[] tmp, int[] ints, int offset) throws IOException {
+  static void decode(DataInput in, long[] tmp1, long[] tmp2, int[] ints, int offset) throws IOException {
+    final int bitsPerValue = in.readByte();
     switch (bitsPerValue) {
     case 1:
-      decode1(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode1(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 2:
-      decode2(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode2(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 3:
-      decode3(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode3(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 4:
-      decode4(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode4(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 5:
-      decode5(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode5(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 6:
-      decode6(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode6(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 7:
-      decode7(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode7(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 8:
-      decode8(in, tmp, longs);
-      expand8(longs, ints, offset);
+      decode8(in, tmp2, tmp1);
+      expand8(tmp1, ints, offset);
       break;
     case 9:
-      decode9(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode9(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 10:
-      decode10(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode10(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 11:
-      decode11(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode11(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 12:
-      decode12(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode12(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 13:
-      decode13(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode13(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 14:
-      decode14(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode14(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 15:
-      decode15(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode15(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 16:
-      decode16(in, tmp, longs);
-      expand16(longs, ints, offset);
+      decode16(in, tmp2, tmp1);
+      expand16(tmp1, ints, offset);
       break;
     case 17:
-      decode17(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode17(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 18:
-      decode18(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode18(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 19:
-      decode19(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode19(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 20:
-      decode20(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode20(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 21:
-      decode21(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode21(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 22:
-      decode22(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode22(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 23:
-      decode23(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode23(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     case 24:
-      decode24(in, tmp, longs);
-      expand32(longs, ints, offset);
+      decode24(in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     default:
-      decodeSlow(bitsPerValue, in, tmp, longs);
-      expand32(longs, ints, offset);
+      decodeSlow(bitsPerValue, in, tmp2, tmp1);
+      expand32(tmp1, ints, offset);
       break;
     }
   }
@@ -589,7 +682,8 @@ final class ForUtilCheck {
   /**
    * Decode 128 integers into {@code longs}.
    */
-  static void decode(int bitsPerValue, DataInput in, long[] longs, long[] tmp, PointValues.IntersectVisitor visitor) throws IOException {
+  static void decode(DataInput in, long[] longs, long[] tmp, PointValues.IntersectVisitor visitor) throws IOException {
+    final int bitsPerValue = in.readByte();
     switch (bitsPerValue) {
       case 1:
         decode1(in, tmp, longs);
@@ -694,111 +788,122 @@ final class ForUtilCheck {
     }
   }
 
+  static void decodeDelta(DataInput in, long[] longs, long[] tmp, PointValues.IntersectVisitor visitor) throws IOException {
+    final int base = in.readVInt();
+    final int bitsPerValue = in.readByte();
+    switch (bitsPerValue) {
+      case 1:
+        decode1(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 2:
+        decode2(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 3:
+        decode3(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 4:
+        decode4(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 5:
+        decode5(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 6:
+        decode6(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 7:
+        decode7(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 8:
+        decode8(in, tmp, longs);
+        expand8Delta(longs, visitor, base);
+        break;
+      case 9:
+        decode9(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 10:
+        decode10(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 11:
+        decode11(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 12:
+        decode12(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 13:
+        decode13(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 14:
+        decode14(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 15:
+        decode15(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 16:
+        decode16(in, tmp, longs);
+        expand16Delta(longs, visitor, base);
+        break;
+      case 17:
+        decode17(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 18:
+        decode18(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 19:
+        decode19(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 20:
+        decode20(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 21:
+        decode21(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 22:
+        decode22(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 23:
+        decode23(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      case 24:
+        decode24(in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+      default:
+        decodeSlow(bitsPerValue, in, tmp, longs);
+        expand32Delta(longs, visitor, base);
+        break;
+    }
+  }
+
   /**
    * Delta-decode 128 integers into {@code longs}.
    */
-  void decodeAndPrefixSum(int bitsPerValue, DataInput in, long base, long[] longs) throws IOException {
-    switch (bitsPerValue) {
-    case 1:
-      decode1(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 2:
-      decode2(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 3:
-      decode3(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 4:
-      decode4(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 5:
-      decode5(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 6:
-      decode6(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 7:
-      decode7(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 8:
-      decode8(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 9:
-      decode9(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 10:
-      decode10(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 11:
-      decode11(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 12:
-      decode12(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 13:
-      decode13(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 14:
-      decode14(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 15:
-      decode15(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 16:
-      decode16(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 17:
-      decode17(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 18:
-      decode18(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 19:
-      decode19(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 20:
-      decode20(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 21:
-      decode21(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 22:
-      decode22(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 23:
-      decode23(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 24:
-      decode24(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    default:
-      decodeSlow(bitsPerValue, in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
+  public static void decodeDelta(DataInput in, long[] tmp1, long[] tmp2, int[] ints, int offset) throws IOException {
+    final int base = in.readVInt();
+    decode(in, tmp1, tmp2, ints, offset);
+    ints[offset] = base;
+    for (int i = offset + 1; i < offset + BLOCK_SIZE; i++) {
+      ints[i] += ints[i -1];
     }
   }
 
