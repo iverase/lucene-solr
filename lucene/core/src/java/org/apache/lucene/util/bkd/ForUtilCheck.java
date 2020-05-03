@@ -90,6 +90,41 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand8Delta(long[] arr, int[] ints, int offset, int base) {
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 56) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 48) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 40) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 32) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 24) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 16) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) ((l >>> 8) & 0xFFL);
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) (l & 0xFFL);
+    }
+  }
+
   private static void expand8(long[] arr, PointValues.IntersectVisitor visitor) throws IOException{
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
@@ -205,6 +240,26 @@ final class ForUtilCheck {
     }
   }
 
+
+  private static void expand16Delta(long[] arr, int[] ints, int offset, int base) {
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int)((l >>> 48) & 0xFFFFL);
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int)((l >>> 32) & 0xFFFFL);
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int)((l >>> 16) & 0xFFFFL);
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int)(l & 0xFFFFL);
+    }
+  }
+
   private static void expand16Delta(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
@@ -262,6 +317,17 @@ final class ForUtilCheck {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit((int) (l & 0xFFFFFFFFL));
+    }
+  }
+
+  private static void expand32Delta(long[] arr, int[] ints, int offset, int base) {
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) (l >>> 32);
+    }
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
+      ints[offset++] = base += (int) (l & 0xFFFFFFFFL);
     }
   }
 
@@ -568,7 +634,6 @@ final class ForUtilCheck {
   private static final long MASK32_22 = mask32(22);
   private static final long MASK32_23 = mask32(23);
   private static final long MASK32_24 = mask32(24);
-
 
   /**
    * Decode 128 integers into {@code longs}.
@@ -900,10 +965,108 @@ final class ForUtilCheck {
    */
   public static void decodeDelta(DataInput in, long[] tmp1, long[] tmp2, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    decode(in, tmp1, tmp2, ints, offset);
-    ints[offset] = base;
-    for (int i = offset + 1; i < offset + BLOCK_SIZE; i++) {
-      ints[i] += ints[i -1];
+    final int bitsPerValue = in.readByte();
+    switch (bitsPerValue) {
+      case 1:
+        decode1(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 2:
+        decode2(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 3:
+        decode3(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 4:
+        decode4(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 5:
+        decode5(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 6:
+        decode6(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 7:
+        decode7(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 8:
+        decode8(in, tmp2, tmp1);
+        expand8Delta(tmp1, ints, offset, base);
+        break;
+      case 9:
+        decode9(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 10:
+        decode10(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 11:
+        decode11(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 12:
+        decode12(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 13:
+        decode13(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 14:
+        decode14(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 15:
+        decode15(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 16:
+        decode16(in, tmp2, tmp1);
+        expand16Delta(tmp1, ints, offset, base);
+        break;
+      case 17:
+        decode17(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 18:
+        decode18(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 19:
+        decode19(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 20:
+        decode20(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 21:
+        decode21(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 22:
+        decode22(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 23:
+        decode23(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      case 24:
+        decode24(in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
+      default:
+        decodeSlow(bitsPerValue, in, tmp2, tmp1);
+        expand32Delta(tmp1, ints, offset, base);
+        break;
     }
   }
 
