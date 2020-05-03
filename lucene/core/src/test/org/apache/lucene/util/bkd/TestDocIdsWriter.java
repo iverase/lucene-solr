@@ -79,8 +79,15 @@ public class TestDocIdsWriter extends LuceneTestCase {
       for (int iter = 0; iter < numIters; ++iter) {
         int[] docIDs = new int[ForUtilCheck.BLOCK_SIZE * TestUtil.nextInt(random(), 1, 10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
-        for (int i = 0; i < docIDs.length; ++i) {
-          docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+        if (rarely()) {
+          int val = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+          for (int i = 0; i < docIDs.length; ++i) {
+            docIDs[i] = val;
+          }
+        } else {
+          for (int i = 0; i < docIDs.length; ++i) {
+            docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+          }
         }
         Arrays.sort(docIDs);
         test(dir, docIDs);
