@@ -36,6 +36,7 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
@@ -442,6 +443,11 @@ final class ForUtilCheck {
   static void encodeDelta(int[] ints, int offset, DataOutput out, long[] tmp1, long[] tmp2) throws IOException {
     int base = ints[offset];
     out.writeVInt(base);
+    if (base == ints[offset + BLOCK_SIZE - 1]) {
+      // all equal
+      out.writeByte((byte) 0);
+      return;
+    }
     tmp1[0] = 0;
     long max = tmp1[0];
     for (int i = 1; i < BLOCK_SIZE; i++) {
@@ -857,6 +863,11 @@ final class ForUtilCheck {
     final int base = in.readVInt();
     final int bitsPerValue = in.readByte();
     switch (bitsPerValue) {
+      case 0:
+        for (int i = 0; i < BLOCK_SIZE; i++) {
+          visitor.visit(base);
+        }
+        break;
       case 1:
         decode1(in, tmp, longs);
         expand8Delta(longs, visitor, base);
@@ -967,6 +978,9 @@ final class ForUtilCheck {
     final int base = in.readVInt();
     final int bitsPerValue = in.readByte();
     switch (bitsPerValue) {
+      case 0:
+        Arrays.fill(ints, offset, offset + BLOCK_SIZE, base);
+        break;
       case 1:
         decode1(in, tmp2, tmp1);
         expand8Delta(tmp1, ints, offset, base);
