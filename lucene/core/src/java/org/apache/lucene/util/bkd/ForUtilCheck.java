@@ -243,22 +243,157 @@ final class ForUtilCheck {
 
 
   private static void expand16Delta(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
-      ints[offset++] = base += (int)((l >>> 48) & 0xFFFFL);
-    }
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
-      ints[offset++] = base += (int)((l >>> 32) & 0xFFFFL);
-    }
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
-      ints[offset++] = base += (int)((l >>> 16) & 0xFFFFL);
-    }
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
-      ints[offset++] = base += (int)(l & 0xFFFFL);
-    }
+    ints[offset] = base + (int)((arr[0] >>> 48) & 0xFFFFL);
+    ints[offset+1] = ints[offset] + (int)((arr[1] >>> 48) & 0xFFFFL);
+    ints[offset+2] = ints[offset+1] + (int)((arr[2] >>> 48) & 0xFFFFL);
+    ints[offset+3] = ints[offset+2] + (int)((arr[3] >>> 48) & 0xFFFFL);
+    ints[offset+4] = ints[offset+3] + (int)((arr[4] >>> 48) & 0xFFFFL);
+    ints[offset+5] = ints[offset+4] + (int)((arr[5] >>> 48) & 0xFFFFL);
+    ints[offset+6] = ints[offset+5] + (int)((arr[6] >>> 48) & 0xFFFFL);
+    ints[offset+7] = ints[offset+6] + (int)((arr[7] >>> 48) & 0xFFFFL);
+    ints[offset+8] = ints[offset+7] + (int)((arr[8] >>> 48) & 0xFFFFL);
+    ints[offset+9] = ints[offset+8] + (int)((arr[9] >>> 48) & 0xFFFFL);
+    ints[offset+10] = ints[offset+9] + (int)((arr[10] >>> 48) & 0xFFFFL);
+    ints[offset+11] = ints[offset+10] + (int)((arr[11] >>> 48) & 0xFFFFL);
+    ints[offset+12] = ints[offset+11] + (int)((arr[12] >>> 48) & 0xFFFFL);
+    ints[offset+13] = ints[offset+12] + (int)((arr[13] >>> 48) & 0xFFFFL);
+    ints[offset+14] = ints[offset+13] + (int)((arr[14] >>> 48) & 0xFFFFL);
+    ints[offset+15] = ints[offset+14] + (int)((arr[15] >>> 48) & 0xFFFFL);
+    ints[offset+16] = ints[offset+15] + (int)((arr[16] >>> 48) & 0xFFFFL);
+    ints[offset+17] = ints[offset+16] + (int)((arr[17] >>> 48) & 0xFFFFL);
+    ints[offset+18] = ints[offset+17] + (int)((arr[18] >>> 48) & 0xFFFFL);
+    ints[offset+19] = ints[offset+18] + (int)((arr[19] >>> 48) & 0xFFFFL);
+    ints[offset+20] = ints[offset+19] + (int)((arr[20] >>> 48) & 0xFFFFL);
+    ints[offset+21] = ints[offset+20] + (int)((arr[21] >>> 48) & 0xFFFFL);
+    ints[offset+22] = ints[offset+21] + (int)((arr[22] >>> 48) & 0xFFFFL);
+    ints[offset+23] = ints[offset+22] + (int)((arr[23] >>> 48) & 0xFFFFL);
+    ints[offset+24] = ints[offset+23] + (int)((arr[24] >>> 48) & 0xFFFFL);
+    ints[offset+25] = ints[offset+24] + (int)((arr[25] >>> 48) & 0xFFFFL);
+    ints[offset+26] = ints[offset+25] + (int)((arr[26] >>> 48) & 0xFFFFL);
+    ints[offset+27] = ints[offset+26] + (int)((arr[27] >>> 48) & 0xFFFFL);
+    ints[offset+28] = ints[offset+27] + (int)((arr[28] >>> 48) & 0xFFFFL);
+    ints[offset+29] = ints[offset+28] + (int)((arr[29] >>> 48) & 0xFFFFL);
+    ints[offset+30] = ints[offset+29] + (int)((arr[30] >>> 48) & 0xFFFFL);
+    ints[offset+31] = ints[offset+30] + (int)((arr[31] >>> 48) & 0xFFFFL);
+
+    offset+=32;
+    ints[offset] = ints[offset-1] + (int)((arr[0] >>> 32) & 0xFFFFL);
+    ints[offset+1] = ints[offset] + (int)((arr[1] >>> 32) & 0xFFFFL);
+    ints[offset+2] = ints[offset+1] + (int)((arr[2] >>> 32) & 0xFFFFL);
+    ints[offset+3] = ints[offset+2] + (int)((arr[3] >>> 32) & 0xFFFFL);
+    ints[offset+4] = ints[offset+3] + (int)((arr[4] >>> 32) & 0xFFFFL);
+    ints[offset+5] = ints[offset+4] + (int)((arr[5] >>> 32) & 0xFFFFL);
+    ints[offset+6] = ints[offset+5] + (int)((arr[6] >>> 32) & 0xFFFFL);
+    ints[offset+7] = ints[offset+6] + (int)((arr[7] >>> 32) & 0xFFFFL);
+    ints[offset+8] = ints[offset+7] + (int)((arr[8] >>> 32) & 0xFFFFL);
+    ints[offset+9] = ints[offset+8] + (int)((arr[9] >>> 32) & 0xFFFFL);
+    ints[offset+10] = ints[offset+9] + (int)((arr[10] >>> 32) & 0xFFFFL);
+    ints[offset+11] = ints[offset+10] + (int)((arr[11] >>> 32) & 0xFFFFL);
+    ints[offset+12] = ints[offset+11] + (int)((arr[12] >>> 32) & 0xFFFFL);
+    ints[offset+13] = ints[offset+12] + (int)((arr[13] >>> 32) & 0xFFFFL);
+    ints[offset+14] = ints[offset+13] + (int)((arr[14] >>> 32) & 0xFFFFL);
+    ints[offset+15] = ints[offset+14] + (int)((arr[15] >>> 32) & 0xFFFFL);
+    ints[offset+16] = ints[offset+15] + (int)((arr[16] >>> 32) & 0xFFFFL);
+    ints[offset+17] = ints[offset+16] + (int)((arr[17] >>> 32) & 0xFFFFL);
+    ints[offset+18] = ints[offset+17] + (int)((arr[18] >>> 32) & 0xFFFFL);
+    ints[offset+19] = ints[offset+18] + (int)((arr[19] >>> 32) & 0xFFFFL);
+    ints[offset+20] = ints[offset+19] + (int)((arr[20] >>> 32) & 0xFFFFL);
+    ints[offset+21] = ints[offset+20] + (int)((arr[21] >>> 32) & 0xFFFFL);
+    ints[offset+22] = ints[offset+21] + (int)((arr[22] >>> 32) & 0xFFFFL);
+    ints[offset+23] = ints[offset+22] + (int)((arr[23] >>> 32) & 0xFFFFL);
+    ints[offset+24] = ints[offset+23] + (int)((arr[24] >>> 32) & 0xFFFFL);
+    ints[offset+25] = ints[offset+24] + (int)((arr[25] >>> 32) & 0xFFFFL);
+    ints[offset+26] = ints[offset+25] + (int)((arr[26] >>> 32) & 0xFFFFL);
+    ints[offset+27] = ints[offset+26] + (int)((arr[27] >>> 32) & 0xFFFFL);
+    ints[offset+28] = ints[offset+27] + (int)((arr[28] >>> 32) & 0xFFFFL);
+    ints[offset+29] = ints[offset+28] + (int)((arr[29] >>> 32) & 0xFFFFL);
+    ints[offset+30] = ints[offset+29] + (int)((arr[30] >>> 32) & 0xFFFFL);
+    ints[offset+31] = ints[offset+30] + (int)((arr[31] >>> 32) & 0xFFFFL);
+
+    offset+=32;
+    ints[offset] = ints[offset-1] + (int)((arr[0] >>> 16) & 0xFFFFL);
+    ints[offset+1] = ints[offset] + (int)((arr[1] >>> 16) & 0xFFFFL);
+    ints[offset+2] = ints[offset+1] + (int)((arr[2] >>> 16) & 0xFFFFL);
+    ints[offset+3] = ints[offset+2] + (int)((arr[3] >>> 16) & 0xFFFFL);
+    ints[offset+4] = ints[offset+3] + (int)((arr[4] >>> 16) & 0xFFFFL);
+    ints[offset+5] = ints[offset+4] + (int)((arr[5] >>> 16) & 0xFFFFL);
+    ints[offset+6] = ints[offset+5] + (int)((arr[6] >>> 16) & 0xFFFFL);
+    ints[offset+7] = ints[offset+6] + (int)((arr[7] >>> 16) & 0xFFFFL);
+    ints[offset+8] = ints[offset+7] + (int)((arr[8] >>> 16) & 0xFFFFL);
+    ints[offset+9] = ints[offset+8] + (int)((arr[9] >>> 16) & 0xFFFFL);
+    ints[offset+10] = ints[offset+9] + (int)((arr[10] >>> 16) & 0xFFFFL);
+    ints[offset+11] = ints[offset+10] + (int)((arr[11] >>> 16) & 0xFFFFL);
+    ints[offset+12] = ints[offset+11] + (int)((arr[12] >>> 16) & 0xFFFFL);
+    ints[offset+13] = ints[offset+12] + (int)((arr[13] >>> 16) & 0xFFFFL);
+    ints[offset+14] = ints[offset+13] + (int)((arr[14] >>> 16) & 0xFFFFL);
+    ints[offset+15] = ints[offset+14] + (int)((arr[15] >>> 16) & 0xFFFFL);
+    ints[offset+16] = ints[offset+15] + (int)((arr[16] >>> 16) & 0xFFFFL);
+    ints[offset+17] = ints[offset+16] + (int)((arr[17] >>> 16) & 0xFFFFL);
+    ints[offset+18] = ints[offset+17] + (int)((arr[18] >>> 16) & 0xFFFFL);
+    ints[offset+19] = ints[offset+18] + (int)((arr[19] >>> 16) & 0xFFFFL);
+    ints[offset+20] = ints[offset+19] + (int)((arr[20] >>> 16) & 0xFFFFL);
+    ints[offset+21] = ints[offset+20] + (int)((arr[21] >>> 16) & 0xFFFFL);
+    ints[offset+22] = ints[offset+21] + (int)((arr[22] >>> 16) & 0xFFFFL);
+    ints[offset+23] = ints[offset+22] + (int)((arr[23] >>> 16) & 0xFFFFL);
+    ints[offset+24] = ints[offset+23] + (int)((arr[24] >>> 16) & 0xFFFFL);
+    ints[offset+25] = ints[offset+24] + (int)((arr[25] >>> 16) & 0xFFFFL);
+    ints[offset+26] = ints[offset+25] + (int)((arr[26] >>> 16) & 0xFFFFL);
+    ints[offset+27] = ints[offset+26] + (int)((arr[27] >>> 16) & 0xFFFFL);
+    ints[offset+28] = ints[offset+27] + (int)((arr[28] >>> 16) & 0xFFFFL);
+    ints[offset+29] = ints[offset+28] + (int)((arr[29] >>> 16) & 0xFFFFL);
+    ints[offset+30] = ints[offset+29] + (int)((arr[30] >>> 16) & 0xFFFFL);
+    ints[offset+31] = ints[offset+30] + (int)((arr[31] >>> 16) & 0xFFFFL);
+
+    offset+=32;
+    ints[offset] = ints[offset-1] + (int)((arr[0]) & 0xFFFFL);
+    ints[offset+1] = ints[offset] + (int)((arr[1]) & 0xFFFFL);
+    ints[offset+2] = ints[offset+1] + (int)((arr[2]) & 0xFFFFL);
+    ints[offset+3] = ints[offset+2] + (int)((arr[3]) & 0xFFFFL);
+    ints[offset+4] = ints[offset+3] + (int)((arr[4]) & 0xFFFFL);
+    ints[offset+5] = ints[offset+4] + (int)((arr[5]) & 0xFFFFL);
+    ints[offset+6] = ints[offset+5] + (int)((arr[6]) & 0xFFFFL);
+    ints[offset+7] = ints[offset+6] + (int)((arr[7]) & 0xFFFFL);
+    ints[offset+8] = ints[offset+7] + (int)((arr[8]) & 0xFFFFL);
+    ints[offset+9] = ints[offset+8] + (int)((arr[9]) & 0xFFFFL);
+    ints[offset+10] = ints[offset+9] + (int)((arr[10]) & 0xFFFFL);
+    ints[offset+11] = ints[offset+10] + (int)((arr[11]) & 0xFFFFL);
+    ints[offset+12] = ints[offset+11] + (int)((arr[12]) & 0xFFFFL);
+    ints[offset+13] = ints[offset+12] + (int)((arr[13]) & 0xFFFFL);
+    ints[offset+14] = ints[offset+13] + (int)((arr[14]) & 0xFFFFL);
+    ints[offset+15] = ints[offset+14] + (int)((arr[15]) & 0xFFFFL);
+    ints[offset+16] = ints[offset+15] + (int)((arr[16]) & 0xFFFFL);
+    ints[offset+17] = ints[offset+16] + (int)((arr[17]) & 0xFFFFL);
+    ints[offset+18] = ints[offset+17] + (int)((arr[18]) & 0xFFFFL);
+    ints[offset+19] = ints[offset+18] + (int)((arr[19]) & 0xFFFFL);
+    ints[offset+20] = ints[offset+19] + (int)((arr[20]) & 0xFFFFL);
+    ints[offset+21] = ints[offset+20] + (int)((arr[21]) & 0xFFFFL);
+    ints[offset+22] = ints[offset+21] + (int)((arr[22]) & 0xFFFFL);
+    ints[offset+23] = ints[offset+22] + (int)((arr[23]) & 0xFFFFL);
+    ints[offset+24] = ints[offset+23] + (int)((arr[24]) & 0xFFFFL);
+    ints[offset+25] = ints[offset+24] + (int)((arr[25]) & 0xFFFFL);
+    ints[offset+26] = ints[offset+25] + (int)((arr[26]) & 0xFFFFL);
+    ints[offset+27] = ints[offset+26] + (int)((arr[27]) & 0xFFFFL);
+    ints[offset+28] = ints[offset+27] + (int)((arr[28]) & 0xFFFFL);
+    ints[offset+29] = ints[offset+28] + (int)((arr[29]) & 0xFFFFL);
+    ints[offset+30] = ints[offset+29] + (int)((arr[30]) & 0xFFFFL);
+    ints[offset+31] = ints[offset+30] + (int)((arr[31]) & 0xFFFFL);
+
+//    for (int i = 0; i < 32; ++i) {
+//      long l = arr[i];
+//      ints[offset++] = base += (int)((l >>> 48) & 0xFFFFL);
+//    }
+//    for (int i = 0; i < 32; ++i) {
+//      long l = arr[i];
+//      ints[offset++] = base += (int)((l >>> 32) & 0xFFFFL);
+//    }
+//    for (int i = 0; i < 32; ++i) {
+//      long l = arr[i];
+//      ints[offset++] = base += (int)((l >>> 16) & 0xFFFFL);
+//    }
+//    for (int i = 0; i < 32; ++i) {
+//      long l = arr[i];
+//      ints[offset++] = base += (int)(l & 0xFFFFL);
+//    }
   }
 
   private static void expand16Delta(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
