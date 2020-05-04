@@ -46,7 +46,7 @@ class DocIdsWriter {
       }
     }
     if (sorted) {
-      if (docIds[start] == docIds[start + count - 1])  {
+      if (docIds[start] == docIds[start + count - 1]) {
         out.writeByte(EQUAL);
         out.writeVInt(docIds[start]);
       } else {
@@ -59,6 +59,11 @@ class DocIdsWriter {
         }
       }
     } else {
+      if (count % ForUtilCheck.BLOCK_SIZE == 0) {
+        out.writeByte(SIMD);
+        writeSIMD(docIds, start, count, out, tmp);
+        return;
+      }
       long max = 0;
       for (int i = 0; i < count; ++i) {
         max |= Integer.toUnsignedLong(docIds[start + i]);
@@ -70,14 +75,9 @@ class DocIdsWriter {
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
-        if (count % ForUtilCheck.BLOCK_SIZE == 0) {
-          out.writeByte(SIMD);
-          writeSIMD(docIds, start, count, out, tmp);
-        } else {
-          out.writeByte(INT32);
-          for (int i = 0; i < count; ++i) {
-            out.writeInt(docIds[start + i]);
-          }
+        out.writeByte(INT32);
+        for (int i = 0; i < count; ++i) {
+          out.writeInt(docIds[start + i]);
         }
       }
     }
@@ -92,7 +92,14 @@ class DocIdsWriter {
         max |= Integer.toUnsignedLong(docIds[start + i * ForUtilCheck.BLOCK_SIZE + j]);
         source[j] = docIds[start + i * ForUtilCheck.BLOCK_SIZE +j];
       }
-      final int bpv = PackedInts.bitsRequired(max);
+      int bpv = PackedInts.bitsRequired(max);
+      if (bpv <= 8) {
+        bpv = 8;
+      } else if (bpv <= 16) {
+        bpv = 16;
+      } else if (bpv <= 24)  {
+        bpv = 24;
+      }
       out.writeByte((byte) bpv);
       ForUtilCheck.encode(source, bpv, out, tmp);
     }
@@ -103,7 +110,7 @@ class DocIdsWriter {
     assert tmp1.length >= ForUtilCheck.BLOCK_SIZE / 2;
     assert tmp2.length >= ForUtilCheck.BLOCK_SIZE / 2;
     final byte bpv = in.readByte();
-   // long start = System.nanoTime();
+    long start = System.nanoTime();
     switch (bpv) {
       case SORTED:
         readDeltaVInts(in, count, docIDs);
@@ -123,8 +130,8 @@ class DocIdsWriter {
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
-    //long end = System.nanoTime();
-    //System.out.println("type: " + bpv + " time: " + (end - start));
+    long end = System.nanoTime();
+    System.out.println("type: " + bpv + " time: " + (end - start));
   }
 
   private static void readSIMD(IndexInput in, int count, int[] docIDs, long[] tmp1, long[] tmp2) throws IOException {
