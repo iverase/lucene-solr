@@ -59,11 +59,6 @@ class DocIdsWriter {
         }
       }
     } else {
-      if (count % ForUtilCheck.BLOCK_SIZE == 0) {
-        out.writeByte(SIMD);
-        writeSIMD(docIds, start, count, out, tmp);
-        return;
-      }
       long max = 0;
       for (int i = 0; i < count; ++i) {
         max |= Integer.toUnsignedLong(docIds[start + i]);
@@ -75,9 +70,15 @@ class DocIdsWriter {
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
-        out.writeByte(INT32);
-        for (int i = 0; i < count; ++i) {
-          out.writeInt(docIds[start + i]);
+        if (count % ForUtilCheck.BLOCK_SIZE == 0) {
+          out.writeByte(SIMD);
+          writeSIMD(docIds, start, count, out, tmp);
+          return;
+        } else {
+          out.writeByte(INT32);
+          for (int i = 0; i < count; ++i) {
+            out.writeInt(docIds[start + i]);
+          }
         }
       }
     }
@@ -103,6 +104,7 @@ class DocIdsWriter {
     assert tmp1.length >= ForUtilCheck.BLOCK_SIZE / 2;
     assert tmp2.length >= ForUtilCheck.BLOCK_SIZE / 2;
     final byte bpv = in.readByte();
+    long start = System.nanoTime();
     switch (bpv) {
       case SORTED:
         readDeltaVInts(in, count, docIDs);
@@ -122,6 +124,8 @@ class DocIdsWriter {
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
+    long end = System.nanoTime();
+    System.out.println("type: " + bpv + " time: " + (end - start));
   }
 
   private static void readSIMD(IndexInput in, int count, int[] docIDs, long[] tmp1, long[] tmp2) throws IOException {
