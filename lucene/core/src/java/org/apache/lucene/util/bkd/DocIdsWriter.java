@@ -17,6 +17,7 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
@@ -25,14 +26,16 @@ import org.apache.lucene.util.packed.PackedInts;
 
 class DocIdsWriter {
 
+  private static final byte SORTED = (byte) 0;
+  private static final byte EQUAL = (byte) 1;
+  private static final byte INT24 = (byte) 24;
+  private static final byte INT32 = (byte) 32;
+  private static final byte SIMD = (byte) 64;
+
   private DocIdsWriter() {}
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out, long[] tmp) throws IOException {
     assert tmp.length >= ForUtilCheck.BLOCK_SIZE / 2;
-    if (count % ForUtilCheck.BLOCK_SIZE == 0) {
-      writeSIMD(docIds, start, count, out, tmp);
-      return;
-    }
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
@@ -43,26 +46,36 @@ class DocIdsWriter {
       }
     }
     if (sorted) {
-      out.writeByte((byte) 0);
-      int previous = 0;
-      for (int i = 0; i < count; ++i) {
-        int doc = docIds[start + i];
-        out.writeVInt(doc - previous);
-        previous = doc;
+      if (docIds[start] == docIds[start + count - 1])  {
+        out.writeByte(EQUAL);
+        out.writeVInt(docIds[start]);
+      } else {
+        out.writeByte(SORTED);
+        int previous = 0;
+        for (int i = 0; i < count; ++i) {
+          int doc = docIds[start + i];
+          out.writeVInt(doc - previous);
+          previous = doc;
+        }
       }
     } else {
+      if (count % ForUtilCheck.BLOCK_SIZE == 0) {
+        out.writeByte(SIMD);
+        writeSIMD(docIds, start, count, out, tmp);
+        return;
+      }
       long max = 0;
       for (int i = 0; i < count; ++i) {
         max |= Integer.toUnsignedLong(docIds[start + i]);
       }
       if (max <= 0xffffff) {
-        out.writeByte((byte) 24);
+        out.writeByte(INT24);
         for (int i = 0; i < count; ++i) {
           out.writeShort((short) (docIds[start + i] >>> 8));
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
-        out.writeByte((byte) 32);
+        out.writeByte(INT32);
         for (int i = 0; i < count; ++i) {
           out.writeInt(docIds[start + i]);
         }
@@ -71,7 +84,6 @@ class DocIdsWriter {
   }
 
   private static void writeSIMD(int[] docIds, int start, int count, DataOutput out, long[] tmp) throws IOException {
-    out.writeByte((byte) 16);
     long[] source = new long[ForUtilCheck.BLOCK_SIZE];
     final int iterations = count / ForUtilCheck.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
@@ -90,19 +102,22 @@ class DocIdsWriter {
   static void readInts(IndexInput in, int count, int[] docIDs, long[] tmp1, long[] tmp2) throws IOException {
     assert tmp1.length >= ForUtilCheck.BLOCK_SIZE / 2;
     assert tmp2.length >= ForUtilCheck.BLOCK_SIZE / 2;
-    final int bpv = in.readByte();
+    final byte bpv = in.readByte();
     switch (bpv) {
-      case 0:
+      case SORTED:
         readDeltaVInts(in, count, docIDs);
         break;
-      case 32:
+      case INT32:
         readInts32(in, count, docIDs);
         break;
-      case 24:
+      case INT24:
         readInts24(in, count, docIDs);
         break;
-      case 16:
+      case SIMD:
         readSIMD(in, count, docIDs, tmp1, tmp2);
+        break;
+      case EQUAL:
+        readEqual(in, count, docIDs);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -117,6 +132,11 @@ class DocIdsWriter {
     }
   }
 
+  private static void readEqual(IndexInput in, int count, int[] docIDs) throws IOException {
+    int doc = in.readVInt();
+    Arrays.fill(docIDs, 0, count, doc);
+  }
+
   private static void readDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
     int doc = 0;
     for (int i = 0; i < count; i++) {
@@ -125,7 +145,7 @@ class DocIdsWriter {
     }
   }
 
-  static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+  private static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; i++) {
       docIDs[i] = in.readInt();
     }
@@ -153,19 +173,22 @@ class DocIdsWriter {
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
   static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] tmp1, long[] tmp2) throws IOException {
-    final int bpv = in.readByte();
+    final byte bpv = in.readByte();
     switch (bpv) {
-      case 0:
+      case SORTED:
         readDeltaVInts(in, count, visitor);
         break;
-      case 32:
+      case INT32:
         readInts32(in, count, visitor);
         break;
-      case 24:
+      case INT24:
         readInts24(in, count, visitor);
         break;
-      case 16:
+      case SIMD:
         readSIMD(in, count, visitor, tmp1, tmp2);
+        break;
+      case EQUAL:
+        readEqual(in, count, visitor);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -177,6 +200,13 @@ class DocIdsWriter {
     for (int i = 0; i < iterations; ++i) {
       final int bitsPerValue = in.readByte();
       ForUtilCheck.decode(bitsPerValue, in, tmp1, tmp2, visitor);
+    }
+  }
+
+  private static void readEqual(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+    int doc = in.readVInt();
+    for (int i = 0; i < count; i++) {
+      visitor.visit(doc);
     }
   }
 

@@ -93,46 +93,35 @@ final class ForUtilCheck {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 56) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 48) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 40) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 32) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 24) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 16) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 8) & 0xFFL));
+    }
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
       visitor.visit((int) (l & 0xFFL));
     }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 56) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 48) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 40) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 32) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 24) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 16) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 8) & 0xFFL));
-//    }
-//    for (int i = 0; i < 16; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) (l & 0xFFL));
-//    }
   }
 
   private static void expand8To32(long[] arr) {
@@ -165,26 +154,19 @@ final class ForUtilCheck {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 48) & 0xFFFFL));
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 32) & 0xFFFFL));
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
       visitor.visit((int) ((l >>> 16) & 0xFFFFL));
+    }
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
       visitor.visit((int) (l & 0xFFFFL));
     }
-//    for (int i = 0; i < 32; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 48) & 0xFFFFL));
-//    }
-//    for (int i = 0; i < 32; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 32) & 0xFFFFL));
-//    }
-//    for (int i = 0; i < 32; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) ((l >>> 16) & 0xFFFFL));
-//    }
-//    for (int i = 0; i < 32; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) (l & 0xFFFFL));
-//    }
   }
 
   private static void expand16To32(long[] arr) {
@@ -221,16 +203,11 @@ final class ForUtilCheck {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
+    }
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
       visitor.visit((int) (l & 0xFFFFFFFFL));
     }
-//    for (int i = 0; i < 64; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) (l >>> 32));
-//    }
-//    for (int i = 0; i < 64; ++i) {
-//      long l = arr[i];
-//      visitor.visit((int) (l & 0xFFFFFFFFL));
-//    }
   }
 
   private static void collapse32(long[] arr) {
