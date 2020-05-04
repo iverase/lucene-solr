@@ -99,6 +99,8 @@ class DocIdsWriter {
         bpv = 16;
       } else if (bpv <= 24)  {
         bpv = 24;
+      } else {
+        bpv = 32;
       }
       out.writeByte((byte) bpv);
       ForUtilCheck.encode(source, bpv, out, tmp);
