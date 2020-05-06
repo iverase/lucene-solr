@@ -143,10 +143,10 @@ final class ForUtilCheck {
   private static void expand16(long[] arr, int[] ints, int offset) {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      ints[offset+i] = (int) ((l >>> 48) & 0xFFFFL);
-      ints[offset+32+i] = (int) ((l >>> 32) & 0xFFFFL);
-      ints[offset+64+i] = (int) ((l >>> 16) & 0xFFFFL);
-      ints[offset+96+i] = (int) (l & 0xFFFFL);
+      ints[offset+4*i] = (int) ((l >>> 48) & 0xFFFFL);
+      ints[offset+4*i+1] = (int) ((l >>> 32) & 0xFFFFL);
+      ints[offset+4*i+2] = (int) ((l >>> 16) & 0xFFFFL);
+      ints[offset+4*i+3] = (int) (l & 0xFFFFL);
     }
   }
 
@@ -154,26 +154,9 @@ final class ForUtilCheck {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 48) & 0xFFFFL));
-    }
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 32) & 0xFFFFL));
-    }
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 16) & 0xFFFFL));
-    }
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
       visitor.visit((int) (l & 0xFFFFL));
-    }
-  }
-
-  private static void expand16To32(long[] arr) {
-    for (int i = 0; i < 32; ++i) {
-      long l = arr[i];
-      arr[i] = (l >>> 16) & 0x0000FFFF0000FFFFL;
-      arr[32+i] = l & 0x0000FFFF0000FFFFL;
     }
   }
 
@@ -192,10 +175,10 @@ final class ForUtilCheck {
   }
 
   private static void expand32(long[] arr, int[] ints, int offset) {
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 64; i++) {
       long l = arr[i];
-      ints[offset+i] = (int) (l >>> 32);
-      ints[offset+64 + i] = (int) (l & 0xFFFFFFFFL);
+      ints[offset+2*i] = (int) (l >>> 32);
+      ints[offset+1+2*i] = (int) (l & 0xFFFFFFFFL);
     }
   }
 
@@ -203,9 +186,6 @@ final class ForUtilCheck {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
-    }
-    for (int i = 0; i < 64; ++i) {
-      long l = arr[i];
       visitor.visit((int) (l & 0xFFFFFFFFL));
     }
   }
@@ -215,96 +195,6 @@ final class ForUtilCheck {
       arr[i] = (arr[i] << 32) | arr[64+i];
     }
   }
-
-  private static void prefixSum8(long[] arr, long base) {
-    expand8To32(arr);
-    prefixSum32(arr, base);
-  }
-
-  private static void prefixSum16(long[] arr, long base) {
-    // We need to move to the next primitive size to avoid overflows
-    expand16To32(arr);
-    prefixSum32(arr, base);
-  }
-
-  private static void prefixSum32(long[] arr, long base) {
-    arr[0] += base << 32;
-    innerPrefixSum32(arr);
-    expand32(arr);
-    final long l = arr[BLOCK_SIZE/2-1];
-    for (int i = BLOCK_SIZE/2; i < BLOCK_SIZE; ++i) {
-      arr[i] += l;
-    }
-  }
-
-  // For some reason unrolling seems to help
-  private static void innerPrefixSum32(long[] arr) {
-    arr[1] += arr[0];
-    arr[2] += arr[1];
-    arr[3] += arr[2];
-    arr[4] += arr[3];
-    arr[5] += arr[4];
-    arr[6] += arr[5];
-    arr[7] += arr[6];
-    arr[8] += arr[7];
-    arr[9] += arr[8];
-    arr[10] += arr[9];
-    arr[11] += arr[10];
-    arr[12] += arr[11];
-    arr[13] += arr[12];
-    arr[14] += arr[13];
-    arr[15] += arr[14];
-    arr[16] += arr[15];
-    arr[17] += arr[16];
-    arr[18] += arr[17];
-    arr[19] += arr[18];
-    arr[20] += arr[19];
-    arr[21] += arr[20];
-    arr[22] += arr[21];
-    arr[23] += arr[22];
-    arr[24] += arr[23];
-    arr[25] += arr[24];
-    arr[26] += arr[25];
-    arr[27] += arr[26];
-    arr[28] += arr[27];
-    arr[29] += arr[28];
-    arr[30] += arr[29];
-    arr[31] += arr[30];
-    arr[32] += arr[31];
-    arr[33] += arr[32];
-    arr[34] += arr[33];
-    arr[35] += arr[34];
-    arr[36] += arr[35];
-    arr[37] += arr[36];
-    arr[38] += arr[37];
-    arr[39] += arr[38];
-    arr[40] += arr[39];
-    arr[41] += arr[40];
-    arr[42] += arr[41];
-    arr[43] += arr[42];
-    arr[44] += arr[43];
-    arr[45] += arr[44];
-    arr[46] += arr[45];
-    arr[47] += arr[46];
-    arr[48] += arr[47];
-    arr[49] += arr[48];
-    arr[50] += arr[49];
-    arr[51] += arr[50];
-    arr[52] += arr[51];
-    arr[53] += arr[52];
-    arr[54] += arr[53];
-    arr[55] += arr[54];
-    arr[56] += arr[55];
-    arr[57] += arr[56];
-    arr[58] += arr[57];
-    arr[59] += arr[58];
-    arr[60] += arr[59];
-    arr[61] += arr[60];
-    arr[62] += arr[61];
-    arr[63] += arr[62];
-  }
-
-  private final long[] tmp = new long[BLOCK_SIZE/2];
 
   /**
    * Encode 128 integers from {@code longs} into {@code out}.
@@ -317,13 +207,26 @@ final class ForUtilCheck {
       numLongs = BLOCK_SIZE / 8;
       collapse8(longs);
     } else if (bitsPerValue <= 16) {
+      for (int i = 0; i < 32; ++i) {
+        tmp[i] = longs[4 * i];
+        tmp[32 +i] = longs[4 * i + 1];
+        tmp[64 +i] = longs[4 * i + 2];
+        tmp[96 +i] = longs[4 * i + 3];
+      }
       nextPrimitive = 16;
       numLongs = BLOCK_SIZE / 4;
-      collapse16(longs);
+      collapse16(tmp);
+      longs = tmp;
     } else {
+      // move original val to right position
+      for (int i = 0; i < 64; ++i) {
+        tmp[i] = longs[2 * i];
+        tmp[64 +i] = longs[2 * i + 1];
+      }
       nextPrimitive = 32;
       numLongs = BLOCK_SIZE / 2;
-      collapse32(longs);
+      collapse32(tmp);
+      longs = tmp;
     }
 
     final int numLongsPerShift = bitsPerValue * 2;
@@ -691,114 +594,6 @@ final class ForUtilCheck {
         decodeSlow(bitsPerValue, in, tmp, longs);
         expand32(longs, visitor);
         break;
-    }
-  }
-
-  /**
-   * Delta-decode 128 integers into {@code longs}.
-   */
-  void decodeAndPrefixSum(int bitsPerValue, DataInput in, long base, long[] longs) throws IOException {
-    switch (bitsPerValue) {
-    case 1:
-      decode1(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 2:
-      decode2(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 3:
-      decode3(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 4:
-      decode4(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 5:
-      decode5(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 6:
-      decode6(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 7:
-      decode7(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 8:
-      decode8(in, tmp, longs);
-      prefixSum8(longs, base);
-      break;
-    case 9:
-      decode9(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 10:
-      decode10(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 11:
-      decode11(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 12:
-      decode12(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 13:
-      decode13(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 14:
-      decode14(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 15:
-      decode15(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 16:
-      decode16(in, tmp, longs);
-      prefixSum16(longs, base);
-      break;
-    case 17:
-      decode17(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 18:
-      decode18(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 19:
-      decode19(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 20:
-      decode20(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 21:
-      decode21(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 22:
-      decode22(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 23:
-      decode23(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    case 24:
-      decode24(in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
-    default:
-      decodeSlow(bitsPerValue, in, tmp, longs);
-      prefixSum32(longs, base);
-      break;
     }
   }
 

@@ -44,6 +44,20 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
+  public void testRandom2() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[ForUtilCheck.BLOCK_SIZE * random().nextInt(10)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+        }
+        test(dir, docIDs);
+      }
+    }
+  }
+
   public void testSorted() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
@@ -61,8 +75,8 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    final long[] tmp1 = new long[ForUtilCheck.BLOCK_SIZE / 2];
-    final long[] tmp2 = new long[ForUtilCheck.BLOCK_SIZE / 2];
+    final long[] tmp1 = new long[ForUtilCheck.BLOCK_SIZE];
+    final long[] tmp2 = new long[ForUtilCheck.BLOCK_SIZE];
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
       DocIdsWriter.writeDocIds(ints, 0, ints.length, out, tmp1);
       len = out.getFilePointer();
