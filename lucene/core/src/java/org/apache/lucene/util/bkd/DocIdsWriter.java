@@ -93,15 +93,6 @@ class DocIdsWriter {
         source[j] = docIds[start + i * ForUtilCheck.BLOCK_SIZE +j];
       }
       int bpv = PackedInts.bitsRequired(max);
-      if (bpv <= 8) {
-        bpv = 8;
-      } else if (bpv <= 16) {
-        bpv = 16;
-      } else if (bpv <= 24)  {
-        bpv = 24;
-      } else {
-        bpv = 32;
-      }
       out.writeByte((byte) bpv);
       ForUtilCheck.encode(source, bpv, out, tmp);
     }
