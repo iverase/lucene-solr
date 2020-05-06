@@ -78,14 +78,14 @@ final class ForUtilCheck {
   private static void expand8(long[] arr, int[] ints, int offset) {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
-      ints[offset+i] = (int) ((l >>> 56) & 0xFFL);
-      ints[offset+16+i] = (int) ((l >>> 48) & 0xFFL);
-      ints[offset+32+i] = (int) ((l >>> 40) & 0xFFL);
-      ints[offset+48+i] = (int) ((l >>> 32) & 0xFFL);
-      ints[offset+64+i] = (int) ((l >>> 24) & 0xFFL);
-      ints[offset+80+i] = (int) ((l >>> 16) & 0xFFL);
-      ints[offset+96+i] = (int) ((l >>> 8) & 0xFFL);
-      ints[offset+112+i] = (int) (l & 0xFFL);
+      ints[offset+8*i]   = (int) ((l >>> 56) & 0xFFL);
+      ints[offset+8*i+1] = (int) ((l >>> 48) & 0xFFL);
+      ints[offset+8*i+2] = (int) ((l >>> 40) & 0xFFL);
+      ints[offset+8*i+3] = (int) ((l >>> 32) & 0xFFL);
+      ints[offset+8*i+4] = (int) ((l >>> 24) & 0xFFL);
+      ints[offset+8*i+5] = (int) ((l >>> 16) & 0xFFL);
+      ints[offset+8*i+6] = (int) ((l >>> 8) & 0xFFL);
+      ints[offset+8*i+7] = (int) (l & 0xFFL);
     }
   }
 
@@ -93,44 +93,13 @@ final class ForUtilCheck {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 56) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 48) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 40) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 32) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 24) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 16) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) ((l >>> 8) & 0xFFL));
-    }
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
       visitor.visit((int) (l & 0xFFL));
-    }
-  }
-
-  private static void expand8To32(long[] arr) {
-    for (int i = 0; i < 16; ++i) {
-      long l = arr[i];
-      arr[i] = (l >>> 24) & 0x000000FF000000FFL;
-      arr[16+i] = (l >>> 16) & 0x000000FF000000FFL;
-      arr[32+i] = (l >>> 8) & 0x000000FF000000FFL;
-      arr[48+i] = l & 0x000000FF000000FFL;
     }
   }
 
@@ -166,14 +135,6 @@ final class ForUtilCheck {
     }
   }
 
-  private static void expand32(long[] arr) {
-    for (int i = 0; i < 64; ++i) {
-      long l = arr[i];
-      arr[i] = l >>> 32;
-      arr[64 + i] = l & 0xFFFFFFFFL;
-    }
-  }
-
   private static void expand32(long[] arr, int[] ints, int offset) {
     for (int i = 0; i < 64; i++) {
       long l = arr[i];
@@ -203,9 +164,20 @@ final class ForUtilCheck {
     final int nextPrimitive;
     final int numLongs;
     if (bitsPerValue <= 8) {
+      for (int i = 0; i < 16; ++i) {
+        tmp[i] = longs[8*i];
+        tmp[16+i] = longs[8*i+1];
+        tmp[32+i] = longs[8*i+2];
+        tmp[48+i] = longs[8*i+3];
+        tmp[64+i] = longs[8*i+4];
+        tmp[80+i] = longs[8*i+5];
+        tmp[96+i] = longs[8*i+6];
+        tmp[112+i] = longs[8*i+7];
+      }
       nextPrimitive = 8;
       numLongs = BLOCK_SIZE / 8;
-      collapse8(longs);
+      collapse8(tmp);
+      longs = tmp;
     } else if (bitsPerValue <= 16) {
       for (int i = 0; i < 32; ++i) {
         tmp[i] = longs[4 * i];
