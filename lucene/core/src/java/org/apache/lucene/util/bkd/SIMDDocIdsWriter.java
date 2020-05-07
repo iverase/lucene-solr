@@ -66,6 +66,7 @@ final class SIMDDocIdsWriter {
     }
     if (sorted) {
       if (ints[start] == ints[start + SIMDIntegerEncoder.BLOCK_SIZE - 1]) {
+        // all equal, it might happen for multi-value points
         out.writeByte((byte) 0);
         out.writeVInt(ints[start]);
       } else {
@@ -73,11 +74,12 @@ final class SIMDDocIdsWriter {
         tmp1[0] = 0;
         long max = 0;
         for (int i = 1; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
-          int doc = ints[start + i] - ints[start + i - 1];
-          max |= Integer.toUnsignedLong(doc);
-          tmp1[i] = doc;
+          final int delta = ints[start + i] - ints[start + i - 1];
+          max |= Integer.toUnsignedLong(delta);
+          tmp1[i] = delta;
         }
-        int bpv = PackedInts.bitsRequired(max);
+        final int bpv = PackedInts.bitsRequired(max);
+        // for delta encoding we add 32 to bvp
         out.writeByte((byte) (32 + bpv));
         encode(tmp1, bpv, out, tmp2);
         out.writeVInt(base);
@@ -92,9 +94,10 @@ final class SIMDDocIdsWriter {
         minVal = Math.min(minVal, ints[start + j]);
         maxVal = Math.max(maxVal, ints[start + j]);
       }
-      int bpv = PackedInts.bitsRequired(max);
-      int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
+      final int bpv = PackedInts.bitsRequired(max);
+      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
       if (bpv > bvpDiff) {
+        // for base encoding we add 64 to bvp
         out.writeByte((byte) (64 + bvpDiff));
         for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
           tmp1[i] = ints[start + i] - minVal;
@@ -102,6 +105,7 @@ final class SIMDDocIdsWriter {
         encode(tmp1, bvpDiff, out, tmp2);
         out.writeVInt(minVal);
       } else {
+        // standard encoding
         out.writeByte((byte) bpv);
         encode(tmp1, bpv, out, tmp2);
       }
@@ -857,13 +861,13 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = base + (int) ((l >>> 56) & 0xFF);
-      ints[j+1] = base +(int) ((l >>> 48) & 0xFF);
-      ints[j+2] = base +(int) ((l >>> 40) & 0xFF);
-      ints[j+3] = base +(int) ((l >>> 32) & 0xFF);
-      ints[j+4] = base +(int) ((l >>> 24) & 0xFF);
-      ints[j+5] = base +(int) ((l >>> 16) & 0xFF);
-      ints[j+6] = base +(int) ((l >>> 8) & 0xFF);
-      ints[j+7] = base +(int) (l & 0xFF);
+      ints[j+1] = base + (int) ((l >>> 48) & 0xFF);
+      ints[j+2] = base + (int) ((l >>> 40) & 0xFF);
+      ints[j+3] = base + (int) ((l >>> 32) & 0xFF);
+      ints[j+4] = base + (int) ((l >>> 24) & 0xFF);
+      ints[j+5] = base + (int) ((l >>> 16) & 0xFF);
+      ints[j+6] = base + (int) ((l >>> 8) & 0xFF);
+      ints[j+7] = base + (int) (l & 0xFF);
     }
   }
 
