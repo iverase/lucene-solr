@@ -114,27 +114,27 @@ final class SIMDDocIdsWriter {
   private static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     // re-order values for easier decoding
     if (bitsPerValue <= 8) {
-      for (int i = 0; i < 16; ++i) {
-        tmp[i] = longs[8*i];
-        tmp[16+i] = longs[8*i+1];
-        tmp[32+i] = longs[8*i+2];
-        tmp[48+i] = longs[8*i+3];
-        tmp[64+i] = longs[8*i+4];
-        tmp[80+i] = longs[8*i+5];
-        tmp[96+i] = longs[8*i+6];
-        tmp[112+i] = longs[8*i+7];
+      for (int i = 0, j = 0; i < 16; ++i, j += 8) {
+        tmp[i] = longs[j];
+        tmp[16+i] = longs[j+1];
+        tmp[32+i] = longs[j+2];
+        tmp[48+i] = longs[j+3];
+        tmp[64+i] = longs[j+4];
+        tmp[80+i] = longs[j+5];
+        tmp[96+i] = longs[j+6];
+        tmp[112+i] = longs[j+7];
       }
     } else if (bitsPerValue <= 16) {
-      for (int i = 0; i < 32; ++i) {
-        tmp[i] = longs[4 * i];
-        tmp[32 +i] = longs[4 * i + 1];
-        tmp[64 +i] = longs[4 * i + 2];
-        tmp[96 +i] = longs[4 * i + 3];
+      for (int i = 0, j = 0; i < 32; ++i, j += 4) {
+        tmp[i] = longs[j];
+        tmp[32+i] = longs[j+1];
+        tmp[64+i] = longs[j+2];
+        tmp[96+i] = longs[j+3];
       }
     } else {
-      for (int i = 0; i < 64; ++i) {
-        tmp[i] = longs[2 * i];
-        tmp[64 +i] = longs[2 * i + 1];
+      for (int i = 0, j = 0; i < 64; ++i, j += 2) {
+        tmp[i] = longs[j];
+        tmp[64+i] = longs[j+1];
       }
     }
     SIMDIntegerEncoder.encode(tmp, bitsPerValue, out, longs);
