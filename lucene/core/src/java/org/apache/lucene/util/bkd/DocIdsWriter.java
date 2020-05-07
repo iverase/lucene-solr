@@ -86,9 +86,8 @@ class DocIdsWriter {
   }
 
   private static void writeSIMD(int[] docIds, int start, int count, DataOutput out, SIMDDocIdsWriter encoder) throws IOException {
-    final int iterations = count / SIMDIntegerEncoder.BLOCK_SIZE;
-    for (int i = 0; i < iterations; ++i) {
-      encoder.encode(docIds, start + i * SIMDIntegerEncoder.BLOCK_SIZE, out);
+    for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
+      encoder.encode(docIds, start + i, out);
     }
   }
 
@@ -118,9 +117,8 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, int[] docIDs, SIMDDocIdsWriter decoder) throws IOException {
-    final int iterations = count / SIMDIntegerEncoder.BLOCK_SIZE;
-    for (int i = 0; i < iterations; ++i) {
-      decoder.decode(in, docIDs,  i * SIMDIntegerEncoder.BLOCK_SIZE);
+    for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
+      decoder.decode(in, docIDs, i);
     }
   }
 
@@ -188,8 +186,7 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, SIMDDocIdsWriter decoder) throws IOException {
-    final int iterations = count / SIMDIntegerEncoder.BLOCK_SIZE;
-    for (int i = 0; i < iterations; ++i) {
+    for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
       decoder.decode(in, visitor);
     }
   }
