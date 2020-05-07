@@ -44,8 +44,6 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.SIMDIntegerEncoder;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
-
 final class SIMDDocIdsWriter {
 
   private final long[] tmp1 = new long[SIMDIntegerEncoder.BLOCK_SIZE];
@@ -840,17 +838,14 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[j]   = (int) ((l >>> 56) & 0xFFL);
-      ints[j+1] = (int) ((l >>> 48) & 0xFFL);
-      ints[j+2] = (int) ((l >>> 40) & 0xFFL);
-      ints[j+3] = (int) ((l >>> 32) & 0xFFL);
-      ints[j+4] = (int) ((l >>> 24) & 0xFFL);
-      ints[j+5] = (int) ((l >>> 16) & 0xFFL);
-      ints[j+6] = (int) ((l >>> 8) & 0xFFL);
-      ints[j+7] = (int) (l & 0xFFL);
-    }
-    for (int i = offset; i < offset + BLOCK_SIZE; ++i) {
-      ints[i] += base;
+      ints[j]   = base + (int) ((l >>> 56) & 0xFFL);
+      ints[j+1] = base +(int) ((l >>> 48) & 0xFFL);
+      ints[j+2] = base +(int) ((l >>> 40) & 0xFFL);
+      ints[j+3] = base +(int) ((l >>> 32) & 0xFFL);
+      ints[j+4] = base +(int) ((l >>> 24) & 0xFFL);
+      ints[j+5] = base +(int) ((l >>> 16) & 0xFFL);
+      ints[j+6] = base +(int) ((l >>> 8) & 0xFFL);
+      ints[j+7] = base +(int) (l & 0xFFL);
     }
   }
 
@@ -901,7 +896,7 @@ final class SIMDDocIdsWriter {
   private static void expand16(long[] arr, int[] ints, int offset) {
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[j] = (int) ((l >>> 48) & 0xFFFFL);
+      ints[j]   = (int) ((l >>> 48) & 0xFFFFL);
       ints[j+1] = (int) ((l >>> 32) & 0xFFFFL);
       ints[j+2] = (int) ((l >>> 16) & 0xFFFFL);
       ints[j+3] = (int) (l & 0xFFFFL);
@@ -912,10 +907,10 @@ final class SIMDDocIdsWriter {
     int base = in.readVInt();
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[j] = base += (int) ((l >>> 48) & 0xFFFFL);
-      ints[j+1] =  base += (int) ((l >>> 32) & 0xFFFFL);
-      ints[j+2] =  base += (int) ((l >>> 16) & 0xFFFFL);
-      ints[j+3] =  base += (int) (l & 0xFFFFL);
+      ints[j]   = base += (int) ((l >>> 48) & 0xFFFFL);
+      ints[j+1] = base += (int) ((l >>> 32) & 0xFFFFL);
+      ints[j+2] = base += (int) ((l >>> 16) & 0xFFFFL);
+      ints[j+3] = base += (int) (l & 0xFFFFL);
     }
   }
 
@@ -923,13 +918,10 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[j] = (int) ((l >>> 48) & 0xFFFFL);
-      ints[j+1] = (int) ((l >>> 32) & 0xFFFFL);
-      ints[j+2] =(int) ((l >>> 16) & 0xFFFFL);
-      ints[j+3] = (int) (l & 0xFFFFL);
-    }
-    for (int i = offset; i < offset + BLOCK_SIZE; ++i) {
-      ints[i] += base;
+      ints[j]   = base + (int) ((l >>> 48) & 0xFFFFL);
+      ints[j+1] = base + (int) ((l >>> 32) & 0xFFFFL);
+      ints[j+2] = base + (int) ((l >>> 16) & 0xFFFFL);
+      ints[j+3] = base + (int) (l & 0xFFFFL);
     }
   }
 
@@ -977,7 +969,7 @@ final class SIMDDocIdsWriter {
     int base = in.readVInt();
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[j] = base += (int) (l >>> 32);
+      ints[j]   = base += (int) (l >>> 32);
       ints[j+1] = base += (int) (l & 0xFFFFFFFFL);
     }
   }
@@ -986,11 +978,8 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[j] = (int) (l >>> 32);
-      ints[j+1] =  (int) (l & 0xFFFFFFFFL);
-    }
-    for (int i = offset; i < offset + BLOCK_SIZE; ++i) {
-      ints[i] += base;
+      ints[j]   = base + (int) (l >>> 32);
+      ints[j+1] = base + (int) (l & 0xFFFFFFFFL);
     }
   }
 
