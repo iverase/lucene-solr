@@ -631,30 +631,30 @@ final class ForUtilCheck {
 
 
   private static void expand8(long[] arr, int[] ints, int offset) {
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0, j = 0; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[offset+8*i]   = (int) ((l >>> 56) & 0xFFL);
-      ints[offset+8*i+1] = (int) ((l >>> 48) & 0xFFL);
-      ints[offset+8*i+2] = (int) ((l >>> 40) & 0xFFL);
-      ints[offset+8*i+3] = (int) ((l >>> 32) & 0xFFL);
-      ints[offset+8*i+4] = (int) ((l >>> 24) & 0xFFL);
-      ints[offset+8*i+5] = (int) ((l >>> 16) & 0xFFL);
-      ints[offset+8*i+6] = (int) ((l >>> 8) & 0xFFL);
-      ints[offset+8*i+7] = (int) (l & 0xFFL);
+      ints[offset+j]   = (int) ((l >>> 56) & 0xFFL);
+      ints[offset+j+1] = (int) ((l >>> 48) & 0xFFL);
+      ints[offset+j+2] = (int) ((l >>> 40) & 0xFFL);
+      ints[offset+j+3] = (int) ((l >>> 32) & 0xFFL);
+      ints[offset+j+4] = (int) ((l >>> 24) & 0xFFL);
+      ints[offset+j+5] = (int) ((l >>> 16) & 0xFFL);
+      ints[offset+j+6] = (int) ((l >>> 8) & 0xFFL);
+      ints[offset+j+7] = (int) (l & 0xFFL);
     }
   }
 
   private static void expand8(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0, j = 0; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[offset+8*i]   = base += (int) ((l >>> 56) & 0xFFL);
-      ints[offset+8*i+1] = base +=  (int) ((l >>> 48) & 0xFFL);
-      ints[offset+8*i+2] = base +=  (int) ((l >>> 40) & 0xFFL);
-      ints[offset+8*i+3] = base +=  (int) ((l >>> 32) & 0xFFL);
-      ints[offset+8*i+4] = base +=  (int) ((l >>> 24) & 0xFFL);
-      ints[offset+8*i+5] = base +=  (int) ((l >>> 16) & 0xFFL);
-      ints[offset+8*i+6] = base +=  (int) ((l >>> 8) & 0xFFL);
-      ints[offset+8*i+7] = base +=  (int) (l & 0xFFL);
+      ints[offset+j]   = base += (int) ((l >>> 56) & 0xFFL);
+      ints[offset+j+1] = base +=  (int) ((l >>> 48) & 0xFFL);
+      ints[offset+j+2] = base +=  (int) ((l >>> 40) & 0xFFL);
+      ints[offset+j+3] = base +=  (int) ((l >>> 32) & 0xFFL);
+      ints[offset+j+4] = base +=  (int) ((l >>> 24) & 0xFFL);
+      ints[offset+j+5] = base +=  (int) ((l >>> 16) & 0xFFL);
+      ints[offset+j+6] = base +=  (int) ((l >>> 8) & 0xFFL);
+      ints[offset+j+7] = base +=  (int) (l & 0xFFL);
     }
   }
 
@@ -687,22 +687,22 @@ final class ForUtilCheck {
   }
 
   private static void expand16(long[] arr, int[] ints, int offset) {
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0, j = 0; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[offset + 4 * i] = (int) ((l >>> 48) & 0xFFFFL);
-      ints[offset + 4 * i + 1] = (int) ((l >>> 32) & 0xFFFFL);
-      ints[offset + 4 * i + 2] = (int) ((l >>> 16) & 0xFFFFL);
-      ints[offset + 4 * i + 3] = (int) (l & 0xFFFFL);
+      ints[offset + j] = (int) ((l >>> 48) & 0xFFFFL);
+      ints[offset + j + 1] = (int) ((l >>> 32) & 0xFFFFL);
+      ints[offset + j + 2] = (int) ((l >>> 16) & 0xFFFFL);
+      ints[offset + j + 3] = (int) (l & 0xFFFFL);
     }
   }
 
   private static void expand16(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0, j = 0; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[offset + 4 * i] = base += (int) ((l >>> 48) & 0xFFFFL);
-      ints[offset + 4 * i + 1] =  base += (int) ((l >>> 32) & 0xFFFFL);
-      ints[offset + 4 * i + 2] =  base += (int) ((l >>> 16) & 0xFFFFL);
-      ints[offset + 4 * i + 3] =  base += (int) (l & 0xFFFFL);
+      ints[offset + j] = base += (int) ((l >>> 48) & 0xFFFFL);
+      ints[offset + j + 1] =  base += (int) ((l >>> 32) & 0xFFFFL);
+      ints[offset + j + 2] =  base += (int) ((l >>> 16) & 0xFFFFL);
+      ints[offset + j + 3] =  base += (int) (l & 0xFFFFL);
     }
   }
 
@@ -727,18 +727,18 @@ final class ForUtilCheck {
   }
 
   private static void expand32(long[] arr, int[] ints, int offset) {
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0, j = 0; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[offset+2*i] = (int) (l >>> 32);
-      ints[offset+1+2*i] = (int) (l & 0xFFFFFFFFL);
+      ints[offset+j] = (int) (l >>> 32);
+      ints[offset+j+1] = (int) (l & 0xFFFFFFFFL);
     }
   }
 
   private static void expand32(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0, j = 0; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[offset+2*i] = base += (int) (l >>> 32);
-      ints[offset+1+2*i] = base += (int) (l & 0xFFFFFFFFL);
+      ints[offset+j] = base += (int) (l >>> 32);
+      ints[offset+j + 1] = base += (int) (l & 0xFFFFFFFFL);
     }
   }
 
