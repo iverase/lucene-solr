@@ -17,7 +17,6 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
@@ -27,7 +26,6 @@ import org.apache.lucene.util.SIMDIntegerEncoder;
 class DocIdsWriter {
 
   private static final byte SORTED = (byte) 0;
-  private static final byte EQUAL = (byte) 1;
   private static final byte INT24 = (byte) 24;
   private static final byte INT32 = (byte) 32;
   private static final byte SIMD = (byte) 64;
@@ -40,7 +38,9 @@ class DocIdsWriter {
     // better decoding speed.
     if (count % SIMDIntegerEncoder.BLOCK_SIZE == 0) {
       out.writeByte(SIMD);
-      writeSIMD(docIds, start, count, out, encoder);
+      for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
+        encoder.encode(docIds, start + i, out);
+      }
       return;
     }
     // docs can be sorted either when all docs in a block have the same value
@@ -53,17 +53,12 @@ class DocIdsWriter {
       }
     }
     if (sorted) {
-      if (count > 0 && docIds[start] == docIds[start + count - 1]) {
-        out.writeByte(EQUAL);
-        out.writeVInt(docIds[start]);
-      } else {
-        out.writeByte(SORTED);
-        int previous = 0;
-        for (int i = 0; i < count; ++i) {
-          int doc = docIds[start + i];
-          out.writeVInt(doc - previous);
-          previous = doc;
-        }
+      out.writeByte(SORTED);
+      int previous = 0;
+      for (int i = 0; i < count; ++i) {
+        int doc = docIds[start + i];
+        out.writeVInt(doc - previous);
+        previous = doc;
       }
     } else {
       long max = 0;
@@ -85,12 +80,6 @@ class DocIdsWriter {
     }
   }
 
-  private static void writeSIMD(int[] docIds, int start, int count, DataOutput out, SIMDDocIdsWriter encoder) throws IOException {
-    for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
-      encoder.encode(docIds, start + i, out);
-    }
-  }
-
   /** Read {@code count} integers into {@code docIDs}. */
   static void readInts(IndexInput in, int count, int[] docIDs, SIMDDocIdsWriter decoder) throws IOException {
     final byte bpv = in.readByte();
@@ -107,9 +96,6 @@ class DocIdsWriter {
       case SIMD:
         readSIMD(in, count, docIDs, decoder);
         break;
-      case EQUAL:
-        readEqual(in, count, docIDs);
-        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
@@ -120,11 +106,6 @@ class DocIdsWriter {
     for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
       decoder.decode(in, docIDs, i);
     }
-  }
-
-  private static void readEqual(IndexInput in, int count, int[] docIDs) throws IOException {
-    int doc = in.readVInt();
-    Arrays.fill(docIDs, 0, count, doc);
   }
 
   private static void readDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
@@ -177,9 +158,6 @@ class DocIdsWriter {
       case SIMD:
         readSIMD(in, count, visitor, decoder);
         break;
-      case EQUAL:
-        readEqual(in, count, visitor);
-        break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
@@ -188,13 +166,6 @@ class DocIdsWriter {
   private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, SIMDDocIdsWriter decoder) throws IOException {
     for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
       decoder.decode(in, visitor);
-    }
-  }
-
-  private static void readEqual(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int doc = in.readVInt();
-    for (int i = 0; i < count; i++) {
-      visitor.visit(doc);
     }
   }
 
