@@ -37,7 +37,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Locale;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
@@ -95,12 +94,12 @@ final class SIMDDocIdsWriter {
       }
       int bpv = PackedInts.bitsRequired(max);
       int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
-      if (bvpDiff < bpv) {
-        out.writeByte((byte) (64 + bpv));
+      if (bpv > bvpDiff) {
+        out.writeByte((byte) (64 + bvpDiff));
         for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
           tmp1[i] = ints[start + i] - minVal;
         }
-        encode(tmp1, bpv, out, tmp2);
+        encode(tmp1, bvpDiff, out, tmp2);
         out.writeVInt(minVal);
       } else {
         out.writeByte((byte) bpv);
@@ -122,8 +121,8 @@ final class SIMDDocIdsWriter {
    * {@link org.apache.lucene.index.PointValues.IntersectVisitor#visit(int)}.
    */
   void decode(DataInput in, PointValues.IntersectVisitor visitor) throws IOException {
-    final int bitsPerValue = in.readByte();
-    decode(bitsPerValue, in, visitor, tmp1, tmp2);
+    final int code = in.readByte();
+    decode(code, in, visitor, tmp1, tmp2);
   }
 
   private static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
@@ -481,8 +480,8 @@ final class SIMDDocIdsWriter {
     }
   }
 
-  private static void decode(int bitsPerValue, DataInput in, PointValues.IntersectVisitor visitor, long[] longs, long[] tmp) throws IOException {
-    switch (bitsPerValue) {
+  private static void decode(int code, DataInput in, PointValues.IntersectVisitor visitor, long[] longs, long[] tmp) throws IOException {
+    switch (code) {
       case 0:
         final int base = in.readVInt();
         for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; i++) {
@@ -593,7 +592,7 @@ final class SIMDDocIdsWriter {
       case 30:
       case 31:
       case 32:
-        SIMDIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(code, in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 33:
@@ -700,7 +699,7 @@ final class SIMDDocIdsWriter {
       case 62:
       case 63:
       case 64:
-        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(code - 32, in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 65:
@@ -800,7 +799,7 @@ final class SIMDDocIdsWriter {
         expand32Base(in, longs, visitor);
         break;
       default:
-        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 64, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
     }
