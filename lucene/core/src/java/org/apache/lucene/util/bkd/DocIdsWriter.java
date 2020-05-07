@@ -35,6 +35,9 @@ class DocIdsWriter {
   private DocIdsWriter() {}
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out, SIMDDocIdsWriter encoder) throws IOException {
+    // if the number of points is a multiple of BLOCK_SIZE, then use
+    // SIMD encoder to get better encoding compression and most of the times
+    // better decoding speed.
     if (count % SIMDIntegerEncoder.BLOCK_SIZE == 0) {
       out.writeByte(SIMD);
       writeSIMD(docIds, start, count, out, encoder);
@@ -117,10 +120,7 @@ class DocIdsWriter {
   private static void readSIMD(IndexInput in, int count, int[] docIDs, SIMDDocIdsWriter decoder) throws IOException {
     final int iterations = count / SIMDIntegerEncoder.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
-      //long start = System.nanoTime();
       decoder.decode(in, docIDs,  i * SIMDIntegerEncoder.BLOCK_SIZE);
-      //long end = System.nanoTime();
-      //System.out.println( "time: " + (end - start));
     }
   }
 

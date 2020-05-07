@@ -45,7 +45,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testRandom2() throws Exception {
+  public void testRandomSIMD() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
@@ -59,7 +59,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testRandom3() throws Exception {
+  public void testRandomSimilarValuesSIMD() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
@@ -88,7 +88,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testSorted2() throws Exception {
+  public void testSortedSIMD() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
@@ -100,6 +100,24 @@ public class TestDocIdsWriter extends LuceneTestCase {
         Arrays.sort(docIDs);
         test(dir, docIDs);
       }
+    }
+  }
+
+  public void testAllEquals() throws Exception {
+    try (Directory dir = newDirectory()) {
+      int[] docIDs;
+      if (random().nextBoolean()) {
+        docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+      } else {
+        docIDs = new int[random().nextInt(5000)];
+      }
+      final int bpv = TestUtil.nextInt(random(), 1, 32);
+      final int val = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+      for (int i = 0; i < docIDs.length; ++i) {
+        docIDs[i] = val;
+      }
+      Arrays.sort(docIDs);
+      test(dir, docIDs);
     }
   }
 

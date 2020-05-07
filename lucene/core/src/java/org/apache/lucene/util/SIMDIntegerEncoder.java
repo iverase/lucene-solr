@@ -27,6 +27,12 @@ import org.apache.lucene.store.DataOutput;
 // If bitsPerValue <= 8 then we pack 8 ints per long
 // else if bitsPerValue <= 16 we pack 4 ints per long
 // else we pack 2 ints per long
+
+/**
+ *  Primitive operations to achieve SIM-D like speed ups when encoding/decoding positive integers.
+ *
+ * @lucene.internal
+ */
 public class SIMDIntegerEncoder {
 
   public static final int BLOCK_SIZE = 128;
@@ -121,6 +127,11 @@ public class SIMDIntegerEncoder {
   private static final long MASK32_24 = mask32(24);
 
 
+  /**
+   * Encode 128 integers from {@code longs} into {@code out}. The integers must have the highest significant bit
+   * at {@code bitsPerValue} or lower. The {@code tml} long[] must have a length of
+   * at least {@link SIMDIntegerEncoder#BLOCK_SIZE} / 2
+   */
   public static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     final int nextPrimitive;
     final int numLongs;
@@ -213,6 +224,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 1
+   * into {@code long} with packed representation.
+   */
   public static void decode1(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 2);
     shiftLongs(tmp, 2, longs, 0, 7, MASK8_1);
@@ -225,6 +240,10 @@ public class SIMDIntegerEncoder {
     shiftLongs(tmp, 2, longs, 14, 0, MASK8_1);
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 2
+   * into {@code long} with packed representation.
+   */
   public static void decode2(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 4);
     shiftLongs(tmp, 4, longs, 0, 6, MASK8_2);
@@ -233,6 +252,10 @@ public class SIMDIntegerEncoder {
     shiftLongs(tmp, 4, longs, 12, 0, MASK8_2);
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 3
+   * into {@code long} with packed representation.
+   */
   public static void decode3(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 6);
     shiftLongs(tmp, 6, longs, 0, 5, MASK8_3);
@@ -247,12 +270,20 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 4
+   * into {@code long} with packed representation.
+   */
   public static void decode4(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 8);
     shiftLongs(tmp, 8, longs, 0, 4, MASK8_4);
     shiftLongs(tmp, 8, longs, 8, 0, MASK8_4);
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 5
+   * into {@code long} with packed representation.
+   */
   public static void decode5(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 10);
     shiftLongs(tmp, 10, longs, 0, 3, MASK8_5);
@@ -270,6 +301,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 6
+   * into {@code long} with packed representation.
+   */
   public static void decode6(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 12);
     shiftLongs(tmp, 12, longs, 0, 2, MASK8_6);
@@ -281,6 +316,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 7
+   * into {@code long} with packed representation.
+   */
   public static void decode7(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 14);
     shiftLongs(tmp, 14, longs, 0, 1, MASK8_7);
@@ -296,10 +335,18 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 8
+   * into {@code long} with packed representation.
+   */
   public static void decode8(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(longs, 0, 16);
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 9
+   * into {@code long} with packed representation.
+   */
   public static void decode9(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 18);
     shiftLongs(tmp, 18, longs, 0, 7, MASK16_9);
@@ -329,6 +376,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 10
+   * into {@code long} with packed representation.
+   */
   public static void decode10(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 20);
     shiftLongs(tmp, 20, longs, 0, 6, MASK16_10);
@@ -346,6 +397,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 11
+   * into {@code long} with packed representation.
+   */
   public static void decode11(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 22);
     shiftLongs(tmp, 22, longs, 0, 5, MASK16_11);
@@ -373,6 +428,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 12
+   * into {@code long} with packed representation.
+   */
   public static void decode12(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 24);
     shiftLongs(tmp, 24, longs, 0, 4, MASK16_12);
@@ -384,6 +443,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 13
+   * into {@code long} with packed representation.
+   */
   public static void decode13(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 26);
     shiftLongs(tmp, 26, longs, 0, 3, MASK16_13);
@@ -409,6 +472,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 14
+   * into {@code long} with packed representation.
+   */
   public static void decode14(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 28);
     shiftLongs(tmp, 28, longs, 0, 2, MASK16_14);
@@ -424,6 +491,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 15
+   * into {@code long} with packed representation.
+   */
   public static void decode15(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 30);
     shiftLongs(tmp, 30, longs, 0, 1, MASK16_15);
@@ -447,10 +518,18 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 16
+   * into {@code long} with packed representation.
+   */
   public static void decode16(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(longs, 0, 32);
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 17
+   * into {@code long} with packed representation.
+   */
   public static void decode17(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 34);
     shiftLongs(tmp, 34, longs, 0, 15, MASK32_17);
@@ -504,6 +583,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 18
+   * into {@code long} with packed representation.
+   */
   public static void decode18(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 36);
     shiftLongs(tmp, 36, longs, 0, 14, MASK32_18);
@@ -533,6 +616,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 19
+   * into {@code long} with packed representation.
+   */
   public static void decode19(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 38);
     shiftLongs(tmp, 38, longs, 0, 13, MASK32_19);
@@ -584,6 +671,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 20
+   * into {@code long} with packed representation.
+   */
   public static void decode20(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 40);
     shiftLongs(tmp, 40, longs, 0, 12, MASK32_20);
@@ -601,6 +692,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 21
+   * into {@code long} with packed representation.
+   */
   public static void decode21(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 42);
     shiftLongs(tmp, 42, longs, 0, 11, MASK32_21);
@@ -650,6 +745,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 22
+   * into {@code long} with packed representation.
+   */
   public static void decode22(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 44);
     shiftLongs(tmp, 44, longs, 0, 10, MASK32_22);
@@ -677,6 +776,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 23
+   * into {@code long} with packed representation.
+   */
   public static void decode23(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 46);
     shiftLongs(tmp, 46, longs, 0, 9, MASK32_23);
@@ -724,6 +827,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of 24
+   * into {@code long} with packed representation.
+   */
   public static void decode24(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 48);
     shiftLongs(tmp, 48, longs, 0, 8, MASK32_24);
@@ -735,6 +842,10 @@ public class SIMDIntegerEncoder {
     }
   }
 
+  /**
+   * Decode 128 integers with highest significant bit of {@code bitsPerValue}
+   * into {@code long} with packed representation.
+   */
   public static void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
     final int numLongs = bitsPerValue << 1;
     in.readLELongs(tmp, 0, numLongs);
