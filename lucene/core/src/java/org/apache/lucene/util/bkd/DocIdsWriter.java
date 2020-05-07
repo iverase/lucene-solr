@@ -22,6 +22,7 @@ import java.util.Arrays;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.SimdIntegerEncoder;
 import org.apache.lucene.util.packed.PackedInts;
 
 class DocIdsWriter {
@@ -35,7 +36,7 @@ class DocIdsWriter {
   private DocIdsWriter() {}
 
   static void writeDocIds(int[] docIds, int start, int count, DataOutput out, ForUtilCheck encoder) throws IOException {
-    if (count % ForUtilCheck.BLOCK_SIZE == 0) {
+    if (count % SimdIntegerEncoder.BLOCK_SIZE == 0) {
       out.writeByte(SIMD);
       writeSIMD(docIds, start, count, out, encoder);
       return;
@@ -83,9 +84,9 @@ class DocIdsWriter {
   }
 
   private static void writeSIMD(int[] docIds, int start, int count, DataOutput out, ForUtilCheck encoder) throws IOException {
-    final int iterations = count / ForUtilCheck.BLOCK_SIZE;
+    final int iterations = count / SimdIntegerEncoder.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
-      encoder.encode(docIds, start + i * ForUtilCheck.BLOCK_SIZE, out);
+      encoder.encode(docIds, start + i * SimdIntegerEncoder.BLOCK_SIZE, out);
     }
   }
 
@@ -115,10 +116,10 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, int[] docIDs, ForUtilCheck decoder) throws IOException {
-    final int iterations = count / ForUtilCheck.BLOCK_SIZE;
+    final int iterations = count / SimdIntegerEncoder.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
       //long start = System.nanoTime();
-      decoder.decode(in, docIDs,  i * ForUtilCheck.BLOCK_SIZE);
+      decoder.decode(in, docIDs,  i * SimdIntegerEncoder.BLOCK_SIZE);
       //long end = System.nanoTime();
       //System.out.println( "time: " + (end - start));
     }
@@ -188,7 +189,7 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, ForUtilCheck decoder) throws IOException {
-    final int iterations = count / ForUtilCheck.BLOCK_SIZE;
+    final int iterations = count / SimdIntegerEncoder.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
       decoder.decode(in, visitor);
     }
