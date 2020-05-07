@@ -916,7 +916,7 @@ final class SIMDDocIdsWriter {
 
   private static void expand16Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    Arrays.fill(ints, 0, SIMDIntegerEncoder.BLOCK_SIZE, base);
+    Arrays.fill(ints, offset, offset + SIMDIntegerEncoder.BLOCK_SIZE, base);
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
       ints[j]   += (int) ((l >>> 48) & 0xFFFF);
@@ -977,7 +977,7 @@ final class SIMDDocIdsWriter {
 
   private static void expand32Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    Arrays.fill(ints, 0, SIMDIntegerEncoder.BLOCK_SIZE, base);
+    Arrays.fill(ints, offset, offset + SIMDIntegerEncoder.BLOCK_SIZE, base);
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j]   += (int) (l >>> 32);
