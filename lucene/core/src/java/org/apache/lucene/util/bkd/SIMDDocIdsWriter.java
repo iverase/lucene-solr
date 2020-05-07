@@ -808,14 +808,14 @@ final class SIMDDocIdsWriter {
   private static void expand8(long[] arr, int[] ints, int offset) {
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[j]   = (int) ((l >>> 56) & 0xFFL);
-      ints[j+1] = (int) ((l >>> 48) & 0xFFL);
-      ints[j+2] = (int) ((l >>> 40) & 0xFFL);
-      ints[j+3] = (int) ((l >>> 32) & 0xFFL);
-      ints[j+4] = (int) ((l >>> 24) & 0xFFL);
-      ints[j+5] = (int) ((l >>> 16) & 0xFFL);
-      ints[j+6] = (int) ((l >>> 8) & 0xFFL);
-      ints[j+7] = (int) (l & 0xFFL);
+      ints[j]   = (int) ((l >>> 56) & 0xFF);
+      ints[j+1] = (int) ((l >>> 48) & 0xFF);
+      ints[j+2] = (int) ((l >>> 40) & 0xFF);
+      ints[j+3] = (int) ((l >>> 32) & 0xFF);
+      ints[j+4] = (int) ((l >>> 24) & 0xFF);
+      ints[j+5] = (int) ((l >>> 16) & 0xFF);
+      ints[j+6] = (int) ((l >>> 8) & 0xFF);
+      ints[j+7] = (int) (l & 0xFF);
     }
   }
 
@@ -823,14 +823,14 @@ final class SIMDDocIdsWriter {
     int base = in.readVInt();
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[j]   = base += (int) ((l >>> 56) & 0xFFL);
-      ints[j+1] = base += (int) ((l >>> 48) & 0xFFL);
-      ints[j+2] = base += (int) ((l >>> 40) & 0xFFL);
-      ints[j+3] = base += (int) ((l >>> 32) & 0xFFL);
-      ints[j+4] = base += (int) ((l >>> 24) & 0xFFL);
-      ints[j+5] = base += (int) ((l >>> 16) & 0xFFL);
-      ints[j+6] = base += (int) ((l >>> 8) & 0xFFL);
-      ints[j+7] = base += (int) (l & 0xFFL);
+      ints[j]   = base += (int) ((l >>> 56) & 0xFF);
+      ints[j+1] = base += (int) ((l >>> 48) & 0xFF);
+      ints[j+2] = base += (int) ((l >>> 40) & 0xFF);
+      ints[j+3] = base += (int) ((l >>> 32) & 0xFF);
+      ints[j+4] = base += (int) ((l >>> 24) & 0xFF);
+      ints[j+5] = base += (int) ((l >>> 16) & 0xFF);
+      ints[j+6] = base += (int) ((l >>> 8) & 0xFF);
+      ints[j+7] = base += (int) (l & 0xFF);
     }
   }
 
@@ -838,28 +838,28 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[j]   = base + (int) ((l >>> 56) & 0xFFL);
-      ints[j+1] = base +(int) ((l >>> 48) & 0xFFL);
-      ints[j+2] = base +(int) ((l >>> 40) & 0xFFL);
-      ints[j+3] = base +(int) ((l >>> 32) & 0xFFL);
-      ints[j+4] = base +(int) ((l >>> 24) & 0xFFL);
-      ints[j+5] = base +(int) ((l >>> 16) & 0xFFL);
-      ints[j+6] = base +(int) ((l >>> 8) & 0xFFL);
-      ints[j+7] = base +(int) (l & 0xFFL);
+      ints[j]   = base + (int) ((l >>> 56) & 0xFF);
+      ints[j+1] = base +(int) ((l >>> 48) & 0xFF);
+      ints[j+2] = base +(int) ((l >>> 40) & 0xFF);
+      ints[j+3] = base +(int) ((l >>> 32) & 0xFF);
+      ints[j+4] = base +(int) ((l >>> 24) & 0xFF);
+      ints[j+5] = base +(int) ((l >>> 16) & 0xFF);
+      ints[j+6] = base +(int) ((l >>> 8) & 0xFF);
+      ints[j+7] = base +(int) (l & 0xFF);
     }
   }
 
   private static void expand8(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
-      visitor.visit((int) ((l >>> 56) & 0xFFL));
-      visitor.visit((int) ((l >>> 48) & 0xFFL));
-      visitor.visit((int) ((l >>> 40) & 0xFFL));
-      visitor.visit((int) ((l >>> 32) & 0xFFL));
-      visitor.visit((int) ((l >>> 24) & 0xFFL));
-      visitor.visit((int) ((l >>> 16) & 0xFFL));
-      visitor.visit((int) ((l >>> 8) & 0xFFL));
-      visitor.visit((int) (l & 0xFFL));
+      visitor.visit((int) ((l >>> 56) & 0xFF));
+      visitor.visit((int) ((l >>> 48) & 0xFF));
+      visitor.visit((int) ((l >>> 40) & 0xFF));
+      visitor.visit((int) ((l >>> 32) & 0xFF));
+      visitor.visit((int) ((l >>> 24) & 0xFF));
+      visitor.visit((int) ((l >>> 16) & 0xFF));
+      visitor.visit((int) ((l >>> 8) & 0xFF));
+      visitor.visit((int) (l & 0xFF));
     }
   }
 
@@ -867,14 +867,14 @@ final class SIMDDocIdsWriter {
     int base = in.readVInt();
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
-      visitor.visit(base += (int) ((l >>> 56) & 0xFFL));
-      visitor.visit(base += (int) ((l >>> 48) & 0xFFL));
-      visitor.visit(base += (int) ((l >>> 40) & 0xFFL));
-      visitor.visit(base += (int) ((l >>> 32) & 0xFFL));
-      visitor.visit(base += (int) ((l >>> 24) & 0xFFL));
-      visitor.visit(base += (int) ((l >>> 16) & 0xFFL));
-      visitor.visit(base += (int) ((l >>> 8) & 0xFFL));
-      visitor.visit(base += (int) (l & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 56) & 0xFF));
+      visitor.visit(base += (int) ((l >>> 48) & 0xFF));
+      visitor.visit(base += (int) ((l >>> 40) & 0xFF));
+      visitor.visit(base += (int) ((l >>> 32) & 0xFF));
+      visitor.visit(base += (int) ((l >>> 24) & 0xFF));
+      visitor.visit(base += (int) ((l >>> 16) & 0xFF));
+      visitor.visit(base += (int) ((l >>> 8) & 0xFF));
+      visitor.visit(base += (int) (l & 0xFF));
     }
   }
 
@@ -882,24 +882,24 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
-      visitor.visit(base + (int) ((l >>> 56) & 0xFFL));
-      visitor.visit(base + (int) ((l >>> 48) & 0xFFL));
-      visitor.visit(base + (int) ((l >>> 40) & 0xFFL));
-      visitor.visit(base + (int) ((l >>> 32) & 0xFFL));
-      visitor.visit(base + (int) ((l >>> 24) & 0xFFL));
-      visitor.visit(base + (int) ((l >>> 16) & 0xFFL));
-      visitor.visit(base + (int) ((l >>> 8) & 0xFFL));
-      visitor.visit(base + (int) (l & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 56) & 0xFF));
+      visitor.visit(base + (int) ((l >>> 48) & 0xFF));
+      visitor.visit(base + (int) ((l >>> 40) & 0xFF));
+      visitor.visit(base + (int) ((l >>> 32) & 0xFF));
+      visitor.visit(base + (int) ((l >>> 24) & 0xFF));
+      visitor.visit(base + (int) ((l >>> 16) & 0xFF));
+      visitor.visit(base + (int) ((l >>> 8) & 0xFF));
+      visitor.visit(base + (int) (l & 0xFF));
     }
   }
 
   private static void expand16(long[] arr, int[] ints, int offset) {
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[j]   = (int) ((l >>> 48) & 0xFFFFL);
-      ints[j+1] = (int) ((l >>> 32) & 0xFFFFL);
-      ints[j+2] = (int) ((l >>> 16) & 0xFFFFL);
-      ints[j+3] = (int) (l & 0xFFFFL);
+      ints[j]   = (int) ((l >>> 48) & 0xFFFF);
+      ints[j+1] = (int) ((l >>> 32) & 0xFFFF);
+      ints[j+2] = (int) ((l >>> 16) & 0xFFFF);
+      ints[j+3] = (int) (l & 0xFFFF);
     }
   }
 
@@ -907,10 +907,10 @@ final class SIMDDocIdsWriter {
     int base = in.readVInt();
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[j]   = base += (int) ((l >>> 48) & 0xFFFFL);
-      ints[j+1] = base += (int) ((l >>> 32) & 0xFFFFL);
-      ints[j+2] = base += (int) ((l >>> 16) & 0xFFFFL);
-      ints[j+3] = base += (int) (l & 0xFFFFL);
+      ints[j]   = base += (int) ((l >>> 48) & 0xFFFF);
+      ints[j+1] = base += (int) ((l >>> 32) & 0xFFFF);
+      ints[j+2] = base += (int) ((l >>> 16) & 0xFFFF);
+      ints[j+3] = base += (int) (l & 0xFFFF);
     }
   }
 
@@ -918,20 +918,20 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[j]   = base + (int) ((l >>> 48) & 0xFFFFL);
-      ints[j+1] = base + (int) ((l >>> 32) & 0xFFFFL);
-      ints[j+2] = base + (int) ((l >>> 16) & 0xFFFFL);
-      ints[j+3] = base + (int) (l & 0xFFFFL);
+      ints[j]   = base + (int) ((l >>> 48) & 0xFFFF);
+      ints[j+1] = base + (int) ((l >>> 32) & 0xFFFF);
+      ints[j+2] = base + (int) ((l >>> 16) & 0xFFFF);
+      ints[j+3] = base + (int) (l & 0xFFFF);
     }
   }
 
   private static void expand16(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      visitor.visit((int) ((l >>> 48) & 0xFFFFL));
-      visitor.visit((int) ((l >>> 32) & 0xFFFFL));
-      visitor.visit((int) ((l >>> 16) & 0xFFFFL));
-      visitor.visit((int) (l & 0xFFFFL));
+      visitor.visit((int) ((l >>> 48) & 0xFFFF));
+      visitor.visit((int) ((l >>> 32) & 0xFFFF));
+      visitor.visit((int) ((l >>> 16) & 0xFFFF));
+      visitor.visit((int) (l & 0xFFFF));
     }
   }
 
@@ -939,10 +939,10 @@ final class SIMDDocIdsWriter {
     int base = in.readVInt();
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      visitor.visit(base += (int) ((l >>> 48) & 0xFFFFL));
-      visitor.visit(base += (int) ((l >>> 32) & 0xFFFFL));
-      visitor.visit(base += (int) ((l >>> 16) & 0xFFFFL));
-      visitor.visit(base += (int) (l & 0xFFFFL));
+      visitor.visit(base += (int) ((l >>> 48) & 0xFFFF));
+      visitor.visit(base += (int) ((l >>> 32) & 0xFFFF));
+      visitor.visit(base += (int) ((l >>> 16) & 0xFFFF));
+      visitor.visit(base += (int) (l & 0xFFFF));
     }
   }
 
@@ -950,10 +950,10 @@ final class SIMDDocIdsWriter {
     final int base = in.readVInt();
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      visitor.visit(base + (int) ((l >>> 48) & 0xFFFFL));
-      visitor.visit(base + (int) ((l >>> 32) & 0xFFFFL));
-      visitor.visit(base + (int) ((l >>> 16) & 0xFFFFL));
-      visitor.visit(base + (int) (l & 0xFFFFL));
+      visitor.visit(base + (int) ((l >>> 48) & 0xFFFF));
+      visitor.visit(base + (int) ((l >>> 32) & 0xFFFF));
+      visitor.visit(base + (int) ((l >>> 16) & 0xFFFF));
+      visitor.visit(base + (int) (l & 0xFFFF));
     }
   }
 
@@ -961,7 +961,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j] = (int) (l >>> 32);
-      ints[j+1] = (int) (l & 0xFFFFFFFFL);
+      ints[j+1] = (int) (l & 0xFFFFFFFF);
     }
   }
 
@@ -970,7 +970,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base += (int) (l >>> 32);
-      ints[j+1] = base += (int) (l & 0xFFFFFFFFL);
+      ints[j+1] = base += (int) (l & 0xFFFFFFFF);
     }
   }
 
@@ -979,7 +979,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base + (int) (l >>> 32);
-      ints[j+1] = base + (int) (l & 0xFFFFFFFFL);
+      ints[j+1] = base + (int) (l & 0xFFFFFFFF);
     }
   }
 
@@ -987,7 +987,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
-      visitor.visit((int) (l & 0xFFFFFFFFL));
+      visitor.visit((int) (l & 0xFFFFFFFF));
     }
   }
 
@@ -996,7 +996,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) (l >>> 32));
-      visitor.visit(base += (int) (l & 0xFFFFFFFFL));
+      visitor.visit(base += (int) (l & 0xFFFFFFFF));
     }
   }
 
@@ -1005,7 +1005,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) (l >>> 32));
-      visitor.visit(base + (int) (l & 0xFFFFFFFFL));
+      visitor.visit(base + (int) (l & 0xFFFFFFFF));
     }
   }
 }
