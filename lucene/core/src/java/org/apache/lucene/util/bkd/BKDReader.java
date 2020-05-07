@@ -484,7 +484,7 @@ public final class BKDReader extends PointValues implements Accountable {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
-    final ForUtilCheck decoder = new ForUtilCheck();
+    final SIMDDocIdsWriter decoder = new SIMDDocIdsWriter();
 
     public IntersectState(IndexInput in, int numDims,
                           int packedBytesLength,
@@ -564,7 +564,7 @@ public final class BKDReader extends PointValues implements Accountable {
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
   }
 
-  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, ForUtilCheck decoder) throws IOException {
+  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, SIMDDocIdsWriter decoder) throws IOException {
     // Leaf node
     in.seek(blockFP);
 
@@ -574,7 +574,7 @@ public final class BKDReader extends PointValues implements Accountable {
     DocIdsWriter.readInts(in, count, visitor, decoder);
   }
 
-  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, ForUtilCheck decoder) throws IOException {
+  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, SIMDDocIdsWriter decoder) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:

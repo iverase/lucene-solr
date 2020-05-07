@@ -41,17 +41,16 @@ import java.util.Arrays;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.SimdIntegerEncoder;
+import org.apache.lucene.util.SIMDIntegerEncoder;
 import org.apache.lucene.util.packed.PackedInts;
 
-final class ForUtilCheck {
+final class SIMDDocIdsWriter {
 
-  private final long[] tmp1 = new long[SimdIntegerEncoder.BLOCK_SIZE];
-  private final long[] tmp2 = new long[SimdIntegerEncoder.BLOCK_SIZE];
+  private final long[] tmp1 = new long[SIMDIntegerEncoder.BLOCK_SIZE];
+  private final long[] tmp2 = new long[SIMDIntegerEncoder.BLOCK_SIZE];
 
   /** sole cxtor */
-  ForUtilCheck() {
-
+  SIMDDocIdsWriter() {
   }
 
   /**
@@ -59,21 +58,21 @@ final class ForUtilCheck {
    */
   void encode(int[] ints, int start, DataOutput out) throws IOException {
     boolean sorted = true;
-    for (int i = 1; i < SimdIntegerEncoder.BLOCK_SIZE; ++i) {
+    for (int i = 1; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
       if (ints[start + i - 1] > ints[start + i]) {
         sorted = false;
         break;
       }
     }
     if (sorted) {
-      if (ints[start] == ints[start + SimdIntegerEncoder.BLOCK_SIZE - 1]) {
+      if (ints[start] == ints[start + SIMDIntegerEncoder.BLOCK_SIZE - 1]) {
         out.writeByte((byte) 0);
         out.writeVInt(ints[start]);
       } else {
         int base  = ints[start];
         tmp1[0] = 0;
         long max = 0;
-        for (int i = 1; i < SimdIntegerEncoder.BLOCK_SIZE; ++i) {
+        for (int i = 1; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
           int doc = ints[start + i] - ints[start + i - 1];
           max |= Integer.toUnsignedLong(doc);
           tmp1[i] = doc;
@@ -85,7 +84,7 @@ final class ForUtilCheck {
       }
     } else {
       long max = 0;
-      for (int j = 0; j < SimdIntegerEncoder.BLOCK_SIZE; ++j) {
+      for (int j = 0; j < SIMDIntegerEncoder.BLOCK_SIZE; ++j) {
         max |= Integer.toUnsignedLong(ints[start + j]);
         tmp1[j] = ints[start + j];
       }
@@ -104,7 +103,8 @@ final class ForUtilCheck {
   }
 
   /**
-   * Decode 128 integers and uses the {@link org.apache.lucene.index.PointValues.IntersectVisitor}.
+   * Decode 128 integers and calls the method
+   * {@link org.apache.lucene.index.PointValues.IntersectVisitor#visit(int)}.
    */
   void decode(DataInput in, PointValues.IntersectVisitor visitor) throws IOException {
     final int bitsPerValue = in.readByte();
@@ -137,7 +137,7 @@ final class ForUtilCheck {
         tmp[64 +i] = longs[2 * i + 1];
       }
     }
-    SimdIntegerEncoder.encode(tmp, bitsPerValue, out, longs);
+    SIMDIntegerEncoder.encode(tmp, bitsPerValue, out, longs);
   }
 
   /**
@@ -148,102 +148,102 @@ final class ForUtilCheck {
     switch (bitsPerValue) {
       case 0:
         base = in.readVInt();
-        Arrays.fill(ints, offset, offset + SimdIntegerEncoder.BLOCK_SIZE, base);
+        Arrays.fill(ints, offset, offset + SIMDIntegerEncoder.BLOCK_SIZE, base);
         break;
       case 1:
-        SimdIntegerEncoder.decode1(in, tmp, longs);
+        SIMDIntegerEncoder.decode1(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 2:
-        SimdIntegerEncoder.decode2(in, tmp, longs);
+        SIMDIntegerEncoder.decode2(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 3:
-        SimdIntegerEncoder.decode3(in, tmp, longs);
+        SIMDIntegerEncoder.decode3(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 4:
-        SimdIntegerEncoder.decode4(in, tmp, longs);
+        SIMDIntegerEncoder.decode4(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 5:
-        SimdIntegerEncoder.decode5(in, tmp, longs);
+        SIMDIntegerEncoder.decode5(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 6:
-        SimdIntegerEncoder.decode6(in, tmp, longs);
+        SIMDIntegerEncoder.decode6(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 7:
-        SimdIntegerEncoder.decode7(in, tmp, longs);
+        SIMDIntegerEncoder.decode7(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 8:
-        SimdIntegerEncoder.decode8(in, tmp, longs);
+        SIMDIntegerEncoder.decode8(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 9:
-        SimdIntegerEncoder.decode9(in, tmp, longs);
+        SIMDIntegerEncoder.decode9(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 10:
-        SimdIntegerEncoder.decode10(in, tmp, longs);
+        SIMDIntegerEncoder.decode10(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 11:
-        SimdIntegerEncoder.decode11(in, tmp, longs);
+        SIMDIntegerEncoder.decode11(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 12:
-        SimdIntegerEncoder.decode12(in, tmp, longs);
+        SIMDIntegerEncoder.decode12(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 13:
-        SimdIntegerEncoder.decode13(in, tmp, longs);
+        SIMDIntegerEncoder.decode13(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 14:
-        SimdIntegerEncoder.decode14(in, tmp, longs);
+        SIMDIntegerEncoder.decode14(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 15:
-        SimdIntegerEncoder.decode15(in, tmp, longs);
+        SIMDIntegerEncoder.decode15(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 16:
-        SimdIntegerEncoder.decode16(in, tmp, longs);
+        SIMDIntegerEncoder.decode16(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 17:
-        SimdIntegerEncoder.decode17(in, tmp, longs);
+        SIMDIntegerEncoder.decode17(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 18:
-        SimdIntegerEncoder.decode18(in, tmp, longs);
+        SIMDIntegerEncoder.decode18(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 19:
-        SimdIntegerEncoder.decode19(in, tmp, longs);
+        SIMDIntegerEncoder.decode19(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 20:
-        SimdIntegerEncoder.decode20(in, tmp, longs);
+        SIMDIntegerEncoder.decode20(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 21:
-        SimdIntegerEncoder.decode21(in, tmp, longs);
+        SIMDIntegerEncoder.decode21(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 22:
-        SimdIntegerEncoder.decode22(in, tmp, longs);
+        SIMDIntegerEncoder.decode22(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 23:
-        SimdIntegerEncoder.decode23(in, tmp, longs);
+        SIMDIntegerEncoder.decode23(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 24:
-        SimdIntegerEncoder.decode24(in, tmp, longs);
+        SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 25:
@@ -254,132 +254,132 @@ final class ForUtilCheck {
       case 30:
       case 31:
       case 32:
-        SimdIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 33:
         base = in.readVInt();
-        SimdIntegerEncoder.decode1(in, tmp, longs);
+        SIMDIntegerEncoder.decode1(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 34:
         base = in.readVInt();
-        SimdIntegerEncoder.decode2(in, tmp, longs);
+        SIMDIntegerEncoder.decode2(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 35:
         base = in.readVInt();
-        SimdIntegerEncoder.decode3(in, tmp, longs);
+        SIMDIntegerEncoder.decode3(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 36:
         base = in.readVInt();
-        SimdIntegerEncoder.decode4(in, tmp, longs);
+        SIMDIntegerEncoder.decode4(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 37:
         base = in.readVInt();
-        SimdIntegerEncoder.decode5(in, tmp, longs);
+        SIMDIntegerEncoder.decode5(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 38:
         base = in.readVInt();
-        SimdIntegerEncoder.decode6(in, tmp, longs);
+        SIMDIntegerEncoder.decode6(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 39:
         base = in.readVInt();
-        SimdIntegerEncoder.decode7(in, tmp, longs);
+        SIMDIntegerEncoder.decode7(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 40:
         base = in.readVInt();
-        SimdIntegerEncoder.decode8(in, tmp, longs);
+        SIMDIntegerEncoder.decode8(in, tmp, longs);
         expand8(longs, ints, offset, base);
         break;
       case 41:
         base = in.readVInt();
-        SimdIntegerEncoder.decode9(in, tmp, longs);
+        SIMDIntegerEncoder.decode9(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 42:
         base = in.readVInt();
-        SimdIntegerEncoder.decode10(in, tmp, longs);
+        SIMDIntegerEncoder.decode10(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 43:
         base = in.readVInt();
-        SimdIntegerEncoder.decode11(in, tmp, longs);
+        SIMDIntegerEncoder.decode11(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 44:
         base = in.readVInt();
-        SimdIntegerEncoder.decode12(in, tmp, longs);
+        SIMDIntegerEncoder.decode12(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 45:
         base = in.readVInt();
-        SimdIntegerEncoder.decode13(in, tmp, longs);
+        SIMDIntegerEncoder.decode13(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 46:
         base = in.readVInt();
-        SimdIntegerEncoder.decode14(in, tmp, longs);
+        SIMDIntegerEncoder.decode14(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 47:
         base = in.readVInt();
-        SimdIntegerEncoder.decode15(in, tmp, longs);
+        SIMDIntegerEncoder.decode15(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 48:
         base = in.readVInt();
-        SimdIntegerEncoder.decode16(in, tmp, longs);
+        SIMDIntegerEncoder.decode16(in, tmp, longs);
         expand16(longs, ints, offset, base);
         break;
       case 49:
         base = in.readVInt();
-        SimdIntegerEncoder.decode17(in, tmp, longs);
+        SIMDIntegerEncoder.decode17(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 50:
         base = in.readVInt();
-        SimdIntegerEncoder.decode18(in, tmp, longs);
+        SIMDIntegerEncoder.decode18(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 51:
         base = in.readVInt();
-        SimdIntegerEncoder.decode19(in, tmp, longs);
+        SIMDIntegerEncoder.decode19(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 52:
         base = in.readVInt();
-        SimdIntegerEncoder.decode20(in, tmp, longs);
+        SIMDIntegerEncoder.decode20(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 53:
         base = in.readVInt();
-        SimdIntegerEncoder.decode21(in, tmp, longs);
+        SIMDIntegerEncoder.decode21(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 54:
         base = in.readVInt();
-        SimdIntegerEncoder.decode22(in, tmp, longs);
+        SIMDIntegerEncoder.decode22(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 55:
         base = in.readVInt();
-        SimdIntegerEncoder.decode23(in, tmp, longs);
+        SIMDIntegerEncoder.decode23(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       case 56:
         base = in.readVInt();
-        SimdIntegerEncoder.decode24(in, tmp, longs);
+        SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
       default:
         base = in.readVInt();
-        SimdIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
         expand32(longs, ints, offset, base);
         break;
     }
@@ -390,104 +390,104 @@ final class ForUtilCheck {
     switch (bitsPerValue) {
       case 0:
         base = in.readVInt();
-        for (int i = 0; i < SimdIntegerEncoder.BLOCK_SIZE; i++) {
+        for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; i++) {
           visitor.visit(base);
         }
         break;
       case 1:
-        SimdIntegerEncoder.decode1(in, tmp, longs);
+        SIMDIntegerEncoder.decode1(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 2:
-        SimdIntegerEncoder.decode2(in, tmp, longs);
+        SIMDIntegerEncoder.decode2(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 3:
-        SimdIntegerEncoder.decode3(in, tmp, longs);
+        SIMDIntegerEncoder.decode3(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 4:
-        SimdIntegerEncoder.decode4(in, tmp, longs);
+        SIMDIntegerEncoder.decode4(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 5:
-        SimdIntegerEncoder.decode5(in, tmp, longs);
+        SIMDIntegerEncoder.decode5(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 6:
-        SimdIntegerEncoder.decode6(in, tmp, longs);
+        SIMDIntegerEncoder.decode6(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 7:
-        SimdIntegerEncoder.decode7(in, tmp, longs);
+        SIMDIntegerEncoder.decode7(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 8:
-        SimdIntegerEncoder.decode8(in, tmp, longs);
+        SIMDIntegerEncoder.decode8(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 9:
-        SimdIntegerEncoder.decode9(in, tmp, longs);
+        SIMDIntegerEncoder.decode9(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 10:
-        SimdIntegerEncoder.decode10(in, tmp, longs);
+        SIMDIntegerEncoder.decode10(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 11:
-        SimdIntegerEncoder.decode11(in, tmp, longs);
+        SIMDIntegerEncoder.decode11(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 12:
-        SimdIntegerEncoder.decode12(in, tmp, longs);
+        SIMDIntegerEncoder.decode12(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 13:
-        SimdIntegerEncoder.decode13(in, tmp, longs);
+        SIMDIntegerEncoder.decode13(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 14:
-        SimdIntegerEncoder.decode14(in, tmp, longs);
+        SIMDIntegerEncoder.decode14(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 15:
-        SimdIntegerEncoder.decode15(in, tmp, longs);
+        SIMDIntegerEncoder.decode15(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 16:
-        SimdIntegerEncoder.decode16(in, tmp, longs);
+        SIMDIntegerEncoder.decode16(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 17:
-        SimdIntegerEncoder.decode17(in, tmp, longs);
+        SIMDIntegerEncoder.decode17(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 18:
-        SimdIntegerEncoder.decode18(in, tmp, longs);
+        SIMDIntegerEncoder.decode18(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 19:
-        SimdIntegerEncoder.decode19(in, tmp, longs);
+        SIMDIntegerEncoder.decode19(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 20:
-        SimdIntegerEncoder.decode20(in, tmp, longs);
+        SIMDIntegerEncoder.decode20(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 21:
-        SimdIntegerEncoder.decode21(in, tmp, longs);
+        SIMDIntegerEncoder.decode21(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 22:
-        SimdIntegerEncoder.decode22(in, tmp, longs);
+        SIMDIntegerEncoder.decode22(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 23:
-        SimdIntegerEncoder.decode23(in, tmp, longs);
+        SIMDIntegerEncoder.decode23(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 24:
-        SimdIntegerEncoder.decode24(in, tmp, longs);
+        SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 25:
@@ -498,137 +498,136 @@ final class ForUtilCheck {
       case 30:
       case 31:
       case 32:
-        SimdIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 33:
         base = in.readVInt();
-        SimdIntegerEncoder.decode1(in, tmp, longs);
+        SIMDIntegerEncoder.decode1(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 34:
         base = in.readVInt();
-        SimdIntegerEncoder.decode2(in, tmp, longs);
+        SIMDIntegerEncoder.decode2(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 35:
         base = in.readVInt();
-        SimdIntegerEncoder.decode3(in, tmp, longs);
+        SIMDIntegerEncoder.decode3(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 36:
         base = in.readVInt();
-        SimdIntegerEncoder.decode4(in, tmp, longs);
+        SIMDIntegerEncoder.decode4(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 37:
         base = in.readVInt();
-        SimdIntegerEncoder.decode5(in, tmp, longs);
+        SIMDIntegerEncoder.decode5(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 38:
         base = in.readVInt();
-        SimdIntegerEncoder.decode6(in, tmp, longs);
+        SIMDIntegerEncoder.decode6(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 39:
         base = in.readVInt();
-        SimdIntegerEncoder.decode7(in, tmp, longs);
+        SIMDIntegerEncoder.decode7(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 40:
         base = in.readVInt();
-        SimdIntegerEncoder.decode8(in, tmp, longs);
+        SIMDIntegerEncoder.decode8(in, tmp, longs);
         expand8(longs, visitor, base);
         break;
       case 41:
         base = in.readVInt();
-        SimdIntegerEncoder.decode9(in, tmp, longs);
+        SIMDIntegerEncoder.decode9(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 42:
         base = in.readVInt();
-        SimdIntegerEncoder.decode10(in, tmp, longs);
+        SIMDIntegerEncoder.decode10(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 43:
         base = in.readVInt();
-        SimdIntegerEncoder.decode11(in, tmp, longs);
+        SIMDIntegerEncoder.decode11(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 44:
         base = in.readVInt();
-        SimdIntegerEncoder.decode12(in, tmp, longs);
+        SIMDIntegerEncoder.decode12(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 45:
         base = in.readVInt();
-        SimdIntegerEncoder.decode13(in, tmp, longs);
+        SIMDIntegerEncoder.decode13(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 46:
         base = in.readVInt();
-        SimdIntegerEncoder.decode14(in, tmp, longs);
+        SIMDIntegerEncoder.decode14(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 47:
         base = in.readVInt();
-        SimdIntegerEncoder.decode15(in, tmp, longs);
+        SIMDIntegerEncoder.decode15(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 48:
         base = in.readVInt();
-        SimdIntegerEncoder.decode16(in, tmp, longs);
+        SIMDIntegerEncoder.decode16(in, tmp, longs);
         expand16(longs, visitor, base);
         break;
       case 49:
         base = in.readVInt();
-        SimdIntegerEncoder.decode17(in, tmp, longs);
+        SIMDIntegerEncoder.decode17(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 50:
         base = in.readVInt();
-        SimdIntegerEncoder.decode18(in, tmp, longs);
+        SIMDIntegerEncoder.decode18(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 51:
         base = in.readVInt();
-        SimdIntegerEncoder.decode19(in, tmp, longs);
+        SIMDIntegerEncoder.decode19(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 52:
         base = in.readVInt();
-        SimdIntegerEncoder.decode20(in, tmp, longs);
+        SIMDIntegerEncoder.decode20(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 53:
         base = in.readVInt();
-        SimdIntegerEncoder.decode21(in, tmp, longs);
+        SIMDIntegerEncoder.decode21(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 54:
         base = in.readVInt();
-        SimdIntegerEncoder.decode22(in, tmp, longs);
+        SIMDIntegerEncoder.decode22(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 55:
         base = in.readVInt();
-        SimdIntegerEncoder.decode23(in, tmp, longs);
+        SIMDIntegerEncoder.decode23(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       case 56:
         base = in.readVInt();
-        SimdIntegerEncoder.decode24(in, tmp, longs);
+        SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32(longs, visitor, base);
         break;
       default:
         base = in.readVInt();
-        SimdIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
         expand32(longs, visitor, base);
         break;
     }
   }
-
 
   private static void expand8(long[] arr, int[] ints, int offset) {
     for (int i = 0, j = 0; i < 16; ++i, j += 8) {

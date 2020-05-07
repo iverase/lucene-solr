@@ -27,7 +27,7 @@ import org.apache.lucene.store.DataOutput;
 // If bitsPerValue <= 8 then we pack 8 ints per long
 // else if bitsPerValue <= 16 we pack 4 ints per long
 // else we pack 2 ints per long
-public class SimdIntegerEncoder {
+public class SIMDIntegerEncoder {
 
   public static final int BLOCK_SIZE = 128;
   private static final int BLOCK_SIZE_LOG2 = 7;
@@ -62,37 +62,6 @@ public class SimdIntegerEncoder {
    */
   public static int numBytes(int bitsPerValue) throws IOException {
     return bitsPerValue << (BLOCK_SIZE_LOG2 - 3);
-  }
-
-  public static void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
-    final int numLongs = bitsPerValue << 1;
-    in.readLELongs(tmp, 0, numLongs);
-    final long mask = mask32(bitsPerValue);
-    int longsIdx = 0;
-    int shift = 32 - bitsPerValue;
-    for (; shift >= 0; shift -= bitsPerValue) {
-      shiftLongs(tmp, numLongs, longs, longsIdx, shift, mask);
-      longsIdx += numLongs;
-    }
-    final int remainingBitsPerLong = shift + bitsPerValue;
-    final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
-    int tmpIdx = 0;
-    int remainingBits = remainingBitsPerLong;
-    for (; longsIdx < BLOCK_SIZE / 2; ++longsIdx) {
-      int b = bitsPerValue - remainingBits;
-      long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
-      while (b >= remainingBitsPerLong) {
-        b -= remainingBitsPerLong;
-        l |= (tmp[tmpIdx++] & mask32RemainingBitsPerLong) << b;
-      }
-      if (b > 0) {
-        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & mask32(b);
-        remainingBits = remainingBitsPerLong - b;
-      } else {
-        remainingBits = remainingBitsPerLong;
-      }
-      longs[longsIdx] = l;
-    }
   }
 
   /**
@@ -152,7 +121,7 @@ public class SimdIntegerEncoder {
   private static final long MASK32_24 = mask32(24);
 
 
-  public  static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
+  public static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     final int nextPrimitive;
     final int numLongs;
     if (bitsPerValue <= 8) {
@@ -763,6 +732,37 @@ public class SimdIntegerEncoder {
       l0 |= (tmp[tmpIdx+1] & MASK32_8) << 8;
       l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
       longs[longsIdx+0] = l0;
+    }
+  }
+
+  public static void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = bitsPerValue << 1;
+    in.readLELongs(tmp, 0, numLongs);
+    final long mask = mask32(bitsPerValue);
+    int longsIdx = 0;
+    int shift = 32 - bitsPerValue;
+    for (; shift >= 0; shift -= bitsPerValue) {
+      shiftLongs(tmp, numLongs, longs, longsIdx, shift, mask);
+      longsIdx += numLongs;
+    }
+    final int remainingBitsPerLong = shift + bitsPerValue;
+    final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
+    int tmpIdx = 0;
+    int remainingBits = remainingBitsPerLong;
+    for (; longsIdx < BLOCK_SIZE / 2; ++longsIdx) {
+      int b = bitsPerValue - remainingBits;
+      long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
+      while (b >= remainingBitsPerLong) {
+        b -= remainingBitsPerLong;
+        l |= (tmp[tmpIdx++] & mask32RemainingBitsPerLong) << b;
+      }
+      if (b > 0) {
+        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & mask32(b);
+        remainingBits = remainingBitsPerLong - b;
+      } else {
+        remainingBits = remainingBitsPerLong;
+      }
+      longs[longsIdx] = l;
     }
   }
 }
