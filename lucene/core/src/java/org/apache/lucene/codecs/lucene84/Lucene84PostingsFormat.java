@@ -36,6 +36,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
+
 /**
  * Lucene 5.0 postings format, which encodes postings in packed integer blocks 
  * for fast decode.
@@ -371,7 +372,7 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
   public static final String PAY_EXTENSION = "pay";
 
   /** Size of blocks. */
-  public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
+  public static final int BLOCK_SIZE = org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
 
   /**
    * Expert: The maximum number of skip levels. Smaller values result in 
@@ -462,10 +463,10 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
     /** file pointer to the start of the payloads enumeration, in {@link #PAY_EXTENSION} file */
     public long payStartFP;
     /** file offset for the start of the skip list, relative to docStartFP, if there are more
-     * than {@link ForUtil#BLOCK_SIZE} docs; otherwise -1 */
+     * than {@link org.apache.lucene.util.SIMDIntegerEncoder#BLOCK_SIZE} docs; otherwise -1 */
     public long skipOffset;
     /** file offset for the last position in the last block, if there are more than
-     * {@link ForUtil#BLOCK_SIZE} positions; otherwise -1 */
+     * {@link org.apache.lucene.util.SIMDIntegerEncoder#BLOCK_SIZE} positions; otherwise -1 */
     public long lastPosBlockOffset;
     /** docid when there is a single pulsed posting, otherwise -1.
      * freq is always implicitly totalTermFreq in this case. */
