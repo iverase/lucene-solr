@@ -961,7 +961,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j] = (int) (l >>> 32);
-      ints[j+1] = (int) (l & 0xFFFFFFFF);
+      ints[j+1] = (int) l;
     }
   }
 
@@ -970,7 +970,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base += (int) (l >>> 32);
-      ints[j+1] = base += (int) (l & 0xFFFFFFFF);
+      ints[j+1] = base += (int) l;
     }
   }
 
@@ -979,7 +979,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base + (int) (l >>> 32);
-      ints[j+1] = base + (int) (l & 0xFFFFFFFF);
+      ints[j+1] = base + (int) l;
     }
   }
 
@@ -987,7 +987,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
-      visitor.visit((int) (l & 0xFFFFFFFF));
+      visitor.visit((int) l);
     }
   }
 
@@ -996,7 +996,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) (l >>> 32));
-      visitor.visit(base += (int) (l & 0xFFFFFFFF));
+      visitor.visit(base += (int) l);
     }
   }
 
@@ -1005,7 +1005,7 @@ final class SIMDDocIdsWriter {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) (l >>> 32));
-      visitor.visit(base + (int) (l & 0xFFFFFFFF));
+      visitor.visit(base + (int) l);
     }
   }
 }
