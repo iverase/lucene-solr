@@ -34,8 +34,12 @@ class DocIdsWriter {
 
   private DocIdsWriter() {}
 
-  static void writeDocIds(int[] docIds, int start, int count, DataOutput out, long[] tmp) throws IOException {
-    assert tmp.length >= ForUtilCheck.BLOCK_SIZE / 2;
+  static void writeDocIds(int[] docIds, int start, int count, DataOutput out, ForUtilCheck encoder) throws IOException {
+    if (count % ForUtilCheck.BLOCK_SIZE == 0) {
+      out.writeByte(SIMD);
+      writeSIMD(docIds, start, count, out, encoder);
+      return;
+    }
     // docs can be sorted either when all docs in a block have the same value
     // or when a segment is sorted
     boolean sorted = true;
@@ -59,11 +63,6 @@ class DocIdsWriter {
         }
       }
     } else {
-      if (count % ForUtilCheck.BLOCK_SIZE == 0) {
-        out.writeByte(SIMD);
-        writeSIMD(docIds, start, count, out, tmp);
-        return;
-      }
       long max = 0;
       for (int i = 0; i < count; ++i) {
         max |= Integer.toUnsignedLong(docIds[start + i]);
@@ -83,36 +82,16 @@ class DocIdsWriter {
     }
   }
 
-  private static void writeSIMD(int[] docIds, int start, int count, DataOutput out, long[] tmp) throws IOException {
-    long[] source = new long[ForUtilCheck.BLOCK_SIZE];
+  private static void writeSIMD(int[] docIds, int start, int count, DataOutput out, ForUtilCheck encoder) throws IOException {
     final int iterations = count / ForUtilCheck.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
-      long max = 0;
-      for (int j = 0; j < ForUtilCheck.BLOCK_SIZE; ++j) {
-        max |= Integer.toUnsignedLong(docIds[start + i * ForUtilCheck.BLOCK_SIZE + j]);
-        source[j] = docIds[start + i * ForUtilCheck.BLOCK_SIZE +j];
-      }
-      int bpv = PackedInts.bitsRequired(max);
-      if (bpv <= 8) {
-        bpv = 8;
-      } else if (bpv <= 16) {
-        bpv = 16;
-      } else if (bpv <= 24)  {
-        bpv = 24;
-      } else {
-        bpv = 32;
-      }
-      out.writeByte((byte) bpv);
-      ForUtilCheck.encode(source, bpv, out, tmp);
+      encoder.encode(docIds, start + i * ForUtilCheck.BLOCK_SIZE, out);
     }
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static void readInts(IndexInput in, int count, int[] docIDs, long[] tmp1, long[] tmp2) throws IOException {
-    assert tmp1.length >= ForUtilCheck.BLOCK_SIZE / 2;
-    assert tmp2.length >= ForUtilCheck.BLOCK_SIZE / 2;
+  static void readInts(IndexInput in, int count, int[] docIDs, ForUtilCheck decoder) throws IOException {
     final byte bpv = in.readByte();
-   // long start = System.nanoTime();
     switch (bpv) {
       case SORTED:
         readDeltaVInts(in, count, docIDs);
@@ -124,7 +103,7 @@ class DocIdsWriter {
         readInts24(in, count, docIDs);
         break;
       case SIMD:
-        readSIMD(in, count, docIDs, tmp1, tmp2);
+        readSIMD(in, count, docIDs, decoder);
         break;
       case EQUAL:
         readEqual(in, count, docIDs);
@@ -132,15 +111,16 @@ class DocIdsWriter {
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
     }
-    //long end = System.nanoTime();
-    //System.out.println("type: " + bpv + " time: " + (end - start));
+
   }
 
-  private static void readSIMD(IndexInput in, int count, int[] docIDs, long[] tmp1, long[] tmp2) throws IOException {
+  private static void readSIMD(IndexInput in, int count, int[] docIDs, ForUtilCheck decoder) throws IOException {
     final int iterations = count / ForUtilCheck.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
-      final int bitsPerValue = in.readByte();
-      ForUtilCheck.decode(bitsPerValue, in, tmp1, tmp2, docIDs, i * ForUtilCheck.BLOCK_SIZE);
+      //long start = System.nanoTime();
+      decoder.decode(in, docIDs,  i * ForUtilCheck.BLOCK_SIZE);
+      //long end = System.nanoTime();
+      //System.out.println( "time: " + (end - start));
     }
   }
 
@@ -184,7 +164,7 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] tmp1, long[] tmp2) throws IOException {
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, ForUtilCheck decoder) throws IOException {
     final byte bpv = in.readByte();
     switch (bpv) {
       case SORTED:
@@ -197,7 +177,7 @@ class DocIdsWriter {
         readInts24(in, count, visitor);
         break;
       case SIMD:
-        readSIMD(in, count, visitor, tmp1, tmp2);
+        readSIMD(in, count, visitor, decoder);
         break;
       case EQUAL:
         readEqual(in, count, visitor);
@@ -207,11 +187,10 @@ class DocIdsWriter {
     }
   }
 
-  private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, long[] tmp1, long[] tmp2) throws IOException {
+  private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, ForUtilCheck decoder) throws IOException {
     final int iterations = count / ForUtilCheck.BLOCK_SIZE;
     for (int i = 0; i < iterations; ++i) {
-      final int bitsPerValue = in.readByte();
-      ForUtilCheck.decode(bitsPerValue, in, tmp1, tmp2, visitor);
+      decoder.decode(in, visitor);
     }
   }
 

@@ -36,10 +36,12 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.packed.PackedInts;
 
 // Inspired from https://fulmicoton.com/posts/bitpacking/
 // Encodes multiple integers in a long to get SIMD-like speedups.
@@ -89,6 +91,20 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand8(long[] arr, int[] ints, int offset, int base) {
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      ints[offset+8*i]   = base += (int) ((l >>> 56) & 0xFFL);
+      ints[offset+8*i+1] = base +=  (int) ((l >>> 48) & 0xFFL);
+      ints[offset+8*i+2] = base +=  (int) ((l >>> 40) & 0xFFL);
+      ints[offset+8*i+3] = base +=  (int) ((l >>> 32) & 0xFFL);
+      ints[offset+8*i+4] = base +=  (int) ((l >>> 24) & 0xFFL);
+      ints[offset+8*i+5] = base +=  (int) ((l >>> 16) & 0xFFL);
+      ints[offset+8*i+6] = base +=  (int) ((l >>> 8) & 0xFFL);
+      ints[offset+8*i+7] = base +=  (int) (l & 0xFFL);
+    }
+  }
+
   private static void expand8(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
@@ -103,6 +119,20 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand8(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 56) & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 48) & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 40) & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 32) & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 24) & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 16) & 0xFFL));
+      visitor.visit(base += (int) ((l >>> 8) & 0xFFL));
+      visitor.visit(base += (int) (l & 0xFFL));
+    }
+  }
+
   private static void collapse8(long[] arr) {
     for (int i = 0; i < 16; ++i) {
       arr[i] = (arr[i] << 56) | (arr[16+i] << 48) | (arr[32+i] << 40) | (arr[48+i] << 32) | (arr[64+i] << 24) | (arr[80+i] << 16) | (arr[96+i] << 8) | arr[112+i];
@@ -112,10 +142,20 @@ final class ForUtilCheck {
   private static void expand16(long[] arr, int[] ints, int offset) {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      ints[offset+4*i] = (int) ((l >>> 48) & 0xFFFFL);
-      ints[offset+4*i+1] = (int) ((l >>> 32) & 0xFFFFL);
-      ints[offset+4*i+2] = (int) ((l >>> 16) & 0xFFFFL);
-      ints[offset+4*i+3] = (int) (l & 0xFFFFL);
+      ints[offset + 4 * i] = (int) ((l >>> 48) & 0xFFFFL);
+      ints[offset + 4 * i + 1] = (int) ((l >>> 32) & 0xFFFFL);
+      ints[offset + 4 * i + 2] = (int) ((l >>> 16) & 0xFFFFL);
+      ints[offset + 4 * i + 3] = (int) (l & 0xFFFFL);
+    }
+  }
+
+  private static void expand16(long[] arr, int[] ints, int offset, int base) {
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      ints[offset + 4 * i] = base += (int) ((l >>> 48) & 0xFFFFL);
+      ints[offset + 4 * i + 1] =  base += (int) ((l >>> 32) & 0xFFFFL);
+      ints[offset + 4 * i + 2] =  base += (int) ((l >>> 16) & 0xFFFFL);
+      ints[offset + 4 * i + 3] =  base += (int) (l & 0xFFFFL);
     }
   }
 
@@ -126,6 +166,16 @@ final class ForUtilCheck {
       visitor.visit((int) ((l >>> 32) & 0xFFFFL));
       visitor.visit((int) ((l >>> 16) & 0xFFFFL));
       visitor.visit((int) (l & 0xFFFFL));
+    }
+  }
+
+  private static void expand16(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) ((l >>> 48) & 0xFFFFL));
+      visitor.visit(base += (int) ((l >>> 32) & 0xFFFFL));
+      visitor.visit(base += (int) ((l >>> 16) & 0xFFFFL));
+      visitor.visit(base += (int) (l & 0xFFFFL));
     }
   }
 
@@ -143,11 +193,27 @@ final class ForUtilCheck {
     }
   }
 
+  private static void expand32(long[] arr, int[] ints, int offset, int base) {
+    for (int i = 0; i < 64; i++) {
+      long l = arr[i];
+      ints[offset+2*i] = base += (int) (l >>> 32);
+      ints[offset+1+2*i] = base += (int) (l & 0xFFFFFFFFL);
+    }
+  }
+
   private static void expand32(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
       visitor.visit((int) (l & 0xFFFFFFFFL));
+    }
+  }
+
+  private static void expand32(long[] arr, PointValues.IntersectVisitor visitor, int base) throws IOException {
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
+      visitor.visit(base += (int) (l >>> 32));
+      visitor.visit(base += (int) (l & 0xFFFFFFFFL));
     }
   }
 
@@ -157,10 +223,80 @@ final class ForUtilCheck {
     }
   }
 
+  private final long[] tmp1 = new long[BLOCK_SIZE];
+  private final long[] tmp2 = new long[BLOCK_SIZE];
+
+  /**
+   * Encode 128 integers from {@code ints} into {@code out}.
+   */
+  void encode(int[] ints, int start, DataOutput out) throws IOException {
+    boolean sorted = true;
+    for (int i = 1; i < ForUtilCheck.BLOCK_SIZE; ++i) {
+      if (ints[start + i - 1] > ints[start + i]) {
+        sorted = false;
+        break;
+      }
+    }
+    if (sorted) {
+      if (ints[start] == ints[start + ForUtilCheck.BLOCK_SIZE - 1]) {
+        out.writeByte((byte) 65);
+        out.writeVInt(ints[start]);
+      } else {
+        int base  = ints[start];
+        tmp1[0] = 0;
+        long max = 0;
+        for (int i = 1; i < ForUtilCheck.BLOCK_SIZE; ++i) {
+          int doc = ints[start + i] - ints[start + i - 1];
+          max |= Integer.toUnsignedLong(doc);
+          tmp1[i] = doc;
+        }
+        int bpv = PackedInts.bitsRequired(max);
+        out.writeByte((byte) (32 + bpv));
+        out.writeVInt(base);
+        encode(tmp1, bpv, out, tmp2);
+      }
+    } else {
+      long max = 0;
+      for (int j = 0; j < ForUtilCheck.BLOCK_SIZE; ++j) {
+        max |= Integer.toUnsignedLong(ints[start + j]);
+        tmp1[j] = ints[start + j];
+      }
+      int bpv = PackedInts.bitsRequired(max);
+      out.writeByte((byte) bpv);
+      encode(tmp1, bpv, out, tmp2);
+    }
+  }
+
+  /**
+   * Decode 128 integers into {@code longs}.
+   */
+  void decode(DataInput in, int[] ints, int offset) throws IOException {
+    final int bitsPerValue = in.readByte();
+    if (bitsPerValue > 32) {
+      final int base = in.readVInt();
+      decode(bitsPerValue - 32, in, ints, offset, tmp1, tmp2, base);
+    } else {
+      decode(bitsPerValue, in, ints, offset, tmp1, tmp2);
+    }
+  }
+
+  /**
+   * Decode 128 integers into {@code longs}.
+   */
+  void decode(DataInput in, PointValues.IntersectVisitor visitor) throws IOException {
+    final int bitsPerValue = in.readByte();
+    if (bitsPerValue > 32) {
+      int base = in.readVInt();
+      decode(bitsPerValue - 32, in, visitor, tmp1, tmp2, base);
+    } else {
+      decode(bitsPerValue, in, visitor, tmp1, tmp2);
+    }
+  }
+
   /**
    * Encode 128 integers from {@code longs} into {@code out}.
    */
-  static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
+  private static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     final int nextPrimitive;
     final int numLongs;
     if (bitsPerValue <= 8) {
@@ -356,7 +492,7 @@ final class ForUtilCheck {
   /**
    * Decode 128 integers into {@code longs}.
    */
-  static void decode(int bitsPerValue, DataInput in, long[] longs, long[] tmp, int[] ints, int offset) throws IOException {
+  private static void decode(int bitsPerValue, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
     switch (bitsPerValue) {
     case 1:
       decode1(in, tmp, longs);
@@ -461,10 +597,115 @@ final class ForUtilCheck {
     }
   }
 
-  /**
-   * Decode 128 integers into {@code longs}.
-   */
-  static void decode(int bitsPerValue, DataInput in, long[] longs, long[] tmp, PointValues.IntersectVisitor visitor) throws IOException {
+  private static void decode(int bitsPerValue, DataInput in, int[] ints, int offset, long[] longs, long[] tmp, int base) throws IOException {
+    switch (bitsPerValue) {
+      case 33:
+        Arrays.fill(ints, offset, offset + BLOCK_SIZE, base);
+        break;
+      case 1:
+        decode1(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 2:
+        decode2(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 3:
+        decode3(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 4:
+        decode4(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 5:
+        decode5(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 6:
+        decode6(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 7:
+        decode7(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 8:
+        decode8(in, tmp, longs);
+        expand8(longs, ints, offset, base);
+        break;
+      case 9:
+        decode9(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 10:
+        decode10(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 11:
+        decode11(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 12:
+        decode12(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 13:
+        decode13(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 14:
+        decode14(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 15:
+        decode15(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 16:
+        decode16(in, tmp, longs);
+        expand16(longs, ints, offset, base);
+        break;
+      case 17:
+        decode17(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 18:
+        decode18(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 19:
+        decode19(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 20:
+        decode20(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 21:
+        decode21(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 22:
+        decode22(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 23:
+        decode23(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      case 24:
+        decode24(in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+      default:
+        decodeSlow(bitsPerValue, in, tmp, longs);
+        expand32(longs, ints, offset, base);
+        break;
+    }
+  }
+
+  private static void decode(int bitsPerValue, DataInput in, PointValues.IntersectVisitor visitor, long[] longs, long[] tmp) throws IOException {
     switch (bitsPerValue) {
       case 1:
         decode1(in, tmp, longs);
@@ -565,6 +806,116 @@ final class ForUtilCheck {
       default:
         decodeSlow(bitsPerValue, in, tmp, longs);
         expand32(longs, visitor);
+        break;
+    }
+  }
+
+  private static void decode(int bitsPerValue, DataInput in, PointValues.IntersectVisitor visitor, long[] longs, long[] tmp, int base) throws IOException {
+    switch (bitsPerValue) {
+      case 33:
+        for (int i = 0; i < BLOCK_SIZE; i++) {
+          visitor.visit(base);
+        }
+        break;
+      case 1:
+        decode1(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 2:
+        decode2(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 3:
+        decode3(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 4:
+        decode4(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 5:
+        decode5(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 6:
+        decode6(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 7:
+        decode7(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 8:
+        decode8(in, tmp, longs);
+        expand8(longs, visitor, base);
+        break;
+      case 9:
+        decode9(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 10:
+        decode10(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 11:
+        decode11(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 12:
+        decode12(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 13:
+        decode13(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 14:
+        decode14(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 15:
+        decode15(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 16:
+        decode16(in, tmp, longs);
+        expand16(longs, visitor, base);
+        break;
+      case 17:
+        decode17(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 18:
+        decode18(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 19:
+        decode19(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 20:
+        decode20(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 21:
+        decode21(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 22:
+        decode22(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 23:
+        decode23(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      case 24:
+        decode24(in, tmp, longs);
+        expand32(longs, visitor, base);
+        break;
+      default:
+        decodeSlow(bitsPerValue, in, tmp, longs);
+        expand32(longs, visitor, base);
         break;
     }
   }

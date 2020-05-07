@@ -73,12 +73,26 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
+  public void testSorted2() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[ForUtilCheck.BLOCK_SIZE * random().nextInt(10)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+        }
+        Arrays.sort(docIDs);
+        test(dir, docIDs);
+      }
+    }
+  }
+
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    final long[] tmp1 = new long[ForUtilCheck.BLOCK_SIZE];
-    final long[] tmp2 = new long[ForUtilCheck.BLOCK_SIZE];
+    final ForUtilCheck encoder = new ForUtilCheck();
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
-      DocIdsWriter.writeDocIds(ints, 0, ints.length, out, tmp1);
+      DocIdsWriter.writeDocIds(ints, 0, ints.length, out, encoder);
       len = out.getFilePointer();
       if (random().nextBoolean()) {
         out.writeLong(0); // garbage
@@ -86,7 +100,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      DocIdsWriter.readInts(in, ints.length, read, tmp1, tmp2);
+      DocIdsWriter.readInts(in, ints.length, read, encoder);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
@@ -109,7 +123,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
           throw new UnsupportedOperationException();
         }
 
-      }, tmp1, tmp2);
+      }, encoder);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
