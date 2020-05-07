@@ -157,8 +157,8 @@ final class SIMDDocIdsWriter {
   /**
    * Decode 128 integers into {@code longs}.
    */
-  private static void decode(int bitsPerValue, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
-    switch (bitsPerValue) {
+  private static void decode(int code, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
+    switch (code) {
       case 0:
         final int base = in.readVInt();
         Arrays.fill(ints, offset, offset + SIMDIntegerEncoder.BLOCK_SIZE, base);
@@ -267,7 +267,7 @@ final class SIMDDocIdsWriter {
       case 30:
       case 31:
       case 32:
-        SIMDIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(code, in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 33:
@@ -374,7 +374,7 @@ final class SIMDDocIdsWriter {
       case 62:
       case 63:
       case 64:
-        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
+        SIMDIntegerEncoder.decodeSlow(code - 32, in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 65:
@@ -473,10 +473,19 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
-      default:
-        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 64, in, tmp, longs);
+      case 89:
+      case 90:
+      case 91:
+      case 92:
+      case 93:
+      case 94:
+      case 95:
+      case 96:
+        SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
+      default:
+        throw new IllegalArgumentException("Invalid code: " + code);
     }
   }
 
@@ -798,10 +807,19 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
-      default:
+      case 89:
+      case 90:
+      case 91:
+      case 92:
+      case 93:
+      case 94:
+      case 95:
+      case 96:
         SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
+      default:
+        throw new IllegalArgumentException("Invalid code: " + code);
     }
   }
 
