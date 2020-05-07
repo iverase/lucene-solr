@@ -630,30 +630,30 @@ final class SIMDDocIdsWriter {
   }
 
   private static void expand8(long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = 0; i < 16; ++i, j += 8) {
+    for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[offset+j]   = (int) ((l >>> 56) & 0xFFL);
-      ints[offset+j+1] = (int) ((l >>> 48) & 0xFFL);
-      ints[offset+j+2] = (int) ((l >>> 40) & 0xFFL);
-      ints[offset+j+3] = (int) ((l >>> 32) & 0xFFL);
-      ints[offset+j+4] = (int) ((l >>> 24) & 0xFFL);
-      ints[offset+j+5] = (int) ((l >>> 16) & 0xFFL);
-      ints[offset+j+6] = (int) ((l >>> 8) & 0xFFL);
-      ints[offset+j+7] = (int) (l & 0xFFL);
+      ints[j]   = (int) ((l >>> 56) & 0xFFL);
+      ints[j+1] = (int) ((l >>> 48) & 0xFFL);
+      ints[j+2] = (int) ((l >>> 40) & 0xFFL);
+      ints[j+3] = (int) ((l >>> 32) & 0xFFL);
+      ints[j+4] = (int) ((l >>> 24) & 0xFFL);
+      ints[j+5] = (int) ((l >>> 16) & 0xFFL);
+      ints[j+6] = (int) ((l >>> 8) & 0xFFL);
+      ints[j+7] = (int) (l & 0xFFL);
     }
   }
 
   private static void expand8(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0, j = 0; i < 16; ++i, j += 8) {
+    for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[offset+j]   = base += (int) ((l >>> 56) & 0xFFL);
-      ints[offset+j+1] = base +=  (int) ((l >>> 48) & 0xFFL);
-      ints[offset+j+2] = base +=  (int) ((l >>> 40) & 0xFFL);
-      ints[offset+j+3] = base +=  (int) ((l >>> 32) & 0xFFL);
-      ints[offset+j+4] = base +=  (int) ((l >>> 24) & 0xFFL);
-      ints[offset+j+5] = base +=  (int) ((l >>> 16) & 0xFFL);
-      ints[offset+j+6] = base +=  (int) ((l >>> 8) & 0xFFL);
-      ints[offset+j+7] = base +=  (int) (l & 0xFFL);
+      ints[j]   = base += (int) ((l >>> 56) & 0xFFL);
+      ints[j+1] = base +=  (int) ((l >>> 48) & 0xFFL);
+      ints[j+2] = base +=  (int) ((l >>> 40) & 0xFFL);
+      ints[j+3] = base +=  (int) ((l >>> 32) & 0xFFL);
+      ints[j+4] = base +=  (int) ((l >>> 24) & 0xFFL);
+      ints[j+5] = base +=  (int) ((l >>> 16) & 0xFFL);
+      ints[j+6] = base +=  (int) ((l >>> 8) & 0xFFL);
+      ints[j+7] = base +=  (int) (l & 0xFFL);
     }
   }
 
@@ -686,22 +686,22 @@ final class SIMDDocIdsWriter {
   }
 
   private static void expand16(long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = 0; i < 32; ++i, j += 4) {
+    for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[offset + j] = (int) ((l >>> 48) & 0xFFFFL);
-      ints[offset + j + 1] = (int) ((l >>> 32) & 0xFFFFL);
-      ints[offset + j + 2] = (int) ((l >>> 16) & 0xFFFFL);
-      ints[offset + j + 3] = (int) (l & 0xFFFFL);
+      ints[j] = (int) ((l >>> 48) & 0xFFFFL);
+      ints[j+1] = (int) ((l >>> 32) & 0xFFFFL);
+      ints[j+2] = (int) ((l >>> 16) & 0xFFFFL);
+      ints[j+3] = (int) (l & 0xFFFFL);
     }
   }
 
   private static void expand16(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0, j = 0; i < 32; ++i, j += 4) {
+    for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
-      ints[offset + j] = base += (int) ((l >>> 48) & 0xFFFFL);
-      ints[offset + j + 1] =  base += (int) ((l >>> 32) & 0xFFFFL);
-      ints[offset + j + 2] =  base += (int) ((l >>> 16) & 0xFFFFL);
-      ints[offset + j + 3] =  base += (int) (l & 0xFFFFL);
+      ints[j] = base += (int) ((l >>> 48) & 0xFFFFL);
+      ints[j+1] =  base += (int) ((l >>> 32) & 0xFFFFL);
+      ints[j+2] =  base += (int) ((l >>> 16) & 0xFFFFL);
+      ints[j+3] =  base += (int) (l & 0xFFFFL);
     }
   }
 
@@ -726,18 +726,18 @@ final class SIMDDocIdsWriter {
   }
 
   private static void expand32(long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = 0; i < 64; i++, j+=2) {
+    for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[offset+j] = (int) (l >>> 32);
-      ints[offset+j+1] = (int) (l & 0xFFFFFFFFL);
+      ints[j] = (int) (l >>> 32);
+      ints[j+1] = (int) (l & 0xFFFFFFFFL);
     }
   }
 
   private static void expand32(long[] arr, int[] ints, int offset, int base) {
-    for (int i = 0, j = 0; i < 64; i++, j+=2) {
+    for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[offset+j] = base += (int) (l >>> 32);
-      ints[offset+j + 1] = base += (int) (l & 0xFFFFFFFFL);
+      ints[j] = base += (int) (l >>> 32);
+      ints[j+1] = base += (int) (l & 0xFFFFFFFFL);
     }
   }
 
