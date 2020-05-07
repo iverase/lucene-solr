@@ -37,6 +37,7 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Locale;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
@@ -84,13 +85,27 @@ final class SIMDDocIdsWriter {
       }
     } else {
       long max = 0;
+      int maxVal = Integer.MIN_VALUE;
+      int minVal = Integer.MAX_VALUE;
       for (int j = 0; j < SIMDIntegerEncoder.BLOCK_SIZE; ++j) {
         max |= Integer.toUnsignedLong(ints[start + j]);
         tmp1[j] = ints[start + j];
+        minVal = Math.min(minVal, ints[start + j]);
+        maxVal = Math.max(maxVal, ints[start + j]);
       }
       int bpv = PackedInts.bitsRequired(max);
-      out.writeByte((byte) bpv);
-      encode(tmp1, bpv, out, tmp2);
+      int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
+      if (bvpDiff < bpv) {
+        out.writeByte((byte) (64 + bpv));
+        for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
+          tmp1[i] = ints[start + i] - minVal;
+        }
+        encode(tmp1, bpv, out, tmp2);
+        out.writeVInt(minVal);
+      } else {
+        out.writeByte((byte) bpv);
+        encode(tmp1, bpv, out, tmp2);
+      }
     }
   }
 
@@ -352,9 +367,116 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
-      default:
+      case 57:
+      case 58:
+      case 59:
+      case 60:
+      case 61:
+      case 62:
+      case 63:
+      case 64:
         SIMDIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
+        break;
+      case 65:
+        SIMDIntegerEncoder.decode1(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 66:
+        SIMDIntegerEncoder.decode2(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 67:
+        SIMDIntegerEncoder.decode3(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 68:
+        SIMDIntegerEncoder.decode4(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 69:
+        SIMDIntegerEncoder.decode5(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 70:
+        SIMDIntegerEncoder.decode6(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 71:
+        SIMDIntegerEncoder.decode7(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 72:
+        SIMDIntegerEncoder.decode8(in, tmp, longs);
+        expand8Base(in, longs, ints, offset);
+        break;
+      case 73:
+        SIMDIntegerEncoder.decode9(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 74:
+        SIMDIntegerEncoder.decode10(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 75:
+        SIMDIntegerEncoder.decode11(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 76:
+        SIMDIntegerEncoder.decode12(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 77:
+        SIMDIntegerEncoder.decode13(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 78:
+        SIMDIntegerEncoder.decode14(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 79:
+        SIMDIntegerEncoder.decode15(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 80:
+        SIMDIntegerEncoder.decode16(in, tmp, longs);
+        expand16Base(in, longs, ints, offset);
+        break;
+      case 81:
+        SIMDIntegerEncoder.decode17(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 82:
+        SIMDIntegerEncoder.decode18(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 83:
+        SIMDIntegerEncoder.decode19(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 84:
+        SIMDIntegerEncoder.decode20(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 85:
+        SIMDIntegerEncoder.decode21(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 86:
+        SIMDIntegerEncoder.decode22(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 87:
+        SIMDIntegerEncoder.decode23(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      case 88:
+        SIMDIntegerEncoder.decode24(in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
+        break;
+      default:
+        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 64, in, tmp, longs);
+        expand32Base(in, longs, ints, offset);
         break;
     }
   }
@@ -570,9 +692,116 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decode24(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
-      default:
+      case 57:
+      case 58:
+      case 59:
+      case 60:
+      case 61:
+      case 62:
+      case 63:
+      case 64:
         SIMDIntegerEncoder.decodeSlow(bitsPerValue - 32, in, tmp, longs);
         expand32Delta(in, longs, visitor);
+        break;
+      case 65:
+        SIMDIntegerEncoder.decode1(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 66:
+        SIMDIntegerEncoder.decode2(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 67:
+        SIMDIntegerEncoder.decode3(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 68:
+        SIMDIntegerEncoder.decode4(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 69:
+        SIMDIntegerEncoder.decode5(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 70:
+        SIMDIntegerEncoder.decode6(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 71:
+        SIMDIntegerEncoder.decode7(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 72:
+        SIMDIntegerEncoder.decode8(in, tmp, longs);
+        expand8Base(in, longs, visitor);
+        break;
+      case 73:
+        SIMDIntegerEncoder.decode9(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 74:
+        SIMDIntegerEncoder.decode10(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 75:
+        SIMDIntegerEncoder.decode11(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 76:
+        SIMDIntegerEncoder.decode12(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 77:
+        SIMDIntegerEncoder.decode13(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 78:
+        SIMDIntegerEncoder.decode14(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 79:
+        SIMDIntegerEncoder.decode15(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 80:
+        SIMDIntegerEncoder.decode16(in, tmp, longs);
+        expand16Base(in, longs, visitor);
+        break;
+      case 81:
+        SIMDIntegerEncoder.decode17(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 82:
+        SIMDIntegerEncoder.decode18(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 83:
+        SIMDIntegerEncoder.decode19(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 84:
+        SIMDIntegerEncoder.decode20(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 85:
+        SIMDIntegerEncoder.decode21(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 86:
+        SIMDIntegerEncoder.decode22(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 87:
+        SIMDIntegerEncoder.decode23(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      case 88:
+        SIMDIntegerEncoder.decode24(in, tmp, longs);
+        expand32Base(in, longs, visitor);
+        break;
+      default:
+        SIMDIntegerEncoder.decodeSlow(bitsPerValue - 64, in, tmp, longs);
+        expand32Base(in, longs, visitor);
         break;
     }
   }
@@ -596,13 +825,28 @@ final class SIMDDocIdsWriter {
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = base += (int) ((l >>> 56) & 0xFFL);
-      ints[j+1] = base +=  (int) ((l >>> 48) & 0xFFL);
-      ints[j+2] = base +=  (int) ((l >>> 40) & 0xFFL);
-      ints[j+3] = base +=  (int) ((l >>> 32) & 0xFFL);
-      ints[j+4] = base +=  (int) ((l >>> 24) & 0xFFL);
-      ints[j+5] = base +=  (int) ((l >>> 16) & 0xFFL);
-      ints[j+6] = base +=  (int) ((l >>> 8) & 0xFFL);
-      ints[j+7] = base +=  (int) (l & 0xFFL);
+      ints[j+1] = base += (int) ((l >>> 48) & 0xFFL);
+      ints[j+2] = base += (int) ((l >>> 40) & 0xFFL);
+      ints[j+3] = base += (int) ((l >>> 32) & 0xFFL);
+      ints[j+4] = base += (int) ((l >>> 24) & 0xFFL);
+      ints[j+5] = base += (int) ((l >>> 16) & 0xFFL);
+      ints[j+6] = base += (int) ((l >>> 8) & 0xFFL);
+      ints[j+7] = base += (int) (l & 0xFFL);
+    }
+  }
+
+  private static void expand8Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException{
+    final int base = in.readVInt();
+    for (int i = 0, j = offset; i < 16; ++i, j += 8) {
+      long l = arr[i];
+      ints[j]   = base + (int) ((l >>> 56) & 0xFFL);
+      ints[j+1] = base + (int) ((l >>> 48) & 0xFFL);
+      ints[j+2] = base + (int) ((l >>> 40) & 0xFFL);
+      ints[j+3] = base + (int) ((l >>> 32) & 0xFFL);
+      ints[j+4] = base + (int) ((l >>> 24) & 0xFFL);
+      ints[j+5] = base + (int) ((l >>> 16) & 0xFFL);
+      ints[j+6] = base + (int) ((l >>> 8) & 0xFFL);
+      ints[j+7] = base + (int) (l & 0xFFL);
     }
   }
 
@@ -635,6 +879,21 @@ final class SIMDDocIdsWriter {
     }
   }
 
+  private static void expand8Base(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
+    final int base = in.readVInt();
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      visitor.visit(base + (int) ((l >>> 56) & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 48) & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 40) & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 32) & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 24) & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 16) & 0xFFL));
+      visitor.visit(base + (int) ((l >>> 8) & 0xFFL));
+      visitor.visit(base + (int) (l & 0xFFL));
+    }
+  }
+
   private static void expand16(long[] arr, int[] ints, int offset) {
     for (int i = 0, j = offset; i < 32; ++i, j += 4) {
       long l = arr[i];
@@ -653,6 +912,17 @@ final class SIMDDocIdsWriter {
       ints[j+1] =  base += (int) ((l >>> 32) & 0xFFFFL);
       ints[j+2] =  base += (int) ((l >>> 16) & 0xFFFFL);
       ints[j+3] =  base += (int) (l & 0xFFFFL);
+    }
+  }
+
+  private static void expand16Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
+    final int base = in.readVInt();
+    for (int i = 0, j = offset; i < 32; ++i, j += 4) {
+      long l = arr[i];
+      ints[j] = base + (int) ((l >>> 48) & 0xFFFFL);
+      ints[j+1] = base + (int) ((l >>> 32) & 0xFFFFL);
+      ints[j+2] = base + (int) ((l >>> 16) & 0xFFFFL);
+      ints[j+3] = base + (int) (l & 0xFFFFL);
     }
   }
 
@@ -677,6 +947,17 @@ final class SIMDDocIdsWriter {
     }
   }
 
+  private static void expand16Base(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
+    final int base = in.readVInt();
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      visitor.visit(base + (int) ((l >>> 48) & 0xFFFFL));
+      visitor.visit(base + (int) ((l >>> 32) & 0xFFFFL));
+      visitor.visit(base + (int) ((l >>> 16) & 0xFFFFL));
+      visitor.visit(base + (int) (l & 0xFFFFL));
+    }
+  }
+
   private static void expand32(long[] arr, int[] ints, int offset) {
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
@@ -694,6 +975,15 @@ final class SIMDDocIdsWriter {
     }
   }
 
+  private static void expand32Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
+    final int base = in.readVInt();
+    for (int i = 0, j = offset; i < 64; i++, j+=2) {
+      long l = arr[i];
+      ints[j] = base + (int) (l >>> 32);
+      ints[j+1] = base + (int) (l & 0xFFFFFFFFL);
+    }
+  }
+
   private static void expand32(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
@@ -708,6 +998,15 @@ final class SIMDDocIdsWriter {
       long l = arr[i];
       visitor.visit(base += (int) (l >>> 32));
       visitor.visit(base += (int) (l & 0xFFFFFFFFL));
+    }
+  }
+
+  private static void expand32Base(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
+    final int base = in.readVInt();
+    for (int i = 0; i < 64; ++i) {
+      long l = arr[i];
+      visitor.visit(base + (int) (l >>> 32));
+      visitor.visit(base + (int) (l & 0xFFFFFFFFL));
     }
   }
 }
