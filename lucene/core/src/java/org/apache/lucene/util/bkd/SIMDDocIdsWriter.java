@@ -836,16 +836,17 @@ final class SIMDDocIdsWriter {
 
   private static void expand8Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException{
     final int base = in.readVInt();
+    Arrays.fill(ints, offset, offset + SIMDIntegerEncoder.BLOCK_SIZE, base);
     for (int i = 0, j = offset; i < 16; ++i, j += 8) {
       long l = arr[i];
-      ints[j]   = base + (int) ((l >>> 56) & 0xFF);
-      ints[j+1] = base +(int) ((l >>> 48) & 0xFF);
-      ints[j+2] = base +(int) ((l >>> 40) & 0xFF);
-      ints[j+3] = base +(int) ((l >>> 32) & 0xFF);
-      ints[j+4] = base +(int) ((l >>> 24) & 0xFF);
-      ints[j+5] = base +(int) ((l >>> 16) & 0xFF);
-      ints[j+6] = base +(int) ((l >>> 8) & 0xFF);
-      ints[j+7] = base +(int) (l & 0xFF);
+      ints[j]   += (int) ((l >>> 56) & 0xFF);
+      ints[j+1] += (int) ((l >>> 48) & 0xFF);
+      ints[j+2] += (int) ((l >>> 40) & 0xFF);
+      ints[j+3] += (int) ((l >>> 32) & 0xFF);
+      ints[j+4] += (int) ((l >>> 24) & 0xFF);
+      ints[j+5] += (int) ((l >>> 16) & 0xFF);
+      ints[j+6] += (int) ((l >>> 8) & 0xFF);
+      ints[j+7] += (int) (l & 0xFF);
     }
   }
 
