@@ -84,13 +84,13 @@ final class SIMDDocIdsWriter {
           tmp1[i] = delta;
           tmp2[i] = ints[start + i];
         }
-        final int bpvDelta = PackedInts.bitsRequired(maxDelta);
-        if (bpvDelta == 1 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
+        final int bpvDelta = getBpv(maxDelta);
+        if (bpvDelta == 8 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
           // special case for consecutive integers
           out.writeByte(Byte.MAX_VALUE);
           out.writeVInt(base);
         } else {
-          final int bpv = PackedInts.bitsRequired(max);
+          final int bpv = getBpv(max);
           if (bpvDelta < bpv) {
             // for delta encoding we add 32 to bpv
             out.writeByte((byte) (32 + bpvDelta));
@@ -113,8 +113,8 @@ final class SIMDDocIdsWriter {
         minVal = Math.min(minVal, ints[start + j]);
         maxVal = Math.max(maxVal, ints[start + j]);
       }
-      final int bpv = PackedInts.bitsRequired(max);
-      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
+      final int bpv = getBpv(max);
+      final int bvpDiff = getBpv(Integer.toUnsignedLong(maxVal - minVal));
       if (bpv > bvpDiff) {
         // for base encoding we add 64 to bvp
         out.writeByte((byte) (64 + bvpDiff));
@@ -128,6 +128,19 @@ final class SIMDDocIdsWriter {
         out.writeByte((byte) bpv);
         encode(tmp1, bpv, out, tmp2);
       }
+    }
+  }
+
+  private static int getBpv(long max) {
+    final int bpv = PackedInts.bitsRequired(max);
+    if (bpv <= 8) {
+      return 8;
+    } else if (bpv <= 16) {
+      return 16;
+    } else if (bpv <= 24) {
+      return 24;
+    } else {
+      return bpv;
     }
   }
 
