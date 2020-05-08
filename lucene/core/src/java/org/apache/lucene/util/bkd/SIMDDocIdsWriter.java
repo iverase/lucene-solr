@@ -93,8 +93,8 @@ final class SIMDDocIdsWriter {
           final int bpv = PackedInts.bitsRequired(max);
           if (bpvDelta < bpv) {
             // for delta encoding we add 32 to bpv
-            out.writeByte((byte) (32 + bpv));
-            encode(tmp1, bpv, out, tmp2);
+            out.writeByte((byte) (32 + bpvDelta));
+            encode(tmp1, bpvDelta, out, tmp2);
             out.writeVInt(base);
           } else {
             // standard encoding, no benefit from delta encoding
