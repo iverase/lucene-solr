@@ -74,22 +74,34 @@ final class SIMDDocIdsWriter {
       } else {
         int base  = ints[start];
         tmp1[0] = 0;
-        long max = 0;
+        tmp2[0] = ints[start];
+        long max = ints[start];
+        long maxDelta = 0;
         for (int i = 1; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
           final int delta = ints[start + i] - ints[start + i - 1];
-          max |= Integer.toUnsignedLong(delta);
+          maxDelta |= Integer.toUnsignedLong(delta);
+          max |= Integer.toUnsignedLong(ints[start + i]);
           tmp1[i] = delta;
+          tmp2[i] = ints[start + i];
         }
-        final int bpv = PackedInts.bitsRequired(max);
-        if (bpv == 1 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
+        final int bpvDelta = PackedInts.bitsRequired(maxDelta);
+        if (bpvDelta == 1 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
           // special case for consecutive integers
           out.writeByte(Byte.MAX_VALUE);
+          out.writeVInt(base);
         } else {
-          // for delta encoding we add 32 to bpv
-          out.writeByte((byte) (32 + bpv));
-          encode(tmp1, bpv, out, tmp2);
+          final int bpv = PackedInts.bitsRequired(max);
+          if (bpvDelta < bpv) {
+            // for delta encoding we add 32 to bpv
+            out.writeByte((byte) (32 + bpv));
+            encode(tmp1, bpv, out, tmp2);
+            out.writeVInt(base);
+          } else {
+            // standard encoding, no benefit from delta encoding
+            out.writeByte((byte) bpv);
+            encode(tmp2, bpv, out, tmp1);
+          }
         }
-        out.writeVInt(base);
       }
     } else {
       long max = 0;
