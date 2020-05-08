@@ -133,12 +133,14 @@ final class SIMDDocIdsWriter {
 
   private static int getBpv(long max) {
     final int bpv = PackedInts.bitsRequired(max);
-    if (bpv <= 16) {
+    if (bpv <= 8) {
       return bpv;
+    } else if (bpv <= 16) {
+      return 16;
     } else if (bpv <= 24) {
       return 24;
     }
-    return bpv;
+    return 32;
     //rm 19, 17
     //if (bpv <= 8 || bpv % 2 == 0) {
       //return bpv;
