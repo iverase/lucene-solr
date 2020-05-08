@@ -134,10 +134,13 @@ final class SIMDDocIdsWriter {
   private static int getBpv(long max) {
     final int bpv = PackedInts.bitsRequired(max);
     //rm 19, 17
-    if (bpv == 21 || bpv == 23) {
-      return bpv + 1;
+    if (bpv % 2 == 0) {
+      return bpv;
     }
-    return bpv;
+    //if (bpv == 21 || bpv == 23) {
+    //  return bpv + 1;
+    //}
+    return bpv + 1;
   }
 
   private static boolean allEqualOne(long[] longs, int start, int end) {
