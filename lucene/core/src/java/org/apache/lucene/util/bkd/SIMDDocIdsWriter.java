@@ -44,6 +44,8 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.SIMDIntegerEncoder;
 import org.apache.lucene.util.packed.PackedInts;
 
+import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+
 final class SIMDDocIdsWriter {
 
   private final long[] tmp1 = new long[SIMDIntegerEncoder.BLOCK_SIZE];
@@ -79,9 +81,14 @@ final class SIMDDocIdsWriter {
           tmp1[i] = delta;
         }
         final int bpv = PackedInts.bitsRequired(max);
-        // for delta encoding we add 32 to bvp
-        out.writeByte((byte) (32 + bpv));
-        encode(tmp1, bpv, out, tmp2);
+        if (bpv == 1 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
+          // special case for consecutive integers
+          out.writeByte((byte) (97));
+        } else {
+          // for delta encoding we add 32 to bvp
+          out.writeByte((byte) (32 + bpv));
+          encode(tmp1, bpv, out, tmp2);
+        }
         out.writeVInt(base);
       }
     } else {
@@ -110,6 +117,15 @@ final class SIMDDocIdsWriter {
         encode(tmp1, bpv, out, tmp2);
       }
     }
+  }
+
+  private static boolean allEqualOne(long[] longs, int start, int end) {
+    for (int i = start; i < end; ++i) {
+      if (longs[i] != 1) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -162,6 +178,8 @@ final class SIMDDocIdsWriter {
    * Decode 128 integers into {@code longs}.
    */
   private static void decode(int code, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
+
+    long start = System.nanoTime();
     switch (code) {
       case 0:
         final int base = in.readVInt();
@@ -487,6 +505,9 @@ final class SIMDDocIdsWriter {
       case 96:
         SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, ints, offset);
+        break;
+      case 97:
+        prefixSumOfOnes(in, ints, offset);
         break;
       default:
         throw new IllegalArgumentException("Invalid code: " + code);
@@ -822,6 +843,9 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
+      case 97:
+        prefixSumOfOnes(in, visitor);
+        break;
       default:
         throw new IllegalArgumentException("Invalid code: " + code);
     }
@@ -1028,6 +1052,20 @@ final class SIMDDocIdsWriter {
       long l = arr[i];
       visitor.visit(base + (int) (l >>> 32));
       visitor.visit(base + (int) l);
+    }
+  }
+
+  private static void prefixSumOfOnes(DataInput in,int[] ints, int offset) throws IOException {
+    int base = in.readVInt();
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
+      ints[offset+i] = base + i;
+    }
+  }
+
+  private static void prefixSumOfOnes(DataInput in, PointValues.IntersectVisitor visitor) throws IOException {
+    int base = in.readVInt();
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
+     visitor.visit(base + i);
     }
   }
 }

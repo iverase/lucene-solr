@@ -103,6 +103,23 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
+
+  public void testSortedOneSIMD() throws Exception {
+    int numIters = atLeast(100);
+    try (Directory dir = newDirectory()) {
+      for (int iter = 0; iter < numIters; ++iter) {
+        int[] docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+        final int bpv = TestUtil.nextInt(random(), 1, 32);
+        int doc = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
+        for (int i = 0; i < docIDs.length; ++i) {
+          docIDs[i] = doc + i;
+        }
+        Arrays.sort(docIDs);
+        test(dir, docIDs);
+      }
+    }
+  }
+
   public void testAllEquals() throws Exception {
     try (Directory dir = newDirectory()) {
       int[] docIDs;
