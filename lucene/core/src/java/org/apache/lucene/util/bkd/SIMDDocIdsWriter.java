@@ -85,7 +85,7 @@ final class SIMDDocIdsWriter {
           tmp2[i] = ints[start + i];
         }
         final int bpvDelta = getBpv(maxDelta);
-        if (bpvDelta == 8 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
+        if (bpvDelta == 1 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
           // special case for consecutive integers
           out.writeByte(Byte.MAX_VALUE);
           out.writeVInt(base);
@@ -133,22 +133,15 @@ final class SIMDDocIdsWriter {
 
   private static int getBpv(long max) {
     final int bpv = PackedInts.bitsRequired(max);
-    if (bpv == 1) {
+    if (bpv <= 8) {
+      return bpv;
+    } else if (bpv <= 16) {
+      return 16;
+    } else if (bpv <= 24) {
+      return 24;
+    } else {
       return bpv;
     }
-    if (bpv % 2 == 0) {
-      return bpv;
-    }
-    return bpv + 1;
-//    if (bpv <= 8) {
-//      return 8;
-//    } else if (bpv <= 16) {
-//      return 16;
-//    } else if (bpv <= 24) {
-//      return 24;
-//    } else {
-//      return bpv;
-//    }
   }
 
   private static boolean allEqualOne(long[] longs, int start, int end) {
