@@ -178,8 +178,6 @@ final class SIMDDocIdsWriter {
    * Decode 128 integers into {@code longs}.
    */
   private static void decode(int code, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
-
-    long start = System.nanoTime();
     switch (code) {
       case 0:
         final int base = in.readVInt();
