@@ -83,9 +83,9 @@ final class SIMDDocIdsWriter {
         final int bpv = PackedInts.bitsRequired(max);
         if (bpv == 1 && allEqualOne(tmp1, 1, BLOCK_SIZE)) {
           // special case for consecutive integers
-          out.writeByte((byte) (97));
+          out.writeByte(Byte.MAX_VALUE);
         } else {
-          // for delta encoding we add 32 to bvp
+          // for delta encoding we add 32 to bpv
           out.writeByte((byte) (32 + bpv));
           encode(tmp1, bpv, out, tmp2);
         }
@@ -102,20 +102,20 @@ final class SIMDDocIdsWriter {
         maxVal = Math.max(maxVal, ints[start + j]);
       }
       final int bpv = PackedInts.bitsRequired(max);
-      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
-      if (bpv > bvpDiff) {
-        // for base encoding we add 64 to bvp
-        out.writeByte((byte) (64 + bvpDiff));
-        for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
-          tmp1[i] = ints[start + i] - minVal;
-        }
-        encode(tmp1, bvpDiff, out, tmp2);
-        out.writeVInt(minVal);
-      } else {
+//      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
+//      if (bpv > bvpDiff) {
+//        // for base encoding we add 64 to bvp
+//        out.writeByte((byte) (64 + bvpDiff));
+//        for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
+//          tmp1[i] = ints[start + i] - minVal;
+//        }
+//        encode(tmp1, bvpDiff, out, tmp2);
+//        out.writeVInt(minVal);
+//      } else {
         // standard encoding
         out.writeByte((byte) bpv);
         encode(tmp1, bpv, out, tmp2);
-      }
+ //     }
     }
   }
 
@@ -506,7 +506,7 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
-      case 97:
+      case Byte.MAX_VALUE:
         prefixSumOfOnes(in, ints, offset);
         break;
       default:
@@ -843,7 +843,7 @@ final class SIMDDocIdsWriter {
         SIMDIntegerEncoder.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
-      case 97:
+      case Byte.MAX_VALUE:
         prefixSumOfOnes(in, visitor);
         break;
       default:
