@@ -103,7 +103,6 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-
   public void testSortedOneSIMD() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {

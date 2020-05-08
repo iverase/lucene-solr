@@ -102,20 +102,20 @@ final class SIMDDocIdsWriter {
         maxVal = Math.max(maxVal, ints[start + j]);
       }
       final int bpv = PackedInts.bitsRequired(max);
-//      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
-//      if (bpv > bvpDiff) {
-//        // for base encoding we add 64 to bvp
-//        out.writeByte((byte) (64 + bvpDiff));
-//        for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
-//          tmp1[i] = ints[start + i] - minVal;
-//        }
-//        encode(tmp1, bvpDiff, out, tmp2);
-//        out.writeVInt(minVal);
-//      } else {
+      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
+      if (bpv > bvpDiff) {
+        // for base encoding we add 64 to bvp
+        out.writeByte((byte) (64 + bvpDiff));
+        for (int i = 0; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
+          tmp1[i] = ints[start + i] - minVal;
+        }
+        encode(tmp1, bvpDiff, out, tmp2);
+        out.writeVInt(minVal);
+      } else {
         // standard encoding
         out.writeByte((byte) bpv);
         encode(tmp1, bpv, out, tmp2);
- //     }
+      }
     }
   }
 
@@ -1055,8 +1055,8 @@ final class SIMDDocIdsWriter {
 
   private static void prefixSumOfOnes(DataInput in,int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < BLOCK_SIZE; ++i) {
-      ints[offset+i] = base + i;
+    for (int i = 0, j = offset; i < BLOCK_SIZE; i++, j++) {
+      ints[j] = base + i;
     }
   }
 
