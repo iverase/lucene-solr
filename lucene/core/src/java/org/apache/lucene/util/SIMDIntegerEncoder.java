@@ -201,7 +201,7 @@ public class SIMDIntegerEncoder {
 
     for (int i = 0; i < numLongsPerShift; ++i) {
       // Java longs are big endian and we want to read little endian longs, so we need to reverse bytes
-      long l = tmp[i];//Long.reverseBytes(tmp[i]);
+      long l = Long.reverseBytes(tmp[i]);
       out.writeLong(l);
     }
   }

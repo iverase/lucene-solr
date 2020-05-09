@@ -174,7 +174,7 @@ public abstract class DataInput implements Cloneable {
   public void readLELongs(long[] dst, int offset, int length) throws IOException {
     Objects.checkFromIndexSize(offset, length, dst.length);
     for (int i = 0; i < length; ++i) {
-      dst[offset + i] = readLong(); //Long.reverseBytes(readLong());
+      dst[offset + i] = Long.reverseBytes(readLong());
     }
   }
 
