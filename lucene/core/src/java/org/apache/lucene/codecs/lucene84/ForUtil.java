@@ -22,22 +22,21 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.SIMDIntegerEncoder;
+import org.apache.lucene.util.ForPrimitives;
 
-// Inspired from https://fulmicoton.com/posts/bitpacking/
-// Encodes multiple integers in a long to get SIMD-like speedups.
-// If bitsPerValue <= 8 then we pack 8 ints per long
-// else if bitsPerValue <= 16 we pack 4 ints per long
-// else we pack 2 ints per long
+/**
+ * Utility class that uses {@link ForPrimitives} for encoding /decoding
+ * blocks of 128 Integers.
+ */
 final class ForUtil {
 
-  private final long[] tmp = new long[SIMDIntegerEncoder.BLOCK_SIZE/2];
+  private final long[] tmp = new long[ForPrimitives.BLOCK_SIZE/2];
 
   /**
    * Encode 128 integers from {@code longs} into {@code out}.
    */
   void encode(long[] longs, int bitsPerValue, DataOutput out) throws IOException {
-    SIMDIntegerEncoder.encode(longs, bitsPerValue, out, tmp);
+    ForPrimitives.encode(longs, bitsPerValue, out, tmp);
   }
 
   /**
@@ -46,103 +45,103 @@ final class ForUtil {
   void decode(int bitsPerValue, DataInput in, long[] longs) throws IOException {
     switch (bitsPerValue) {
     case 1:
-      SIMDIntegerEncoder.decode1(in, tmp, longs);
+      ForPrimitives.decode1(in, tmp, longs);
       expand8(longs);
       break;
     case 2:
-      SIMDIntegerEncoder.decode2(in, tmp, longs);
+      ForPrimitives.decode2(in, tmp, longs);
       expand8(longs);
       break;
     case 3:
-      SIMDIntegerEncoder.decode3(in, tmp, longs);
+      ForPrimitives.decode3(in, tmp, longs);
       expand8(longs);
       break;
     case 4:
-      SIMDIntegerEncoder.decode4(in, tmp, longs);
+      ForPrimitives.decode4(in, tmp, longs);
       expand8(longs);
       break;
     case 5:
-      SIMDIntegerEncoder.decode5(in, tmp, longs);
+      ForPrimitives.decode5(in, tmp, longs);
       expand8(longs);
       break;
     case 6:
-      SIMDIntegerEncoder.decode6(in, tmp, longs);
+      ForPrimitives.decode6(in, tmp, longs);
       expand8(longs);
       break;
     case 7:
-      SIMDIntegerEncoder.decode7(in, tmp, longs);
+      ForPrimitives.decode7(in, tmp, longs);
       expand8(longs);
       break;
     case 8:
-      SIMDIntegerEncoder.decode8(in, tmp, longs);
+      ForPrimitives.decode8(in, tmp, longs);
       expand8(longs);
       break;
     case 9:
-      SIMDIntegerEncoder.decode9(in, tmp, longs);
+      ForPrimitives.decode9(in, tmp, longs);
       expand16(longs);
       break;
     case 10:
-      SIMDIntegerEncoder.decode10(in, tmp, longs);
+      ForPrimitives.decode10(in, tmp, longs);
       expand16(longs);
       break;
     case 11:
-      SIMDIntegerEncoder.decode11(in, tmp, longs);
+      ForPrimitives.decode11(in, tmp, longs);
       expand16(longs);
       break;
     case 12:
-      SIMDIntegerEncoder.decode12(in, tmp, longs);
+      ForPrimitives.decode12(in, tmp, longs);
       expand16(longs);
       break;
     case 13:
-      SIMDIntegerEncoder.decode13(in, tmp, longs);
+      ForPrimitives.decode13(in, tmp, longs);
       expand16(longs);
       break;
     case 14:
-      SIMDIntegerEncoder.decode14(in, tmp, longs);
+      ForPrimitives.decode14(in, tmp, longs);
       expand16(longs);
       break;
     case 15:
-      SIMDIntegerEncoder.decode15(in, tmp, longs);
+      ForPrimitives.decode15(in, tmp, longs);
       expand16(longs);
       break;
     case 16:
-      SIMDIntegerEncoder.decode16(in, tmp, longs);
+      ForPrimitives.decode16(in, tmp, longs);
       expand16(longs);
       break;
     case 17:
-      SIMDIntegerEncoder.decode17(in, tmp, longs);
+      ForPrimitives.decode17(in, tmp, longs);
       expand32(longs);
       break;
     case 18:
-      SIMDIntegerEncoder.decode18(in, tmp, longs);
+      ForPrimitives.decode18(in, tmp, longs);
       expand32(longs);
       break;
     case 19:
-      SIMDIntegerEncoder.decode19(in, tmp, longs);
+      ForPrimitives.decode19(in, tmp, longs);
       expand32(longs);
       break;
     case 20:
-      SIMDIntegerEncoder.decode20(in, tmp, longs);
+      ForPrimitives.decode20(in, tmp, longs);
       expand32(longs);
       break;
     case 21:
-      SIMDIntegerEncoder.decode21(in, tmp, longs);
+      ForPrimitives.decode21(in, tmp, longs);
       expand32(longs);
       break;
     case 22:
-      SIMDIntegerEncoder.decode22(in, tmp, longs);
+      ForPrimitives.decode22(in, tmp, longs);
       expand32(longs);
       break;
     case 23:
-      SIMDIntegerEncoder.decode23(in, tmp, longs);
+      ForPrimitives.decode23(in, tmp, longs);
       expand32(longs);
       break;
     case 24:
-      SIMDIntegerEncoder.decode24(in, tmp, longs);
+      ForPrimitives.decode24(in, tmp, longs);
       expand32(longs);
       break;
     default:
-      SIMDIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
+      ForPrimitives.decodeSlow(bitsPerValue, in, tmp, longs);
       expand32(longs);
       break;
     }
@@ -154,103 +153,103 @@ final class ForUtil {
   void decodeAndPrefixSum(int bitsPerValue, DataInput in, long base, long[] longs) throws IOException {
     switch (bitsPerValue) {
     case 1:
-      SIMDIntegerEncoder.decode1(in, tmp, longs);
+      ForPrimitives.decode1(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 2:
-      SIMDIntegerEncoder.decode2(in, tmp, longs);
+      ForPrimitives.decode2(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 3:
-      SIMDIntegerEncoder.decode3(in, tmp, longs);
+      ForPrimitives.decode3(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 4:
-      SIMDIntegerEncoder.decode4(in, tmp, longs);
+      ForPrimitives.decode4(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 5:
-      SIMDIntegerEncoder.decode5(in, tmp, longs);
+      ForPrimitives.decode5(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 6:
-      SIMDIntegerEncoder.decode6(in, tmp, longs);
+      ForPrimitives.decode6(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 7:
-      SIMDIntegerEncoder.decode7(in, tmp, longs);
+      ForPrimitives.decode7(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 8:
-      SIMDIntegerEncoder.decode8(in, tmp, longs);
+      ForPrimitives.decode8(in, tmp, longs);
       prefixSum8(longs, base);
       break;
     case 9:
-      SIMDIntegerEncoder.decode9(in, tmp, longs);
+      ForPrimitives.decode9(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 10:
-      SIMDIntegerEncoder.decode10(in, tmp, longs);
+      ForPrimitives.decode10(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 11:
-      SIMDIntegerEncoder.decode11(in, tmp, longs);
+      ForPrimitives.decode11(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 12:
-      SIMDIntegerEncoder.decode12(in, tmp, longs);
+      ForPrimitives.decode12(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 13:
-      SIMDIntegerEncoder.decode13(in, tmp, longs);
+      ForPrimitives.decode13(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 14:
-      SIMDIntegerEncoder.decode14(in, tmp, longs);
+      ForPrimitives.decode14(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 15:
-      SIMDIntegerEncoder.decode15(in, tmp, longs);
+      ForPrimitives.decode15(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 16:
-      SIMDIntegerEncoder.decode16(in, tmp, longs);
+      ForPrimitives.decode16(in, tmp, longs);
       prefixSum16(longs, base);
       break;
     case 17:
-      SIMDIntegerEncoder.decode17(in, tmp, longs);
+      ForPrimitives.decode17(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 18:
-      SIMDIntegerEncoder.decode18(in, tmp, longs);
+      ForPrimitives.decode18(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 19:
-      SIMDIntegerEncoder.decode19(in, tmp, longs);
+      ForPrimitives.decode19(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 20:
-      SIMDIntegerEncoder.decode20(in, tmp, longs);
+      ForPrimitives.decode20(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 21:
-      SIMDIntegerEncoder.decode21(in, tmp, longs);
+      ForPrimitives.decode21(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 22:
-      SIMDIntegerEncoder.decode22(in, tmp, longs);
+      ForPrimitives.decode22(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 23:
-      SIMDIntegerEncoder.decode23(in, tmp, longs);
+      ForPrimitives.decode23(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     case 24:
-      SIMDIntegerEncoder.decode24(in, tmp, longs);
+      ForPrimitives.decode24(in, tmp, longs);
       prefixSum32(longs, base);
       break;
     default:
-      SIMDIntegerEncoder.decodeSlow(bitsPerValue, in, tmp, longs);
+      ForPrimitives.decodeSlow(bitsPerValue, in, tmp, longs);
       prefixSum32(longs, base);
       break;
     }
@@ -321,8 +320,8 @@ final class ForUtil {
     arr[0] += base << 32;
     innerPrefixSum32(arr);
     expand32(arr);
-    final long l = arr[SIMDIntegerEncoder.BLOCK_SIZE/2-1];
-    for (int i = SIMDIntegerEncoder.BLOCK_SIZE/2; i < SIMDIntegerEncoder.BLOCK_SIZE; ++i) {
+    final long l = arr[ForPrimitives.BLOCK_SIZE/2-1];
+    for (int i = ForPrimitives.BLOCK_SIZE/2; i < ForPrimitives.BLOCK_SIZE; ++i) {
       arr[i] += l;
     }
   }

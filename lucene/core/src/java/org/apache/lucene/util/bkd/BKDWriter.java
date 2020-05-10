@@ -1011,7 +1011,7 @@ public class BKDWriter implements Closeable {
     out.writeBytes(packedIndex, 0, packedIndex.length);
   }
 
-  private final SIMDDocIdsWriter encoder = new SIMDDocIdsWriter();
+  private final ForDocIdsWriter encoder = new ForDocIdsWriter();
 
   private void writeLeafBlockDocs(DataOutput out, int[] docIDs, int start, int count) throws IOException {
     assert count > 0: "maxPointsInLeafNode=" + maxPointsInLeafNode;

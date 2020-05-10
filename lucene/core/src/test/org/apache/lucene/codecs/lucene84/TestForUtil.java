@@ -26,11 +26,11 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SIMDIntegerEncoder;
+import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
@@ -87,7 +87,7 @@ public class TestForUtil extends LuceneTestCase {
         assertArrayEquals(Arrays.toString(ints),
             ArrayUtil.copyOfSubArray(values, i*BLOCK_SIZE, (i+1)*BLOCK_SIZE),
             ints);
-        assertEquals(SIMDIntegerEncoder.numBytes(bitsPerValue), in.getFilePointer() - currentFilePointer);
+        assertEquals(ForPrimitives.numBytes(bitsPerValue), in.getFilePointer() - currentFilePointer);
       }
       assertEquals(endPointer, in.getFilePointer());
       in.close();

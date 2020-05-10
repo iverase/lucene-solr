@@ -28,7 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 

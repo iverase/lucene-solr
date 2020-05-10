@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.SIMDIntegerEncoder;
+import org.apache.lucene.util.ForPrimitives;
 
 class DocIdsWriter {
 
@@ -32,13 +32,13 @@ class DocIdsWriter {
 
   private DocIdsWriter() {}
 
-  static void writeDocIds(int[] docIds, int start, int count, DataOutput out, SIMDDocIdsWriter encoder) throws IOException {
+  static void writeDocIds(int[] docIds, int start, int count, DataOutput out, ForDocIdsWriter encoder) throws IOException {
     // if the number of points is a multiple of BLOCK_SIZE, then use
     // SIMD encoder to get better encoding compression and most of the times
     // better decoding speed.
-    if (count % SIMDIntegerEncoder.BLOCK_SIZE == 0) {
+    if (count % ForPrimitives.BLOCK_SIZE == 0) {
       out.writeByte(SIMD);
-      for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
+      for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
         encoder.encode(docIds, start + i, out);
       }
       return;
@@ -81,7 +81,7 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static void readInts(IndexInput in, int count, int[] docIDs, SIMDDocIdsWriter decoder) throws IOException {
+  static void readInts(IndexInput in, int count, int[] docIDs, ForDocIdsWriter decoder) throws IOException {
     final byte bpv = in.readByte();
     switch (bpv) {
       case SORTED:
@@ -102,8 +102,8 @@ class DocIdsWriter {
 
   }
 
-  private static void readSIMD(IndexInput in, int count, int[] docIDs, SIMDDocIdsWriter decoder) throws IOException {
-    for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
+  private static void readSIMD(IndexInput in, int count, int[] docIDs, ForDocIdsWriter decoder) throws IOException {
+    for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
       decoder.decode(in, docIDs, i);
     }
   }
@@ -143,7 +143,7 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor, SIMDDocIdsWriter decoder) throws IOException {
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, ForDocIdsWriter decoder) throws IOException {
     final byte bpv = in.readByte();
     switch (bpv) {
       case SORTED:
@@ -163,8 +163,8 @@ class DocIdsWriter {
     }
   }
 
-  private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, SIMDDocIdsWriter decoder) throws IOException {
-    for (int i = 0; i < count; i += SIMDIntegerEncoder.BLOCK_SIZE) {
+  private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, ForDocIdsWriter decoder) throws IOException {
+    for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
       decoder.decode(in, visitor);
     }
   }

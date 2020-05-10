@@ -21,10 +21,10 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.SIMDIntegerEncoder;
+import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 /**
  * Utility class to encode sequences of 128 small positive integers.
@@ -126,7 +126,7 @@ final class PForUtil {
       in.readVLong();
       in.skipBytes((numExceptions << 1));
     } else {
-      in.skipBytes(SIMDIntegerEncoder.numBytes(bitsPerValue) + (numExceptions << 1));
+      in.skipBytes(ForPrimitives.numBytes(bitsPerValue) + (numExceptions << 1));
     }
   }
 

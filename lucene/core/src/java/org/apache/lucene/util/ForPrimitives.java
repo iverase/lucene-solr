@@ -33,7 +33,7 @@ import org.apache.lucene.store.DataOutput;
  *
  * @lucene.internal
  */
-public class SIMDIntegerEncoder {
+public class ForPrimitives {
 
   public static final int BLOCK_SIZE = 128;
   private static final int BLOCK_SIZE_LOG2 = 7;
@@ -130,7 +130,7 @@ public class SIMDIntegerEncoder {
   /**
    * Encode 128 integers from {@code longs} into {@code out}. The integers must have the highest significant bit
    * at {@code bitsPerValue} or lower. The {@code tml} long[] must have a length of
-   * at least {@link SIMDIntegerEncoder#BLOCK_SIZE} / 2
+   * at least {@link ForPrimitives#BLOCK_SIZE} / 2
    */
   public static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     final int nextPrimitive;

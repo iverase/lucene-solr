@@ -20,10 +20,10 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.SIMDIntegerEncoder;
+import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 /**
  * Utility class to encode/decode increasing sequences of 128 integers.
@@ -89,7 +89,7 @@ public class ForDeltaUtil {
   void skip(DataInput in) throws IOException {
     final int bitsPerValue = Byte.toUnsignedInt(in.readByte());
     if (bitsPerValue != 0) {
-      in.skipBytes(SIMDIntegerEncoder.numBytes(bitsPerValue));
+      in.skipBytes(ForPrimitives.numBytes(bitsPerValue));
     }
   }
 

@@ -26,7 +26,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SIMDIntegerEncoder;
+import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDocIdsWriter extends LuceneTestCase {
@@ -45,11 +45,11 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testRandomSIMD() throws Exception {
+  public void testRandomFor() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
@@ -59,11 +59,11 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testRandomSimilarValuesSIMD() throws Exception {
+  public void testRandomSimilarValuesFor() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 2, 32);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), (1 << bpv - 1), (1 << bpv) - 1);
@@ -88,11 +88,11 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testSortedSIMD() throws Exception {
+  public void testSortedFor() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
@@ -103,11 +103,11 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
   }
 
-  public void testSortedOneSIMD() throws Exception {
+  public void testSortedConsecutiveFor() throws Exception {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         int doc = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
         for (int i = 0; i < docIDs.length; ++i) {
@@ -123,7 +123,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       int[] docIDs;
       if (random().nextBoolean()) {
-        docIDs = new int[SIMDIntegerEncoder.BLOCK_SIZE * random().nextInt(10)];
+        docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
       } else {
         docIDs = new int[random().nextInt(5000)];
       }
@@ -139,7 +139,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    final SIMDDocIdsWriter encoder = new SIMDDocIdsWriter();
+    final ForDocIdsWriter encoder = new ForDocIdsWriter();
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
       DocIdsWriter.writeDocIds(ints, 0, ints.length, out, encoder);
       len = out.getFilePointer();

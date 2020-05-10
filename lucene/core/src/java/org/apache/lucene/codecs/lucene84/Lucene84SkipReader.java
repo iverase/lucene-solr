@@ -23,7 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.MultiLevelSkipListReader;
 import org.apache.lucene.store.IndexInput;
 
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 /**
  * Implements the skip list reader for block postings format

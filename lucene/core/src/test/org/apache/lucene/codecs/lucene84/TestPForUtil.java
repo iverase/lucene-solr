@@ -30,7 +30,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import static org.apache.lucene.util.SIMDIntegerEncoder.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
 
 public class TestPForUtil extends LuceneTestCase {
 
