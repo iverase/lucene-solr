@@ -1032,11 +1032,17 @@ final class SIMDDocIdsWriter {
 
   private static void expand32Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
+    Arrays.fill(ints, offset, offset + BLOCK_SIZE, base);
     for (int i = 0, j = offset; i < 64; i++, j+=2) {
       long l = arr[i];
-      ints[j]   = base + (int) (l >>> 32);
-      ints[j+1] = base + (int) l;
+      ints[j]   += (int) (l >>> 32);
+      ints[j+1] += (int) l;
     }
+//    for (int i = 0, j = offset; i < 64; i++, j+=2) {
+//      long l = arr[i];
+//      ints[j]   = base + (int) (l >>> 32);
+//      ints[j+1] = base + (int) l;
+//    }
   }
 
   private static void expand32(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
