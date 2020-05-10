@@ -1065,10 +1065,20 @@ final class ForDocIdsWriter {
     }
   }
 
+  // IDENTITY[i] == i
+  private static final int[] IDENTITY = new int[BLOCK_SIZE];
+  static {
+    for (int i = 0; i < BLOCK_SIZE; ++i) {
+      IDENTITY[i] = i;
+    }
+  }
+
   private static void consecutiveIntegers(DataInput in, int[] ints, int offset) throws IOException {
-    int base = in.readVInt();
-    for (int i = 0, j = offset; i < BLOCK_SIZE; i++, j++) {
-      ints[j] = base + i;
+    final int base = in.readVInt();
+    System.arraycopy(IDENTITY, 0, ints, offset, BLOCK_SIZE);
+    // This loop gets auto-vectorized
+    for (int i = offset; i < offset + BLOCK_SIZE; ++i) {
+      ints[i] += base;
     }
   }
 
