@@ -155,7 +155,7 @@ final class EdgeTree {
 
   /** Returns true if the triangle crosses any edge in this edge subtree */
   boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
-                          double ax, double ay, double bx, double by, double cx, double cy, boolean includeBoundary) {
+                          double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca, boolean includeBoundary) {
       if (minY <= max) {
         double dy = y1;
         double ey = y2;
@@ -171,26 +171,26 @@ final class EdgeTree {
 
         if (outside == false) {
           if (includeBoundary == true) {
-            if (lineCrossesLineWithBoundary(dx, dy, ex, ey, ax, ay, bx, by) ||
-                lineCrossesLineWithBoundary(dx, dy, ex, ey, bx, by, cx, cy) ||
-                lineCrossesLineWithBoundary(dx, dy, ex, ey, cx, cy, ax, ay)) {
+            if ((ab && lineCrossesLineWithBoundary(dx, dy, ex, ey, ax, ay, bx, by)) ||
+                (bc && lineCrossesLineWithBoundary(dx, dy, ex, ey, bx, by, cx, cy)) ||
+                (ca && lineCrossesLineWithBoundary(dx, dy, ex, ey, cx, cy, ax, ay))) {
               return true;
             }
           } else {
-            if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by) ||
-                lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy) ||
-                lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
+            if ((ab && lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by)) ||
+                (bc && lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy)) ||
+                (ca && lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay))) {
               return true;
             }
           }
         }
 
 
-        if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
+        if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, ab, bx, by, bc, cx, cy, ca, includeBoundary)) {
           return true;
         }
 
-        if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
+        if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, ab, bx, by, bc, cx, cy, ca, includeBoundary)) {
           return true;
         }
       }

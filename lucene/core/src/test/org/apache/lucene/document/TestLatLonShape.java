@@ -500,16 +500,16 @@ public class TestLatLonShape extends LuceneTestCase {
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
     Component2D polygon2D = LatLonGeometry.create(polygon);
     boolean intersects = polygon2D.intersectsTriangle(
-        quantizeLon(alon), quantizeLat(blat),
-        quantizeLon(blon), quantizeLat(blat),
-        quantizeLon(alon), quantizeLat(alat));
+        quantizeLon(alon), quantizeLat(blat), true,
+        quantizeLon(blon), quantizeLat(blat), true,
+        quantizeLon(alon), quantizeLat(alat), true);
 
     assertTrue(intersects);
 
     intersects = polygon2D.intersectsTriangle(
-        quantizeLon(alon), quantizeLat(blat),
-        quantizeLon(alon), quantizeLat(alat),
-        quantizeLon(blon), quantizeLat(blat));
+        quantizeLon(alon), quantizeLat(blat), true,
+        quantizeLon(alon), quantizeLat(alat), true,
+        quantizeLon(blon), quantizeLat(blat), true);
 
     assertTrue(intersects);
   }
@@ -519,79 +519,79 @@ public class TestLatLonShape extends LuceneTestCase {
     Component2D polygon2D = LatLonGeometry.create(p);
     //3 shared points
     boolean containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(1));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(1), true);
     boolean intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(1));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(1), true);
     assertTrue(intersectsTriangle);
     assertTrue(containsTriangle);
     //2 shared points
     containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(0.75));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(0.75), true);
     intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(0.75));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(0.75), true);
     assertTrue(intersectsTriangle);
     assertTrue(containsTriangle);
     //1 shared point
     containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(0.5), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(0.75), quantizeLat(0.75));
+        quantizeLon(0.5), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(0.75), quantizeLat(0.75), true);
     intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(0.75));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(0.75), true);
     assertTrue(intersectsTriangle);
     assertTrue(containsTriangle);
     // 1 shared point but out
     containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(2), quantizeLat(0),
-        quantizeLon(2), quantizeLat(2));
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(2), quantizeLat(0), true,
+        quantizeLon(2), quantizeLat(2), true);
     intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(1), quantizeLat(0.5),
-        quantizeLon(2), quantizeLat(0),
-        quantizeLon(2), quantizeLat(2));
+        quantizeLon(1), quantizeLat(0.5), true,
+        quantizeLon(2), quantizeLat(0), true,
+        quantizeLon(2), quantizeLat(2), true);
     assertTrue(intersectsTriangle);
     assertFalse(containsTriangle);
     // 1 shared point but crossing
     containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(2), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(1));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(2), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(1), true);
     intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(0.5), quantizeLat(0),
-        quantizeLon(2), quantizeLat(0.5),
-        quantizeLon(0.5), quantizeLat(1));
+        quantizeLon(0.5), quantizeLat(0), true,
+        quantizeLon(2), quantizeLat(0.5), true,
+        quantizeLon(0.5), quantizeLat(1), true);
     assertTrue(intersectsTriangle);
     assertFalse(containsTriangle);
     //share one edge
     containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(0), quantizeLat(0),
-        quantizeLon(0), quantizeLat(1),
-        quantizeLon(0.5), quantizeLat(0.5));
+        quantizeLon(0), quantizeLat(0), true,
+        quantizeLon(0), quantizeLat(1), true,
+        quantizeLon(0.5), quantizeLat(0.5), true);
     intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(0), quantizeLat(0),
-        quantizeLon(0), quantizeLat(1),
-        quantizeLon(0.5), quantizeLat(0.5));
+        quantizeLon(0), quantizeLat(0), true,
+        quantizeLon(0), quantizeLat(1), true,
+        quantizeLon(0.5), quantizeLat(0.5), true);
     assertTrue(intersectsTriangle);
     assertTrue(containsTriangle);
     //share one edge outside
     containsTriangle = polygon2D.containsTriangle(
-        quantizeLon(0), quantizeLat(1),
-        quantizeLon(1.5), quantizeLat(1.5),
-        quantizeLon(1), quantizeLat(1));
+        quantizeLon(0), quantizeLat(1), true,
+        quantizeLon(1.5), quantizeLat(1.5), true,
+        quantizeLon(1), quantizeLat(1), true);
     intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(0), quantizeLat(1),
-        quantizeLon(1.5), quantizeLat(1.5),
-        quantizeLon(1), quantizeLat(1));
+        quantizeLon(0), quantizeLat(1), true,
+        quantizeLon(1.5), quantizeLat(1.5), true,
+        quantizeLon(1), quantizeLat(1), true);
     assertTrue(intersectsTriangle);
     assertFalse(containsTriangle);
   }
@@ -653,9 +653,9 @@ public class TestLatLonShape extends LuceneTestCase {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
     Component2D polygon2D = LatLonGeometry.create(p);
     boolean intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(-5), quantizeLat(0),
-        quantizeLon(10), quantizeLat(0),
-        quantizeLon(-5), quantizeLat(-15));
+        quantizeLon(-5), quantizeLat(0), true,
+        quantizeLon(10), quantizeLat(0), true,
+        quantizeLon(-5), quantizeLat(-15), true);
     assertTrue(intersectsTriangle);
   }
 
@@ -663,9 +663,9 @@ public class TestLatLonShape extends LuceneTestCase {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
     Component2D polygon2D = LatLonGeometry.create(p);
     boolean intersectsTriangle = polygon2D.intersectsTriangle(
-        quantizeLon(-1.5), quantizeLat(0),
-        quantizeLon(1.5), quantizeLat(0),
-        quantizeLon(-1.5), quantizeLat(0));
+        quantizeLon(-1.5), quantizeLat(0), true,
+        quantizeLon(1.5), quantizeLat(0), true,
+        quantizeLon(-1.5), quantizeLat(0), true);
     assertTrue(intersectsTriangle);
   }
 

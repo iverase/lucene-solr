@@ -79,15 +79,15 @@ class Circle2D implements Component2D {
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }
     return contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
         Component2D.pointInTriangle(minX, maxX, minY, maxY, calculator.geX(), calculator.getY(), aX, aY, bX, bY, cX, cY) ||
-        calculator.intersectsLine(aX, aY, bX, bY) ||
-        calculator.intersectsLine(bX, bY, cX, cY) ||
-        calculator.intersectsLine(cX, cY, aX, aY);
+        (ab && calculator.intersectsLine(aX, aY, bX, bY)) ||
+        (bc && calculator.intersectsLine(bX, bY, cX, cY)) ||
+        (ca && calculator.intersectsLine(cX, cY, aX, aY));
   }
 
   @Override
@@ -101,7 +101,7 @@ class Circle2D implements Component2D {
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (calculator.disjoint(minX, maxX, minY, maxY)) {
       return false;
     }

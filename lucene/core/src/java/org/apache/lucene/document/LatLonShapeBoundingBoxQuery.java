@@ -81,7 +81,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
         int bX = scratchTriangle.bX;
         int cY = scratchTriangle.cY;
         int cX = scratchTriangle.cX;
-        return encodedRectangle.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+        return encodedRectangle.intersectsTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }
@@ -367,7 +367,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     /**
      * Checks if the rectangle intersects the provided triangle
      **/
-    boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
+    boolean intersectsTriangle(int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
       // query contains any triangle points
       if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
         return true;
@@ -392,9 +392,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       }
       // expensive part
       return Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY) ||
-             edgeIntersectsQuery(aX, aY, bX, bY) ||
-             edgeIntersectsQuery(bX, bY, cX, cY) ||
-             edgeIntersectsQuery(cX, cY, aX, aY);
+          (ab && edgeIntersectsQuery(aX, aY, bX, bY))||
+          (bc && edgeIntersectsQuery(bX, bY, cX, cY)) ||
+          (ca && edgeIntersectsQuery(cX, cY, aX, aY));
     }
 
     /**
@@ -469,35 +469,17 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
         }
       }
       // If any of the edges intersects an edge belonging to the shape then it cannot be within.
-      Component2D.WithinRelation relation = Component2D.WithinRelation.DISJOINT;
-      if (edgeIntersectsBox(aX, aY, bX, bY, minX, maxX, minY, maxY) == true) {
-        if (ab == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        } else {
-          relation = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
-      if (edgeIntersectsBox(bX, bY, cX, cY, minX, maxX, minY, maxY) == true) {
-        if (bc == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        } else {
-          relation = Component2D.WithinRelation.CANDIDATE;
-        }
+      if ((ab && edgeIntersectsBox(aX, aY, bX, bY, minX, maxX, minY, maxY)) ||
+          (bc && edgeIntersectsBox(bX, bY, cX, cY, minX, maxX, minY, maxY)) ||
+          (ca && edgeIntersectsBox(bX, bY, cX, cY, minX, maxX, minY, maxY))) {
+        return Component2D.WithinRelation.NOTWITHIN;
       }
 
-      if (edgeIntersectsBox(cX, cY, aX, aY, minX, maxX, minY, maxY) == true) {
-        if (ca == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        } else {
-          relation = Component2D.WithinRelation.CANDIDATE;
-        }
-      }
       // Check if shape is within the triangle
-      if (relation == Component2D.WithinRelation.CANDIDATE ||
-          Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)) {
+      if (Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)) {
         return Component2D.WithinRelation.CANDIDATE;
       }
-      return relation;
+      return Component2D.WithinRelation.DISJOINT;
     }
 
     /**

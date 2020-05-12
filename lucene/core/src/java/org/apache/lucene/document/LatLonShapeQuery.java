@@ -92,7 +92,7 @@ final class LatLonShapeQuery extends ShapeQuery {
         double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
         double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
         double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.intersectsTriangle(alon, alat, blon, blat, clon, clat);
+        return component2D.intersectsTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }
@@ -122,7 +122,7 @@ final class LatLonShapeQuery extends ShapeQuery {
         double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
         double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
         double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.containsTriangle(alon, alat, blon, blat, clon, clat);
+        return component2D.containsTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
       }
       default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
     }

@@ -118,18 +118,18 @@ final class ComponentTree implements Component2D {
 
   @Override
   public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+                                    double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (minY <= this.maxY && minX <= this.maxX) {
-      if(component.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+      if(component.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca)) {
         return true;
       }
       if (left != null) {
-        if (left.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+        if (left.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca)) {
           return true;
         }
       }
       if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
-        if (right.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+        if (right.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca)) {
           return true;
         }
       }
@@ -160,18 +160,18 @@ final class ComponentTree implements Component2D {
 
   @Override
   public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+                                  double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     if (minY <= this.maxY && minX <= this.maxX) {
-      if(component.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+      if(component.containsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca)) {
         return true;
       }
       if (left != null) {
-        if (left.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+        if (left.containsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca)) {
           return true;
         }
       }
       if (right != null && ((splitX == false && maxY >= this.component.getMinY()) || (splitX && maxX >= this.component.getMinX()))) {
-        if (right.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY)) {
+        if (right.containsTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca)) {
           return true;
         }
       }

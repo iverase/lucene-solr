@@ -834,8 +834,9 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             double bX = encoder.decodeX(decodedTriangle.bX);
             double cY = encoder.decodeY(decodedTriangle.cY);
             double cX = encoder.decodeX(decodedTriangle.cX);
-            intersects = query.intersectsTriangle(aX, aY, bX, bY, cX, cY);
-            contains = query.containsTriangle(aX, aY, bX, bY, cX, cY);
+            // we ignore the value from edges and set it always to true
+            intersects = query.intersectsTriangle(aX, aY, true, bX, bY, true, cX, cY, true);
+            contains = query.containsTriangle(aX, aY, true, bX, bY, true, cX, cY, true);
             break;
           }
           default:
