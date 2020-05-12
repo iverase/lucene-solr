@@ -471,7 +471,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       // If any of the edges intersects an edge belonging to the shape then it cannot be within.
       if ((ab && edgeIntersectsBox(aX, aY, bX, bY, minX, maxX, minY, maxY)) ||
           (bc && edgeIntersectsBox(bX, bY, cX, cY, minX, maxX, minY, maxY)) ||
-          (ca && edgeIntersectsBox(bX, bY, cX, cY, minX, maxX, minY, maxY))) {
+          (ca && edgeIntersectsBox(cX, cY, aX, aY, minX, maxX, minY, maxY))) {
         return Component2D.WithinRelation.NOTWITHIN;
       }
 
