@@ -128,7 +128,7 @@ public class BKDWriter implements Closeable {
   final BytesRef scratchBytesRef2 = new BytesRef();
   final int[] commonPrefixLengths;
 
-  final private  ForDocIdsWriter encoder = new ForDocIdsWriter();
+  final private  ForDocIdsWriter encoder;
 
   protected final FixedBitSet docsSeen;
 
@@ -189,6 +189,7 @@ public class BKDWriter implements Closeable {
     }
 
     this.maxMBSortInHeap = maxMBSortInHeap;
+    this.encoder = new ForDocIdsWriter(maxPointsInLeafNode);
   }
 
   public static void verifyParams(int numDims, int numIndexDims, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) {

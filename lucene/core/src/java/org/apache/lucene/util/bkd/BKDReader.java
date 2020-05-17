@@ -484,7 +484,7 @@ public final class BKDReader extends PointValues implements Accountable {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
-    final ForDocIdsWriter decoder = new ForDocIdsWriter();
+    final ForDocIdsWriter decoder;
 
     public IntersectState(IndexInput in, int numDims,
                           int packedBytesLength,
@@ -500,6 +500,7 @@ public final class BKDReader extends PointValues implements Accountable {
       this.scratchMinIndexPackedValue = new byte[packedIndexBytesLength];
       this.scratchMaxIndexPackedValue = new byte[packedIndexBytesLength];
       this.index = indexVisitor;
+      decoder = new ForDocIdsWriter(maxPointsInLeafNode);
     }
   }
 

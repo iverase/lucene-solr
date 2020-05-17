@@ -49,7 +49,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[64 * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
@@ -63,7 +63,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[64 * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 2, 32);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), (1 << bpv - 1), (1 << bpv) - 1);
@@ -92,7 +92,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[64 * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
@@ -107,7 +107,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
+        int[] docIDs = new int[64 * random().nextInt(10)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         int doc = TestUtil.nextInt(random(), 0, (1 << bpv) - 1);
         for (int i = 0; i < docIDs.length; ++i) {
@@ -123,7 +123,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       int[] docIDs;
       if (random().nextBoolean()) {
-        docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
+        docIDs = new int[64 * random().nextInt(10)];
       } else {
         docIDs = new int[random().nextInt(5000)];
       }
@@ -139,7 +139,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    final ForDocIdsWriter encoder = new ForDocIdsWriter();
+    final ForDocIdsWriter encoder = new ForDocIdsWriter(ints.length);
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
       DocIdsWriter.writeDocIds(ints, 0, ints.length, out, encoder);
       len = out.getFilePointer();
