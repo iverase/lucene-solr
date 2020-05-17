@@ -36,7 +36,7 @@ class DocIdsWriter {
     // if the number of points is a multiple of BLOCK_SIZE, then use
     // For encoder to get better encoding compression and most of the times
     // better decoding speed.
-    if (count > 0 && count % 64 == 0) {
+    if (count > 0 && count % 512 == 0) {
       out.writeByte(SIMD);
       //for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
         encoder.encode(count, docIds, start, out);
