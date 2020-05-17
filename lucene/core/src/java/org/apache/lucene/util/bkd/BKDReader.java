@@ -500,7 +500,7 @@ public final class BKDReader extends PointValues implements Accountable {
       this.scratchMinIndexPackedValue = new byte[packedIndexBytesLength];
       this.scratchMaxIndexPackedValue = new byte[packedIndexBytesLength];
       this.index = indexVisitor;
-      decoder = new ForDocIdsWriter(maxPointsInLeafNode);
+      this.decoder = new ForDocIdsWriter(maxPointsInLeafNode);
     }
   }
 

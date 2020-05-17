@@ -361,7 +361,7 @@ public class ForPrimitives2 {
   public static void decode8(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
     final int numLongs = 8 * blockSize / 64;
-    in.readLELongs(tmp, 0, numLongs);
+    in.readLELongs(longs, 0, numLongs);
   }
 
   /**
@@ -560,7 +560,7 @@ public class ForPrimitives2 {
   public static void decode16(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
     final int numLongs = 16 * blockSize / 64;
-    in.readLELongs(tmp, 0, numLongs);
+    in.readLELongs(longs, 0, numLongs);
   }
 
   /**
