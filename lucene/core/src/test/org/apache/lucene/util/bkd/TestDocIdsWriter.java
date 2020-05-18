@@ -139,7 +139,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    final ForDocIdsWriter encoder = new ForDocIdsWriter(ints.length);
+    final ForDocIdsWriter encoder = new ForDocIdsWriter();
     try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
       DocIdsWriter.writeDocIds(ints, 0, ints.length, out, encoder);
       len = out.getFilePointer();

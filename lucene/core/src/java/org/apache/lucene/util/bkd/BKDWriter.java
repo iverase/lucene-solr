@@ -189,7 +189,7 @@ public class BKDWriter implements Closeable {
     }
 
     this.maxMBSortInHeap = maxMBSortInHeap;
-    this.encoder = new ForDocIdsWriter(maxPointsInLeafNode);
+    this.encoder = new ForDocIdsWriter();
   }
 
   public static void verifyParams(int numDims, int numIndexDims, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) {

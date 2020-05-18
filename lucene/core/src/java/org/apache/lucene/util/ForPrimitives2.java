@@ -35,9 +35,35 @@ import org.apache.lucene.store.DataOutput;
  */
 public class ForPrimitives2 {
 
-  //public static final int BLOCK_SIZE = 128;
-  //(int)(Math.log(128) / Math.log(2))
-  //private static final int BLOCK_SIZE_LOG2 = 7;
+  public static final ForPrimitives2 INT64 = new ForPrimitives2(64);
+  public static final ForPrimitives2 INT128 = new ForPrimitives2(128);
+  public static final ForPrimitives2 INT256 = new ForPrimitives2(256);
+  public static final ForPrimitives2 INT512 = new ForPrimitives2(512);
+  public static final ForPrimitives2 INT1024 = new ForPrimitives2(1024);
+  public static final ForPrimitives2 INT2048 = new ForPrimitives2(2048);
+
+  private final int blockSize;
+  private final int block_size_log2;
+  private final int blockFactor;
+
+  private final int blockSizeDividedBy2;
+  private final int blockSizeDividedBy4;
+  private final int blockSizeDividedBy8;
+
+  private ForPrimitives2(int blockSize) {
+    assert blockSize >= 64 && ((blockSize & (blockSize - 1)) == 0);
+    this.blockSize = blockSize;
+    this.blockFactor = blockSize / 64;
+    this.block_size_log2 = (int) (Math.log(blockSize) / Math.log(2));
+
+    this.blockSizeDividedBy2 = blockSize / 2;
+    this.blockSizeDividedBy4 = blockSize / 4;
+    this.blockSizeDividedBy8 = blockSize / 8;
+  }
+
+  public int blockSize() {
+    return blockSize;
+  }
 
   private static long expandMask32(long mask32) {
     return mask32 | (mask32 << 32);
@@ -67,9 +93,8 @@ public class ForPrimitives2 {
   /**
    * Number of bytes required to encode 128 integers of {@code bitsPerValue} bits per value.
    */
-  public static int numBytes(int blocksize, int bitsPerValue) throws IOException {
-    int log2 = (int)(Math.log(blocksize) / Math.log(2));
-    return bitsPerValue << (log2 - 3);
+  public int numBytes(int bitsPerValue) throws IOException {
+    return bitsPerValue << (block_size_log2 - 3);
   }
 
   /**
@@ -79,7 +104,7 @@ public class ForPrimitives2 {
    */
   private static void shiftLongs(long[] a, int count, long[] b, int bi, int shift, long mask) {
     for (int i = 0; i < count; ++i) {
-      b[bi+i] = (a[i] >>> shift) & mask;
+      b[bi + i] = (a[i] >>> shift) & mask;
     }
   }
 
@@ -134,24 +159,24 @@ public class ForPrimitives2 {
    * at {@code bitsPerValue} or lower. The {@code tml} long[] must have a length of
    * at least {@link ForPrimitives2} / 2
    */
-  public static void encode(int blockSize, long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
+  public  void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     final int nextPrimitive;
     final int numLongs;
     if (bitsPerValue <= 8) {
       nextPrimitive = 8;
-      numLongs = blockSize / 8;
-      collapse8(blockSize, longs);
+      numLongs =blockSizeDividedBy8;
+      collapse8(longs);
     } else if (bitsPerValue <= 16) {
       nextPrimitive = 16;
-      numLongs = blockSize / 4;
-      collapse16(blockSize, longs);
+      numLongs = blockSizeDividedBy4;
+      collapse16(longs);
     } else {
       nextPrimitive = 32;
-      numLongs = blockSize / 2;
-      collapse32(blockSize, longs);
+      numLongs = blockSizeDividedBy2;
+      collapse32(longs);
     }
 
-    final int numLongsPerShift = bitsPerValue * blockSize / 64;// bitsPerValue * 2;
+    final int numLongsPerShift = bitsPerValue * blockFactor;
     int idx = 0;
     int shift = nextPrimitive - bitsPerValue;
     for (int i = 0; i < numLongsPerShift; ++i) {
@@ -208,24 +233,23 @@ public class ForPrimitives2 {
     }
   }
 
-  private static void collapse8(int count, long[] arr) {
-    int x = count / 8;
-    for (int i = 0; i < x; ++i) {
-      arr[i] = (arr[i] << 56) | (arr[x+i] << 48) | (arr[2*x+i] << 40) | (arr[3*x+i] << 32) | (arr[4*x+i] << 24) | (arr[5*x+i] << 16) | (arr[6*x+i] << 8) | arr[7*x+i];
+  private void collapse8(long[] arr) {
+    for (int i = 0; i < blockSizeDividedBy8; ++i) {
+      arr[i] = (arr[i] << 56) | (arr[blockSizeDividedBy8 + i] << 48) | (arr[2 * blockSizeDividedBy8 + i] << 40) |
+          (arr[3 * blockSizeDividedBy8 + i] << 32) | (arr[4 * blockSizeDividedBy8 + i] << 24) | (arr[5 * blockSizeDividedBy8 + i] << 16) |
+          (arr[6 * blockSizeDividedBy8 + i] << 8) | arr[7 * blockSizeDividedBy8 + i];
     }
   }
 
-  private static void collapse16(int count, long[] arr) {
-    int x = count / 4;
-    for (int i = 0; i < x; ++i) {
-      arr[i] = (arr[i] << 48) | (arr[x+i] << 32) | (arr[2*x+i] << 16) | arr[3*x+i];
+  private void collapse16(long[] arr) {
+    for (int i = 0; i < blockSizeDividedBy4; ++i) {
+      arr[i] = (arr[i] << 48) | (arr[blockSizeDividedBy4 + i] << 32) | (arr[2 * blockSizeDividedBy4 + i] << 16) | arr[3 * blockSizeDividedBy4 + i];
     }
   }
 
-  private static void collapse32(int count, long[] arr) {
-    int x = count / 2;
-    for (int i = 0; i < x; ++i) {
-      arr[i] = (arr[i] << 32) | arr[x+i];
+  private void collapse32(long[] arr) {
+    for (int i = 0; i < blockSizeDividedBy2; ++i) {
+      arr[i] = (arr[i] << 32) | arr[blockSizeDividedBy2 + i];
     }
   }
 
@@ -233,9 +257,8 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 1
    * into {@code long} with packed representation.
    */
-  public static void decode1(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 1 * blockSize / 64;
+  public void decode1(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 7, MASK8_1);
     shiftLongs(tmp, numLongs, longs, numLongs, 6, MASK8_1);
@@ -243,41 +266,39 @@ public class ForPrimitives2 {
     shiftLongs(tmp, numLongs, longs, 3 * numLongs, 4, MASK8_1);
     shiftLongs(tmp, numLongs, longs, 4 * numLongs, 3, MASK8_1);
     shiftLongs(tmp, numLongs, longs, 5 * numLongs, 2, MASK8_1);
-    shiftLongs(tmp, numLongs, longs, 6*numLongs, 1, MASK8_1);
-    shiftLongs(tmp, numLongs, longs, 7*numLongs, 0, MASK8_1);
+    shiftLongs(tmp, numLongs, longs, 6 * numLongs, 1, MASK8_1);
+    shiftLongs(tmp, numLongs, longs, 7 * numLongs, 0, MASK8_1);
   }
 
   /**
    * Decode 128 integers with highest significant bit of 2
    * into {@code long} with packed representation.
    */
-  public static void decode2(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 2 * blockSize / 64;
+  public void decode2(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 2 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 6, MASK8_2);
     shiftLongs(tmp, numLongs, longs, numLongs, 4, MASK8_2);
-    shiftLongs(tmp, numLongs, longs, 2*numLongs, 2, MASK8_2);
-    shiftLongs(tmp, numLongs, longs, 3*numLongs, 0, MASK8_2);
+    shiftLongs(tmp, numLongs, longs, 2 * numLongs, 2, MASK8_2);
+    shiftLongs(tmp, numLongs, longs, 3 * numLongs, 0, MASK8_2);
   }
 
   /**
    * Decode 128 integers with highest significant bit of 3
    * into {@code long} with packed representation.
    */
-  public static void decode3(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 3 * blockSize / 64;
+  public void decode3(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 3 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 5, MASK8_3);
     shiftLongs(tmp, numLongs, longs, numLongs, 2, MASK8_3);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 2 * numLongs; iter < blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 2) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_2) << 1;
-      l0 |= (tmp[tmpIdx+1] >>> 1) & MASK8_1;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK8_1) << 2;
-      l1 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
-      longs[longsIdx+1] = l1;
+    for (int iter = 0, tmpIdx = 0, longsIdx = 2 * numLongs; iter < blockFactor; ++iter, tmpIdx += 3, longsIdx += 2) {
+      long l0 = (tmp[tmpIdx + 0] & MASK8_2) << 1;
+      l0 |= (tmp[tmpIdx + 1] >>> 1) & MASK8_1;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK8_1) << 2;
+      l1 |= (tmp[tmpIdx + 2] & MASK8_2) << 0;
+      longs[longsIdx + 1] = l1;
     }
   }
 
@@ -285,9 +306,8 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 4
    * into {@code long} with packed representation.
    */
-  public static void decode4(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 4 * blockSize / 64;
+  public void decode4(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 4 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 4, MASK8_4);
     shiftLongs(tmp, numLongs, longs, numLongs, 0, MASK8_4);
@@ -297,22 +317,21 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 5
    * into {@code long} with packed representation.
    */
-  public static void decode5(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 5 * blockSize / 64;
+  public void decode5(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 5 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 3, MASK8_5);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 5, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_3) << 2;
-      l0 |= (tmp[tmpIdx+1] >>> 1) & MASK8_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK8_1) << 4;
-      l1 |= (tmp[tmpIdx+2] & MASK8_3) << 1;
-      l1 |= (tmp[tmpIdx+3] >>> 2) & MASK8_1;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+3] & MASK8_2) << 3;
-      l2 |= (tmp[tmpIdx+4] & MASK8_3) << 0;
-      longs[longsIdx+2] = l2;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 5, longsIdx += 3) {
+      long l0 = (tmp[tmpIdx + 0] & MASK8_3) << 2;
+      l0 |= (tmp[tmpIdx + 1] >>> 1) & MASK8_2;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK8_1) << 4;
+      l1 |= (tmp[tmpIdx + 2] & MASK8_3) << 1;
+      l1 |= (tmp[tmpIdx + 3] >>> 2) & MASK8_1;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 3] & MASK8_2) << 3;
+      l2 |= (tmp[tmpIdx + 4] & MASK8_3) << 0;
+      longs[longsIdx + 2] = l2;
     }
   }
 
@@ -320,16 +339,15 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 6
    * into {@code long} with packed representation.
    */
-  public static void decode6(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 6 * blockSize / 64;
+  public void decode6(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 6 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 2, MASK8_6);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_2) << 4;
-      l0 |= (tmp[tmpIdx+1] & MASK8_2) << 2;
-      l0 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
-      longs[longsIdx+0] = l0;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockFactor; ++iter, tmpIdx += 3, longsIdx += 1) {
+      long l0 = (tmp[tmpIdx + 0] & MASK8_2) << 4;
+      l0 |= (tmp[tmpIdx + 1] & MASK8_2) << 2;
+      l0 |= (tmp[tmpIdx + 2] & MASK8_2) << 0;
+      longs[longsIdx + 0] = l0;
     }
   }
 
@@ -337,20 +355,19 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 7
    * into {@code long} with packed representation.
    */
-  public static void decode7(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 7 * blockSize / 64;
+  public void decode7(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 7 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 1, MASK8_7);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 7, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_1) << 6;
-      l0 |= (tmp[tmpIdx+1] & MASK8_1) << 5;
-      l0 |= (tmp[tmpIdx+2] & MASK8_1) << 4;
-      l0 |= (tmp[tmpIdx+3] & MASK8_1) << 3;
-      l0 |= (tmp[tmpIdx+4] & MASK8_1) << 2;
-      l0 |= (tmp[tmpIdx+5] & MASK8_1) << 1;
-      l0 |= (tmp[tmpIdx+6] & MASK8_1) << 0;
-      longs[longsIdx+0] = l0;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 7, longsIdx += 1) {
+      long l0 = (tmp[tmpIdx + 0] & MASK8_1) << 6;
+      l0 |= (tmp[tmpIdx + 1] & MASK8_1) << 5;
+      l0 |= (tmp[tmpIdx + 2] & MASK8_1) << 4;
+      l0 |= (tmp[tmpIdx + 3] & MASK8_1) << 3;
+      l0 |= (tmp[tmpIdx + 4] & MASK8_1) << 2;
+      l0 |= (tmp[tmpIdx + 5] & MASK8_1) << 1;
+      l0 |= (tmp[tmpIdx + 6] & MASK8_1) << 0;
+      longs[longsIdx + 0] = l0;
     }
   }
 
@@ -358,9 +375,8 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 8
    * into {@code long} with packed representation.
    */
-  public static void decode8(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 8 * blockSize / 64;
+  public void decode8(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 8 * blockFactor;
     in.readLELongs(longs, 0, numLongs);
   }
 
@@ -368,34 +384,33 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 9
    * into {@code long} with packed representation.
    */
-  public static void decode9(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 9 * blockSize / 64;
+  public void decode9(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 9 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 7, MASK16_9);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 9, longsIdx += 7) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_7) << 2;
-      l0 |= (tmp[tmpIdx+1] >>> 5) & MASK16_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK16_5) << 4;
-      l1 |= (tmp[tmpIdx+2] >>> 3) & MASK16_4;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+2] & MASK16_3) << 6;
-      l2 |= (tmp[tmpIdx+3] >>> 1) & MASK16_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+3] & MASK16_1) << 8;
-      l3 |= (tmp[tmpIdx+4] & MASK16_7) << 1;
-      l3 |= (tmp[tmpIdx+5] >>> 6) & MASK16_1;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+5] & MASK16_6) << 3;
-      l4 |= (tmp[tmpIdx+6] >>> 4) & MASK16_3;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+6] & MASK16_4) << 5;
-      l5 |= (tmp[tmpIdx+7] >>> 2) & MASK16_5;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+7] & MASK16_2) << 7;
-      l6 |= (tmp[tmpIdx+8] & MASK16_7) << 0;
-      longs[longsIdx+6] = l6;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 9, longsIdx += 7) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_7) << 2;
+      l0 |= (tmp[tmpIdx + 1] >>> 5) & MASK16_2;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK16_5) << 4;
+      l1 |= (tmp[tmpIdx + 2] >>> 3) & MASK16_4;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 2] & MASK16_3) << 6;
+      l2 |= (tmp[tmpIdx + 3] >>> 1) & MASK16_6;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 3] & MASK16_1) << 8;
+      l3 |= (tmp[tmpIdx + 4] & MASK16_7) << 1;
+      l3 |= (tmp[tmpIdx + 5] >>> 6) & MASK16_1;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 5] & MASK16_6) << 3;
+      l4 |= (tmp[tmpIdx + 6] >>> 4) & MASK16_3;
+      longs[longsIdx + 4] = l4;
+      long l5 = (tmp[tmpIdx + 6] & MASK16_4) << 5;
+      l5 |= (tmp[tmpIdx + 7] >>> 2) & MASK16_5;
+      longs[longsIdx + 5] = l5;
+      long l6 = (tmp[tmpIdx + 7] & MASK16_2) << 7;
+      l6 |= (tmp[tmpIdx + 8] & MASK16_7) << 0;
+      longs[longsIdx + 6] = l6;
     }
   }
 
@@ -403,22 +418,21 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 10
    * into {@code long} with packed representation.
    */
-  public static void decode10(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 10 * blockSize / 64;
+  public void decode10(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 10 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 6, MASK16_10);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockSize / 64; ++iter, tmpIdx += 5, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_6) << 4;
-      l0 |= (tmp[tmpIdx+1] >>> 2) & MASK16_4;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK16_2) << 8;
-      l1 |= (tmp[tmpIdx+2] & MASK16_6) << 2;
-      l1 |= (tmp[tmpIdx+3] >>> 4) & MASK16_2;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+3] & MASK16_4) << 6;
-      l2 |= (tmp[tmpIdx+4] & MASK16_6) << 0;
-      longs[longsIdx+2] = l2;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockFactor; ++iter, tmpIdx += 5, longsIdx += 3) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_6) << 4;
+      l0 |= (tmp[tmpIdx + 1] >>> 2) & MASK16_4;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK16_2) << 8;
+      l1 |= (tmp[tmpIdx + 2] & MASK16_6) << 2;
+      l1 |= (tmp[tmpIdx + 3] >>> 4) & MASK16_2;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 3] & MASK16_4) << 6;
+      l2 |= (tmp[tmpIdx + 4] & MASK16_6) << 0;
+      longs[longsIdx + 2] = l2;
     }
   }
 
@@ -426,32 +440,31 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 11
    * into {@code long} with packed representation.
    */
-  public static void decode11(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 11 * blockSize / 64;
+  public void decode11(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 11 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 5, MASK16_11);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 11, longsIdx += 5) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_5) << 6;
-      l0 |= (tmp[tmpIdx+1] & MASK16_5) << 1;
-      l0 |= (tmp[tmpIdx+2] >>> 4) & MASK16_1;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+2] & MASK16_4) << 7;
-      l1 |= (tmp[tmpIdx+3] & MASK16_5) << 2;
-      l1 |= (tmp[tmpIdx+4] >>> 3) & MASK16_2;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+4] & MASK16_3) << 8;
-      l2 |= (tmp[tmpIdx+5] & MASK16_5) << 3;
-      l2 |= (tmp[tmpIdx+6] >>> 2) & MASK16_3;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+6] & MASK16_2) << 9;
-      l3 |= (tmp[tmpIdx+7] & MASK16_5) << 4;
-      l3 |= (tmp[tmpIdx+8] >>> 1) & MASK16_4;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+8] & MASK16_1) << 10;
-      l4 |= (tmp[tmpIdx+9] & MASK16_5) << 5;
-      l4 |= (tmp[tmpIdx+10] & MASK16_5) << 0;
-      longs[longsIdx+4] = l4;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 11, longsIdx += 5) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_5) << 6;
+      l0 |= (tmp[tmpIdx + 1] & MASK16_5) << 1;
+      l0 |= (tmp[tmpIdx + 2] >>> 4) & MASK16_1;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 2] & MASK16_4) << 7;
+      l1 |= (tmp[tmpIdx + 3] & MASK16_5) << 2;
+      l1 |= (tmp[tmpIdx + 4] >>> 3) & MASK16_2;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 4] & MASK16_3) << 8;
+      l2 |= (tmp[tmpIdx + 5] & MASK16_5) << 3;
+      l2 |= (tmp[tmpIdx + 6] >>> 2) & MASK16_3;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 6] & MASK16_2) << 9;
+      l3 |= (tmp[tmpIdx + 7] & MASK16_5) << 4;
+      l3 |= (tmp[tmpIdx + 8] >>> 1) & MASK16_4;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 8] & MASK16_1) << 10;
+      l4 |= (tmp[tmpIdx + 9] & MASK16_5) << 5;
+      l4 |= (tmp[tmpIdx + 10] & MASK16_5) << 0;
+      longs[longsIdx + 4] = l4;
     }
   }
 
@@ -459,16 +472,15 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 12
    * into {@code long} with packed representation.
    */
-  public static void decode12(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 12 * blockSize / 64;
+  public void decode12(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 12 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 4, MASK16_12);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_4) << 8;
-      l0 |= (tmp[tmpIdx+1] & MASK16_4) << 4;
-      l0 |= (tmp[tmpIdx+2] & MASK16_4) << 0;
-      longs[longsIdx+0] = l0;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4 * blockFactor; ++iter, tmpIdx += 3, longsIdx += 1) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_4) << 8;
+      l0 |= (tmp[tmpIdx + 1] & MASK16_4) << 4;
+      l0 |= (tmp[tmpIdx + 2] & MASK16_4) << 0;
+      longs[longsIdx + 0] = l0;
     }
   }
 
@@ -476,30 +488,29 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 13
    * into {@code long} with packed representation.
    */
-  public static void decode13(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 13 * blockSize / 64;
+  public void decode13(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 13 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 3, MASK16_13);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 13, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_3) << 10;
-      l0 |= (tmp[tmpIdx+1] & MASK16_3) << 7;
-      l0 |= (tmp[tmpIdx+2] & MASK16_3) << 4;
-      l0 |= (tmp[tmpIdx+3] & MASK16_3) << 1;
-      l0 |= (tmp[tmpIdx+4] >>> 2) & MASK16_1;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+4] & MASK16_2) << 11;
-      l1 |= (tmp[tmpIdx+5] & MASK16_3) << 8;
-      l1 |= (tmp[tmpIdx+6] & MASK16_3) << 5;
-      l1 |= (tmp[tmpIdx+7] & MASK16_3) << 2;
-      l1 |= (tmp[tmpIdx+8] >>> 1) & MASK16_2;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+8] & MASK16_1) << 12;
-      l2 |= (tmp[tmpIdx+9] & MASK16_3) << 9;
-      l2 |= (tmp[tmpIdx+10] & MASK16_3) << 6;
-      l2 |= (tmp[tmpIdx+11] & MASK16_3) << 3;
-      l2 |= (tmp[tmpIdx+12] & MASK16_3) << 0;
-      longs[longsIdx+2] = l2;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 13, longsIdx += 3) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_3) << 10;
+      l0 |= (tmp[tmpIdx + 1] & MASK16_3) << 7;
+      l0 |= (tmp[tmpIdx + 2] & MASK16_3) << 4;
+      l0 |= (tmp[tmpIdx + 3] & MASK16_3) << 1;
+      l0 |= (tmp[tmpIdx + 4] >>> 2) & MASK16_1;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 4] & MASK16_2) << 11;
+      l1 |= (tmp[tmpIdx + 5] & MASK16_3) << 8;
+      l1 |= (tmp[tmpIdx + 6] & MASK16_3) << 5;
+      l1 |= (tmp[tmpIdx + 7] & MASK16_3) << 2;
+      l1 |= (tmp[tmpIdx + 8] >>> 1) & MASK16_2;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 8] & MASK16_1) << 12;
+      l2 |= (tmp[tmpIdx + 9] & MASK16_3) << 9;
+      l2 |= (tmp[tmpIdx + 10] & MASK16_3) << 6;
+      l2 |= (tmp[tmpIdx + 11] & MASK16_3) << 3;
+      l2 |= (tmp[tmpIdx + 12] & MASK16_3) << 0;
+      longs[longsIdx + 2] = l2;
     }
   }
 
@@ -507,20 +518,19 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 14
    * into {@code long} with packed representation.
    */
-  public static void decode14(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 14 * blockSize / 64;
+  public void decode14(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 14 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 2, MASK16_14);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*blockSize / 64; ++iter, tmpIdx += 7, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_2) << 12;
-      l0 |= (tmp[tmpIdx+1] & MASK16_2) << 10;
-      l0 |= (tmp[tmpIdx+2] & MASK16_2) << 8;
-      l0 |= (tmp[tmpIdx+3] & MASK16_2) << 6;
-      l0 |= (tmp[tmpIdx+4] & MASK16_2) << 4;
-      l0 |= (tmp[tmpIdx+5] & MASK16_2) << 2;
-      l0 |= (tmp[tmpIdx+6] & MASK16_2) << 0;
-      longs[longsIdx+0] = l0;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockFactor; ++iter, tmpIdx += 7, longsIdx += 1) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_2) << 12;
+      l0 |= (tmp[tmpIdx + 1] & MASK16_2) << 10;
+      l0 |= (tmp[tmpIdx + 2] & MASK16_2) << 8;
+      l0 |= (tmp[tmpIdx + 3] & MASK16_2) << 6;
+      l0 |= (tmp[tmpIdx + 4] & MASK16_2) << 4;
+      l0 |= (tmp[tmpIdx + 5] & MASK16_2) << 2;
+      l0 |= (tmp[tmpIdx + 6] & MASK16_2) << 0;
+      longs[longsIdx + 0] = l0;
     }
   }
 
@@ -528,28 +538,27 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 15
    * into {@code long} with packed representation.
    */
-  public static void decode15(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 15 * blockSize / 64;
+  public void decode15(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 15 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 1, MASK16_15);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 15, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_1) << 14;
-      l0 |= (tmp[tmpIdx+1] & MASK16_1) << 13;
-      l0 |= (tmp[tmpIdx+2] & MASK16_1) << 12;
-      l0 |= (tmp[tmpIdx+3] & MASK16_1) << 11;
-      l0 |= (tmp[tmpIdx+4] & MASK16_1) << 10;
-      l0 |= (tmp[tmpIdx+5] & MASK16_1) << 9;
-      l0 |= (tmp[tmpIdx+6] & MASK16_1) << 8;
-      l0 |= (tmp[tmpIdx+7] & MASK16_1) << 7;
-      l0 |= (tmp[tmpIdx+8] & MASK16_1) << 6;
-      l0 |= (tmp[tmpIdx+9] & MASK16_1) << 5;
-      l0 |= (tmp[tmpIdx+10] & MASK16_1) << 4;
-      l0 |= (tmp[tmpIdx+11] & MASK16_1) << 3;
-      l0 |= (tmp[tmpIdx+12] & MASK16_1) << 2;
-      l0 |= (tmp[tmpIdx+13] & MASK16_1) << 1;
-      l0 |= (tmp[tmpIdx+14] & MASK16_1) << 0;
-      longs[longsIdx+0] = l0;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 15, longsIdx += 1) {
+      long l0 = (tmp[tmpIdx + 0] & MASK16_1) << 14;
+      l0 |= (tmp[tmpIdx + 1] & MASK16_1) << 13;
+      l0 |= (tmp[tmpIdx + 2] & MASK16_1) << 12;
+      l0 |= (tmp[tmpIdx + 3] & MASK16_1) << 11;
+      l0 |= (tmp[tmpIdx + 4] & MASK16_1) << 10;
+      l0 |= (tmp[tmpIdx + 5] & MASK16_1) << 9;
+      l0 |= (tmp[tmpIdx + 6] & MASK16_1) << 8;
+      l0 |= (tmp[tmpIdx + 7] & MASK16_1) << 7;
+      l0 |= (tmp[tmpIdx + 8] & MASK16_1) << 6;
+      l0 |= (tmp[tmpIdx + 9] & MASK16_1) << 5;
+      l0 |= (tmp[tmpIdx + 10] & MASK16_1) << 4;
+      l0 |= (tmp[tmpIdx + 11] & MASK16_1) << 3;
+      l0 |= (tmp[tmpIdx + 12] & MASK16_1) << 2;
+      l0 |= (tmp[tmpIdx + 13] & MASK16_1) << 1;
+      l0 |= (tmp[tmpIdx + 14] & MASK16_1) << 0;
+      longs[longsIdx + 0] = l0;
     }
   }
 
@@ -557,9 +566,8 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 16
    * into {@code long} with packed representation.
    */
-  public static void decode16(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 16 * blockSize / 64;
+  public void decode16(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 16 * blockFactor;
     in.readLELongs(longs, 0, numLongs);
   }
 
@@ -567,58 +575,57 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 17
    * into {@code long} with packed representation.
    */
-  public static void decode17(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 17 * blockSize / 64;
+  public void decode17(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 17 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 15, MASK32_17);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 17, longsIdx += 15) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_15) << 2;
-      l0 |= (tmp[tmpIdx+1] >>> 13) & MASK32_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK32_13) << 4;
-      l1 |= (tmp[tmpIdx+2] >>> 11) & MASK32_4;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+2] & MASK32_11) << 6;
-      l2 |= (tmp[tmpIdx+3] >>> 9) & MASK32_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+3] & MASK32_9) << 8;
-      l3 |= (tmp[tmpIdx+4] >>> 7) & MASK32_8;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+4] & MASK32_7) << 10;
-      l4 |= (tmp[tmpIdx+5] >>> 5) & MASK32_10;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+5] & MASK32_5) << 12;
-      l5 |= (tmp[tmpIdx+6] >>> 3) & MASK32_12;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+6] & MASK32_3) << 14;
-      l6 |= (tmp[tmpIdx+7] >>> 1) & MASK32_14;
-      longs[longsIdx+6] = l6;
-      long l7 = (tmp[tmpIdx+7] & MASK32_1) << 16;
-      l7 |= (tmp[tmpIdx+8] & MASK32_15) << 1;
-      l7 |= (tmp[tmpIdx+9] >>> 14) & MASK32_1;
-      longs[longsIdx+7] = l7;
-      long l8 = (tmp[tmpIdx+9] & MASK32_14) << 3;
-      l8 |= (tmp[tmpIdx+10] >>> 12) & MASK32_3;
-      longs[longsIdx+8] = l8;
-      long l9 = (tmp[tmpIdx+10] & MASK32_12) << 5;
-      l9 |= (tmp[tmpIdx+11] >>> 10) & MASK32_5;
-      longs[longsIdx+9] = l9;
-      long l10 = (tmp[tmpIdx+11] & MASK32_10) << 7;
-      l10 |= (tmp[tmpIdx+12] >>> 8) & MASK32_7;
-      longs[longsIdx+10] = l10;
-      long l11 = (tmp[tmpIdx+12] & MASK32_8) << 9;
-      l11 |= (tmp[tmpIdx+13] >>> 6) & MASK32_9;
-      longs[longsIdx+11] = l11;
-      long l12 = (tmp[tmpIdx+13] & MASK32_6) << 11;
-      l12 |= (tmp[tmpIdx+14] >>> 4) & MASK32_11;
-      longs[longsIdx+12] = l12;
-      long l13 = (tmp[tmpIdx+14] & MASK32_4) << 13;
-      l13 |= (tmp[tmpIdx+15] >>> 2) & MASK32_13;
-      longs[longsIdx+13] = l13;
-      long l14 = (tmp[tmpIdx+15] & MASK32_2) << 15;
-      l14 |= (tmp[tmpIdx+16] & MASK32_15) << 0;
-      longs[longsIdx+14] = l14;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 17, longsIdx += 15) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_15) << 2;
+      l0 |= (tmp[tmpIdx + 1] >>> 13) & MASK32_2;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK32_13) << 4;
+      l1 |= (tmp[tmpIdx + 2] >>> 11) & MASK32_4;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 2] & MASK32_11) << 6;
+      l2 |= (tmp[tmpIdx + 3] >>> 9) & MASK32_6;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 3] & MASK32_9) << 8;
+      l3 |= (tmp[tmpIdx + 4] >>> 7) & MASK32_8;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 4] & MASK32_7) << 10;
+      l4 |= (tmp[tmpIdx + 5] >>> 5) & MASK32_10;
+      longs[longsIdx + 4] = l4;
+      long l5 = (tmp[tmpIdx + 5] & MASK32_5) << 12;
+      l5 |= (tmp[tmpIdx + 6] >>> 3) & MASK32_12;
+      longs[longsIdx + 5] = l5;
+      long l6 = (tmp[tmpIdx + 6] & MASK32_3) << 14;
+      l6 |= (tmp[tmpIdx + 7] >>> 1) & MASK32_14;
+      longs[longsIdx + 6] = l6;
+      long l7 = (tmp[tmpIdx + 7] & MASK32_1) << 16;
+      l7 |= (tmp[tmpIdx + 8] & MASK32_15) << 1;
+      l7 |= (tmp[tmpIdx + 9] >>> 14) & MASK32_1;
+      longs[longsIdx + 7] = l7;
+      long l8 = (tmp[tmpIdx + 9] & MASK32_14) << 3;
+      l8 |= (tmp[tmpIdx + 10] >>> 12) & MASK32_3;
+      longs[longsIdx + 8] = l8;
+      long l9 = (tmp[tmpIdx + 10] & MASK32_12) << 5;
+      l9 |= (tmp[tmpIdx + 11] >>> 10) & MASK32_5;
+      longs[longsIdx + 9] = l9;
+      long l10 = (tmp[tmpIdx + 11] & MASK32_10) << 7;
+      l10 |= (tmp[tmpIdx + 12] >>> 8) & MASK32_7;
+      longs[longsIdx + 10] = l10;
+      long l11 = (tmp[tmpIdx + 12] & MASK32_8) << 9;
+      l11 |= (tmp[tmpIdx + 13] >>> 6) & MASK32_9;
+      longs[longsIdx + 11] = l11;
+      long l12 = (tmp[tmpIdx + 13] & MASK32_6) << 11;
+      l12 |= (tmp[tmpIdx + 14] >>> 4) & MASK32_11;
+      longs[longsIdx + 12] = l12;
+      long l13 = (tmp[tmpIdx + 14] & MASK32_4) << 13;
+      l13 |= (tmp[tmpIdx + 15] >>> 2) & MASK32_13;
+      longs[longsIdx + 13] = l13;
+      long l14 = (tmp[tmpIdx + 15] & MASK32_2) << 15;
+      l14 |= (tmp[tmpIdx + 16] & MASK32_15) << 0;
+      longs[longsIdx + 14] = l14;
     }
   }
 
@@ -626,34 +633,33 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 18
    * into {@code long} with packed representation.
    */
-  public static void decode18(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 18 * blockSize / 64;
+  public void decode18( DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 18 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 14, MASK32_18);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockSize / 64; ++iter, tmpIdx += 9, longsIdx += 7) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_14) << 4;
-      l0 |= (tmp[tmpIdx+1] >>> 10) & MASK32_4;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK32_10) << 8;
-      l1 |= (tmp[tmpIdx+2] >>> 6) & MASK32_8;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+2] & MASK32_6) << 12;
-      l2 |= (tmp[tmpIdx+3] >>> 2) & MASK32_12;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+3] & MASK32_2) << 16;
-      l3 |= (tmp[tmpIdx+4] & MASK32_14) << 2;
-      l3 |= (tmp[tmpIdx+5] >>> 12) & MASK32_2;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+5] & MASK32_12) << 6;
-      l4 |= (tmp[tmpIdx+6] >>> 8) & MASK32_6;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+6] & MASK32_8) << 10;
-      l5 |= (tmp[tmpIdx+7] >>> 4) & MASK32_10;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+7] & MASK32_4) << 14;
-      l6 |= (tmp[tmpIdx+8] & MASK32_14) << 0;
-      longs[longsIdx+6] = l6;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockFactor; ++iter, tmpIdx += 9, longsIdx += 7) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_14) << 4;
+      l0 |= (tmp[tmpIdx + 1] >>> 10) & MASK32_4;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK32_10) << 8;
+      l1 |= (tmp[tmpIdx + 2] >>> 6) & MASK32_8;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 2] & MASK32_6) << 12;
+      l2 |= (tmp[tmpIdx + 3] >>> 2) & MASK32_12;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 3] & MASK32_2) << 16;
+      l3 |= (tmp[tmpIdx + 4] & MASK32_14) << 2;
+      l3 |= (tmp[tmpIdx + 5] >>> 12) & MASK32_2;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 5] & MASK32_12) << 6;
+      l4 |= (tmp[tmpIdx + 6] >>> 8) & MASK32_6;
+      longs[longsIdx + 4] = l4;
+      long l5 = (tmp[tmpIdx + 6] & MASK32_8) << 10;
+      l5 |= (tmp[tmpIdx + 7] >>> 4) & MASK32_10;
+      longs[longsIdx + 5] = l5;
+      long l6 = (tmp[tmpIdx + 7] & MASK32_4) << 14;
+      l6 |= (tmp[tmpIdx + 8] & MASK32_14) << 0;
+      longs[longsIdx + 6] = l6;
     }
   }
 
@@ -661,56 +667,55 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 19
    * into {@code long} with packed representation.
    */
-  public static void decode19(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 19 * blockSize / 64;
+  public void decode19(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 19 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 13, MASK32_19);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 19, longsIdx += 13) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_13) << 6;
-      l0 |= (tmp[tmpIdx+1] >>> 7) & MASK32_6;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK32_7) << 12;
-      l1 |= (tmp[tmpIdx+2] >>> 1) & MASK32_12;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+2] & MASK32_1) << 18;
-      l2 |= (tmp[tmpIdx+3] & MASK32_13) << 5;
-      l2 |= (tmp[tmpIdx+4] >>> 8) & MASK32_5;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+4] & MASK32_8) << 11;
-      l3 |= (tmp[tmpIdx+5] >>> 2) & MASK32_11;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+5] & MASK32_2) << 17;
-      l4 |= (tmp[tmpIdx+6] & MASK32_13) << 4;
-      l4 |= (tmp[tmpIdx+7] >>> 9) & MASK32_4;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+7] & MASK32_9) << 10;
-      l5 |= (tmp[tmpIdx+8] >>> 3) & MASK32_10;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+8] & MASK32_3) << 16;
-      l6 |= (tmp[tmpIdx+9] & MASK32_13) << 3;
-      l6 |= (tmp[tmpIdx+10] >>> 10) & MASK32_3;
-      longs[longsIdx+6] = l6;
-      long l7 = (tmp[tmpIdx+10] & MASK32_10) << 9;
-      l7 |= (tmp[tmpIdx+11] >>> 4) & MASK32_9;
-      longs[longsIdx+7] = l7;
-      long l8 = (tmp[tmpIdx+11] & MASK32_4) << 15;
-      l8 |= (tmp[tmpIdx+12] & MASK32_13) << 2;
-      l8 |= (tmp[tmpIdx+13] >>> 11) & MASK32_2;
-      longs[longsIdx+8] = l8;
-      long l9 = (tmp[tmpIdx+13] & MASK32_11) << 8;
-      l9 |= (tmp[tmpIdx+14] >>> 5) & MASK32_8;
-      longs[longsIdx+9] = l9;
-      long l10 = (tmp[tmpIdx+14] & MASK32_5) << 14;
-      l10 |= (tmp[tmpIdx+15] & MASK32_13) << 1;
-      l10 |= (tmp[tmpIdx+16] >>> 12) & MASK32_1;
-      longs[longsIdx+10] = l10;
-      long l11 = (tmp[tmpIdx+16] & MASK32_12) << 7;
-      l11 |= (tmp[tmpIdx+17] >>> 6) & MASK32_7;
-      longs[longsIdx+11] = l11;
-      long l12 = (tmp[tmpIdx+17] & MASK32_6) << 13;
-      l12 |= (tmp[tmpIdx+18] & MASK32_13) << 0;
-      longs[longsIdx+12] = l12;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 19, longsIdx += 13) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_13) << 6;
+      l0 |= (tmp[tmpIdx + 1] >>> 7) & MASK32_6;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK32_7) << 12;
+      l1 |= (tmp[tmpIdx + 2] >>> 1) & MASK32_12;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 2] & MASK32_1) << 18;
+      l2 |= (tmp[tmpIdx + 3] & MASK32_13) << 5;
+      l2 |= (tmp[tmpIdx + 4] >>> 8) & MASK32_5;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 4] & MASK32_8) << 11;
+      l3 |= (tmp[tmpIdx + 5] >>> 2) & MASK32_11;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 5] & MASK32_2) << 17;
+      l4 |= (tmp[tmpIdx + 6] & MASK32_13) << 4;
+      l4 |= (tmp[tmpIdx + 7] >>> 9) & MASK32_4;
+      longs[longsIdx + 4] = l4;
+      long l5 = (tmp[tmpIdx + 7] & MASK32_9) << 10;
+      l5 |= (tmp[tmpIdx + 8] >>> 3) & MASK32_10;
+      longs[longsIdx + 5] = l5;
+      long l6 = (tmp[tmpIdx + 8] & MASK32_3) << 16;
+      l6 |= (tmp[tmpIdx + 9] & MASK32_13) << 3;
+      l6 |= (tmp[tmpIdx + 10] >>> 10) & MASK32_3;
+      longs[longsIdx + 6] = l6;
+      long l7 = (tmp[tmpIdx + 10] & MASK32_10) << 9;
+      l7 |= (tmp[tmpIdx + 11] >>> 4) & MASK32_9;
+      longs[longsIdx + 7] = l7;
+      long l8 = (tmp[tmpIdx + 11] & MASK32_4) << 15;
+      l8 |= (tmp[tmpIdx + 12] & MASK32_13) << 2;
+      l8 |= (tmp[tmpIdx + 13] >>> 11) & MASK32_2;
+      longs[longsIdx + 8] = l8;
+      long l9 = (tmp[tmpIdx + 13] & MASK32_11) << 8;
+      l9 |= (tmp[tmpIdx + 14] >>> 5) & MASK32_8;
+      longs[longsIdx + 9] = l9;
+      long l10 = (tmp[tmpIdx + 14] & MASK32_5) << 14;
+      l10 |= (tmp[tmpIdx + 15] & MASK32_13) << 1;
+      l10 |= (tmp[tmpIdx + 16] >>> 12) & MASK32_1;
+      longs[longsIdx + 10] = l10;
+      long l11 = (tmp[tmpIdx + 16] & MASK32_12) << 7;
+      l11 |= (tmp[tmpIdx + 17] >>> 6) & MASK32_7;
+      longs[longsIdx + 11] = l11;
+      long l12 = (tmp[tmpIdx + 17] & MASK32_6) << 13;
+      l12 |= (tmp[tmpIdx + 18] & MASK32_13) << 0;
+      longs[longsIdx + 12] = l12;
     }
   }
 
@@ -718,22 +723,21 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 20
    * into {@code long} with packed representation.
    */
-  public static void decode20(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 20 * blockSize / 64;
+  public void decode20(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 20 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 12, MASK32_20);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*blockSize / 64; ++iter, tmpIdx += 5, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_12) << 8;
-      l0 |= (tmp[tmpIdx+1] >>> 4) & MASK32_8;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK32_4) << 16;
-      l1 |= (tmp[tmpIdx+2] & MASK32_12) << 4;
-      l1 |= (tmp[tmpIdx+3] >>> 8) & MASK32_4;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+3] & MASK32_8) << 12;
-      l2 |= (tmp[tmpIdx+4] & MASK32_12) << 0;
-      longs[longsIdx+2] = l2;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4 * blockFactor; ++iter, tmpIdx += 5, longsIdx += 3) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_12) << 8;
+      l0 |= (tmp[tmpIdx + 1] >>> 4) & MASK32_8;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK32_4) << 16;
+      l1 |= (tmp[tmpIdx + 2] & MASK32_12) << 4;
+      l1 |= (tmp[tmpIdx + 3] >>> 8) & MASK32_4;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 3] & MASK32_8) << 12;
+      l2 |= (tmp[tmpIdx + 4] & MASK32_12) << 0;
+      longs[longsIdx + 2] = l2;
     }
   }
 
@@ -741,54 +745,53 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 21
    * into {@code long} with packed representation.
    */
-  public static void decode21(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 21 * blockSize / 64;
+  public void decode21(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 21 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 11, MASK32_21);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 21, longsIdx += 11) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_11) << 10;
-      l0 |= (tmp[tmpIdx+1] >>> 1) & MASK32_10;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK32_1) << 20;
-      l1 |= (tmp[tmpIdx+2] & MASK32_11) << 9;
-      l1 |= (tmp[tmpIdx+3] >>> 2) & MASK32_9;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+3] & MASK32_2) << 19;
-      l2 |= (tmp[tmpIdx+4] & MASK32_11) << 8;
-      l2 |= (tmp[tmpIdx+5] >>> 3) & MASK32_8;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+5] & MASK32_3) << 18;
-      l3 |= (tmp[tmpIdx+6] & MASK32_11) << 7;
-      l3 |= (tmp[tmpIdx+7] >>> 4) & MASK32_7;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+7] & MASK32_4) << 17;
-      l4 |= (tmp[tmpIdx+8] & MASK32_11) << 6;
-      l4 |= (tmp[tmpIdx+9] >>> 5) & MASK32_6;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+9] & MASK32_5) << 16;
-      l5 |= (tmp[tmpIdx+10] & MASK32_11) << 5;
-      l5 |= (tmp[tmpIdx+11] >>> 6) & MASK32_5;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+11] & MASK32_6) << 15;
-      l6 |= (tmp[tmpIdx+12] & MASK32_11) << 4;
-      l6 |= (tmp[tmpIdx+13] >>> 7) & MASK32_4;
-      longs[longsIdx+6] = l6;
-      long l7 = (tmp[tmpIdx+13] & MASK32_7) << 14;
-      l7 |= (tmp[tmpIdx+14] & MASK32_11) << 3;
-      l7 |= (tmp[tmpIdx+15] >>> 8) & MASK32_3;
-      longs[longsIdx+7] = l7;
-      long l8 = (tmp[tmpIdx+15] & MASK32_8) << 13;
-      l8 |= (tmp[tmpIdx+16] & MASK32_11) << 2;
-      l8 |= (tmp[tmpIdx+17] >>> 9) & MASK32_2;
-      longs[longsIdx+8] = l8;
-      long l9 = (tmp[tmpIdx+17] & MASK32_9) << 12;
-      l9 |= (tmp[tmpIdx+18] & MASK32_11) << 1;
-      l9 |= (tmp[tmpIdx+19] >>> 10) & MASK32_1;
-      longs[longsIdx+9] = l9;
-      long l10 = (tmp[tmpIdx+19] & MASK32_10) << 11;
-      l10 |= (tmp[tmpIdx+20] & MASK32_11) << 0;
-      longs[longsIdx+10] = l10;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 21, longsIdx += 11) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_11) << 10;
+      l0 |= (tmp[tmpIdx + 1] >>> 1) & MASK32_10;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 1] & MASK32_1) << 20;
+      l1 |= (tmp[tmpIdx + 2] & MASK32_11) << 9;
+      l1 |= (tmp[tmpIdx + 3] >>> 2) & MASK32_9;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 3] & MASK32_2) << 19;
+      l2 |= (tmp[tmpIdx + 4] & MASK32_11) << 8;
+      l2 |= (tmp[tmpIdx + 5] >>> 3) & MASK32_8;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 5] & MASK32_3) << 18;
+      l3 |= (tmp[tmpIdx + 6] & MASK32_11) << 7;
+      l3 |= (tmp[tmpIdx + 7] >>> 4) & MASK32_7;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 7] & MASK32_4) << 17;
+      l4 |= (tmp[tmpIdx + 8] & MASK32_11) << 6;
+      l4 |= (tmp[tmpIdx + 9] >>> 5) & MASK32_6;
+      longs[longsIdx + 4] = l4;
+      long l5 = (tmp[tmpIdx + 9] & MASK32_5) << 16;
+      l5 |= (tmp[tmpIdx + 10] & MASK32_11) << 5;
+      l5 |= (tmp[tmpIdx + 11] >>> 6) & MASK32_5;
+      longs[longsIdx + 5] = l5;
+      long l6 = (tmp[tmpIdx + 11] & MASK32_6) << 15;
+      l6 |= (tmp[tmpIdx + 12] & MASK32_11) << 4;
+      l6 |= (tmp[tmpIdx + 13] >>> 7) & MASK32_4;
+      longs[longsIdx + 6] = l6;
+      long l7 = (tmp[tmpIdx + 13] & MASK32_7) << 14;
+      l7 |= (tmp[tmpIdx + 14] & MASK32_11) << 3;
+      l7 |= (tmp[tmpIdx + 15] >>> 8) & MASK32_3;
+      longs[longsIdx + 7] = l7;
+      long l8 = (tmp[tmpIdx + 15] & MASK32_8) << 13;
+      l8 |= (tmp[tmpIdx + 16] & MASK32_11) << 2;
+      l8 |= (tmp[tmpIdx + 17] >>> 9) & MASK32_2;
+      longs[longsIdx + 8] = l8;
+      long l9 = (tmp[tmpIdx + 17] & MASK32_9) << 12;
+      l9 |= (tmp[tmpIdx + 18] & MASK32_11) << 1;
+      l9 |= (tmp[tmpIdx + 19] >>> 10) & MASK32_1;
+      longs[longsIdx + 9] = l9;
+      long l10 = (tmp[tmpIdx + 19] & MASK32_10) << 11;
+      l10 |= (tmp[tmpIdx + 20] & MASK32_11) << 0;
+      longs[longsIdx + 10] = l10;
     }
   }
 
@@ -796,32 +799,31 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 22
    * into {@code long} with packed representation.
    */
-  public static void decode22(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 22 * blockSize / 64;
+  public void decode22(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 22 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 10, MASK32_22);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*blockSize / 64; ++iter, tmpIdx += 11, longsIdx += 5) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_10) << 12;
-      l0 |= (tmp[tmpIdx+1] & MASK32_10) << 2;
-      l0 |= (tmp[tmpIdx+2] >>> 8) & MASK32_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+2] & MASK32_8) << 14;
-      l1 |= (tmp[tmpIdx+3] & MASK32_10) << 4;
-      l1 |= (tmp[tmpIdx+4] >>> 6) & MASK32_4;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+4] & MASK32_6) << 16;
-      l2 |= (tmp[tmpIdx+5] & MASK32_10) << 6;
-      l2 |= (tmp[tmpIdx+6] >>> 4) & MASK32_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+6] & MASK32_4) << 18;
-      l3 |= (tmp[tmpIdx+7] & MASK32_10) << 8;
-      l3 |= (tmp[tmpIdx+8] >>> 2) & MASK32_8;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+8] & MASK32_2) << 20;
-      l4 |= (tmp[tmpIdx+9] & MASK32_10) << 10;
-      l4 |= (tmp[tmpIdx+10] & MASK32_10) << 0;
-      longs[longsIdx+4] = l4;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockFactor; ++iter, tmpIdx += 11, longsIdx += 5) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_10) << 12;
+      l0 |= (tmp[tmpIdx + 1] & MASK32_10) << 2;
+      l0 |= (tmp[tmpIdx + 2] >>> 8) & MASK32_2;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 2] & MASK32_8) << 14;
+      l1 |= (tmp[tmpIdx + 3] & MASK32_10) << 4;
+      l1 |= (tmp[tmpIdx + 4] >>> 6) & MASK32_4;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 4] & MASK32_6) << 16;
+      l2 |= (tmp[tmpIdx + 5] & MASK32_10) << 6;
+      l2 |= (tmp[tmpIdx + 6] >>> 4) & MASK32_6;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 6] & MASK32_4) << 18;
+      l3 |= (tmp[tmpIdx + 7] & MASK32_10) << 8;
+      l3 |= (tmp[tmpIdx + 8] >>> 2) & MASK32_8;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 8] & MASK32_2) << 20;
+      l4 |= (tmp[tmpIdx + 9] & MASK32_10) << 10;
+      l4 |= (tmp[tmpIdx + 10] & MASK32_10) << 0;
+      longs[longsIdx + 4] = l4;
     }
   }
 
@@ -829,52 +831,51 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 23
    * into {@code long} with packed representation.
    */
-  public static void decode23(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 23 * blockSize / 64;
+  public void decode23(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 23 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 9, MASK32_23);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 23, longsIdx += 9) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_9) << 14;
-      l0 |= (tmp[tmpIdx+1] & MASK32_9) << 5;
-      l0 |= (tmp[tmpIdx+2] >>> 4) & MASK32_5;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+2] & MASK32_4) << 19;
-      l1 |= (tmp[tmpIdx+3] & MASK32_9) << 10;
-      l1 |= (tmp[tmpIdx+4] & MASK32_9) << 1;
-      l1 |= (tmp[tmpIdx+5] >>> 8) & MASK32_1;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+5] & MASK32_8) << 15;
-      l2 |= (tmp[tmpIdx+6] & MASK32_9) << 6;
-      l2 |= (tmp[tmpIdx+7] >>> 3) & MASK32_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+7] & MASK32_3) << 20;
-      l3 |= (tmp[tmpIdx+8] & MASK32_9) << 11;
-      l3 |= (tmp[tmpIdx+9] & MASK32_9) << 2;
-      l3 |= (tmp[tmpIdx+10] >>> 7) & MASK32_2;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+10] & MASK32_7) << 16;
-      l4 |= (tmp[tmpIdx+11] & MASK32_9) << 7;
-      l4 |= (tmp[tmpIdx+12] >>> 2) & MASK32_7;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+12] & MASK32_2) << 21;
-      l5 |= (tmp[tmpIdx+13] & MASK32_9) << 12;
-      l5 |= (tmp[tmpIdx+14] & MASK32_9) << 3;
-      l5 |= (tmp[tmpIdx+15] >>> 6) & MASK32_3;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+15] & MASK32_6) << 17;
-      l6 |= (tmp[tmpIdx+16] & MASK32_9) << 8;
-      l6 |= (tmp[tmpIdx+17] >>> 1) & MASK32_8;
-      longs[longsIdx+6] = l6;
-      long l7 = (tmp[tmpIdx+17] & MASK32_1) << 22;
-      l7 |= (tmp[tmpIdx+18] & MASK32_9) << 13;
-      l7 |= (tmp[tmpIdx+19] & MASK32_9) << 4;
-      l7 |= (tmp[tmpIdx+20] >>> 5) & MASK32_4;
-      longs[longsIdx+7] = l7;
-      long l8 = (tmp[tmpIdx+20] & MASK32_5) << 18;
-      l8 |= (tmp[tmpIdx+21] & MASK32_9) << 9;
-      l8 |= (tmp[tmpIdx+22] & MASK32_9) << 0;
-      longs[longsIdx+8] = l8;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockFactor; ++iter, tmpIdx += 23, longsIdx += 9) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_9) << 14;
+      l0 |= (tmp[tmpIdx + 1] & MASK32_9) << 5;
+      l0 |= (tmp[tmpIdx + 2] >>> 4) & MASK32_5;
+      longs[longsIdx + 0] = l0;
+      long l1 = (tmp[tmpIdx + 2] & MASK32_4) << 19;
+      l1 |= (tmp[tmpIdx + 3] & MASK32_9) << 10;
+      l1 |= (tmp[tmpIdx + 4] & MASK32_9) << 1;
+      l1 |= (tmp[tmpIdx + 5] >>> 8) & MASK32_1;
+      longs[longsIdx + 1] = l1;
+      long l2 = (tmp[tmpIdx + 5] & MASK32_8) << 15;
+      l2 |= (tmp[tmpIdx + 6] & MASK32_9) << 6;
+      l2 |= (tmp[tmpIdx + 7] >>> 3) & MASK32_6;
+      longs[longsIdx + 2] = l2;
+      long l3 = (tmp[tmpIdx + 7] & MASK32_3) << 20;
+      l3 |= (tmp[tmpIdx + 8] & MASK32_9) << 11;
+      l3 |= (tmp[tmpIdx + 9] & MASK32_9) << 2;
+      l3 |= (tmp[tmpIdx + 10] >>> 7) & MASK32_2;
+      longs[longsIdx + 3] = l3;
+      long l4 = (tmp[tmpIdx + 10] & MASK32_7) << 16;
+      l4 |= (tmp[tmpIdx + 11] & MASK32_9) << 7;
+      l4 |= (tmp[tmpIdx + 12] >>> 2) & MASK32_7;
+      longs[longsIdx + 4] = l4;
+      long l5 = (tmp[tmpIdx + 12] & MASK32_2) << 21;
+      l5 |= (tmp[tmpIdx + 13] & MASK32_9) << 12;
+      l5 |= (tmp[tmpIdx + 14] & MASK32_9) << 3;
+      l5 |= (tmp[tmpIdx + 15] >>> 6) & MASK32_3;
+      longs[longsIdx + 5] = l5;
+      long l6 = (tmp[tmpIdx + 15] & MASK32_6) << 17;
+      l6 |= (tmp[tmpIdx + 16] & MASK32_9) << 8;
+      l6 |= (tmp[tmpIdx + 17] >>> 1) & MASK32_8;
+      longs[longsIdx + 6] = l6;
+      long l7 = (tmp[tmpIdx + 17] & MASK32_1) << 22;
+      l7 |= (tmp[tmpIdx + 18] & MASK32_9) << 13;
+      l7 |= (tmp[tmpIdx + 19] & MASK32_9) << 4;
+      l7 |= (tmp[tmpIdx + 20] >>> 5) & MASK32_4;
+      longs[longsIdx + 7] = l7;
+      long l8 = (tmp[tmpIdx + 20] & MASK32_5) << 18;
+      l8 |= (tmp[tmpIdx + 21] & MASK32_9) << 9;
+      l8 |= (tmp[tmpIdx + 22] & MASK32_9) << 0;
+      longs[longsIdx + 8] = l8;
     }
   }
 
@@ -882,16 +883,15 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of 24
    * into {@code long} with packed representation.
    */
-  public static void decode24(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = 24 * blockSize / 64;
+  public void decode24(DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = 24 * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 8, MASK32_24);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 8*blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_8) << 16;
-      l0 |= (tmp[tmpIdx+1] & MASK32_8) << 8;
-      l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
-      longs[longsIdx+0] = l0;
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 8 * blockFactor; ++iter, tmpIdx += 3, longsIdx += 1) {
+      long l0 = (tmp[tmpIdx + 0] & MASK32_8) << 16;
+      l0 |= (tmp[tmpIdx + 1] & MASK32_8) << 8;
+      l0 |= (tmp[tmpIdx + 2] & MASK32_8) << 0;
+      longs[longsIdx + 0] = l0;
     }
   }
 
@@ -899,9 +899,8 @@ public class ForPrimitives2 {
    * Decode 128 integers with highest significant bit of {@code bitsPerValue}
    * into {@code long} with packed representation.
    */
-  public static void decodeSlow(int blockSize, int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
-    assert blockSize % 64 == 0;
-    final int numLongs = bitsPerValue * blockSize / 64;
+  public void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
+    final int numLongs = bitsPerValue * blockFactor;
     in.readLELongs(tmp, 0, numLongs);
     final long mask = mask32(bitsPerValue);
     int longsIdx = 0;
@@ -914,7 +913,7 @@ public class ForPrimitives2 {
     final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
     int tmpIdx = 0;
     int remainingBits = remainingBitsPerLong;
-    for (; longsIdx < blockSize / 2; ++longsIdx) {
+    for (; longsIdx < blockSizeDividedBy2; ++longsIdx) {
       int b = bitsPerValue - remainingBits;
       long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
       while (b >= remainingBitsPerLong) {
@@ -922,7 +921,7 @@ public class ForPrimitives2 {
         l |= (tmp[tmpIdx++] & mask32RemainingBitsPerLong) << b;
       }
       if (b > 0) {
-        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & mask32(b);
+        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong - b)) & mask32(b);
         remainingBits = remainingBitsPerLong - b;
       } else {
         remainingBits = remainingBitsPerLong;
