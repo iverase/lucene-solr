@@ -59,7 +59,7 @@ final class ForDocIdsWriter {
 
   /** sole cxtor */
   ForDocIdsWriter() {
-    this.encoder = ForPrimitives2.INT64;
+    this.encoder = ForPrimitives2.INT512;
     this.blockSize = encoder.blockSize();
     tmp1 = new long[encoder.blockSize()];
     tmp2 = new long[encoder.blockSize()];
