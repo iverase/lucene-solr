@@ -21,7 +21,6 @@ import java.io.IOException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ForPrimitives;
 
 class DocIdsWriter {
 
@@ -36,11 +35,9 @@ class DocIdsWriter {
     // if the number of points is a multiple of BLOCK_SIZE, then use
     // For encoder to get better encoding compression and most of the times
     // better decoding speed.
-    if (count > 0 && count % 512 == 0) {
+    if (count > 0 && count % 64 == 0) {
       out.writeByte(SIMD);
-      //for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
-        encoder.encode(count, docIds, start, out);
-      //}
+      encoder.encode(count, docIds, start, out);
       return;
     }
     // docs can be sorted either when all docs in a block have the same value
@@ -103,9 +100,7 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, int[] docIDs, ForDocIdsWriter decoder) throws IOException {
-    //for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
-      decoder.decode(count, in, docIDs, 0);
-    //}
+    decoder.decode(count, in, docIDs, 0);
   }
 
   private static void readDeltaVInts(IndexInput in, int count, int[] docIDs) throws IOException {
@@ -164,9 +159,7 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, ForDocIdsWriter decoder) throws IOException {
-    //for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
-      decoder.decode(count, in, visitor);
-    //}
+    decoder.decode(count, in, visitor);
   }
 
   private static void readDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {

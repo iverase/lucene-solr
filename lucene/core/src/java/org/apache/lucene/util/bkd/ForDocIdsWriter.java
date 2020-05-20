@@ -98,12 +98,12 @@ final class ForDocIdsWriter {
           if (bpvDelta < bpv) {
             // for delta encoding we add 32 to bpv
             out.writeByte((byte) (32 + bpvDelta));
-            encode(tmp1, bpvDelta, out, tmp2);
+            encode(count, tmp1, bpvDelta, out, tmp2);
             out.writeVInt(base);
           } else {
             // standard encoding, no benefit from delta encoding
             out.writeByte((byte) bpv);
-            encode(tmp2, bpv, out, tmp1);
+            encode(count, tmp2, bpv, out, tmp1);
           }
         }
       }
@@ -125,12 +125,12 @@ final class ForDocIdsWriter {
         for (int i = 0; i < count; ++i) {
           tmp1[i] = ints[start + i] - minVal;
         }
-        encode(tmp1, bvpDiff, out, tmp2);
+        encode(count, tmp1, bvpDiff, out, tmp2);
         out.writeVInt(minVal);
       } else {
         // standard encoding
         out.writeByte((byte) bpv);
-        encode(tmp1, bpv, out, tmp2);
+        encode(count, tmp1, bpv, out, tmp2);
       }
     }
   }
@@ -161,7 +161,7 @@ final class ForDocIdsWriter {
     decode(count, code, in, visitor, tmp1, tmp2);
   }
 
-  private void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
+  private void encode(int count, long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     // re-order values for easier decoding
     if (bitsPerValue <= 8) {
       int x = count / 8;

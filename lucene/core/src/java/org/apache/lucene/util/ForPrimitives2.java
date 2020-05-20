@@ -35,10 +35,6 @@ import org.apache.lucene.store.DataOutput;
  */
 public class ForPrimitives2 {
 
-  //public static final int BLOCK_SIZE = 128;
-  //(int)(Math.log(128) / Math.log(2))
-  //private static final int BLOCK_SIZE_LOG2 = 7;
-
   private static long expandMask32(long mask32) {
     return mask32 | (mask32 << 32);
   }
@@ -209,23 +205,23 @@ public class ForPrimitives2 {
   }
 
   private static void collapse8(int count, long[] arr) {
-    int x = count / 8;
-    for (int i = 0; i < x; ++i) {
-      arr[i] = (arr[i] << 56) | (arr[x+i] << 48) | (arr[2*x+i] << 40) | (arr[3*x+i] << 32) | (arr[4*x+i] << 24) | (arr[5*x+i] << 16) | (arr[6*x+i] << 8) | arr[7*x+i];
+    int numLongs = count / 8;
+    for (int i = 0; i < numLongs; ++i) {
+      arr[i] = (arr[i] << 56) | (arr[numLongs+i] << 48) | (arr[2*numLongs+i] << 40) | (arr[3*numLongs+i] << 32) | (arr[4*numLongs+i] << 24) | (arr[5*numLongs+i] << 16) | (arr[6*numLongs+i] << 8) | arr[7*numLongs+i];
     }
   }
 
   private static void collapse16(int count, long[] arr) {
-    int x = count / 4;
-    for (int i = 0; i < x; ++i) {
-      arr[i] = (arr[i] << 48) | (arr[x+i] << 32) | (arr[2*x+i] << 16) | arr[3*x+i];
+    int numLongs = count / 4;
+    for (int i = 0; i < numLongs; ++i) {
+      arr[i] = (arr[i] << 48) | (arr[numLongs+i] << 32) | (arr[2*numLongs+i] << 16) | arr[3*numLongs+i];
     }
   }
 
   private static void collapse32(int count, long[] arr) {
-    int x = count / 2;
-    for (int i = 0; i < x; ++i) {
-      arr[i] = (arr[i] << 32) | arr[x+i];
+    int numLongs = count / 2;
+    for (int i = 0; i < numLongs; ++i) {
+      arr[i] = (arr[i] << 32) | arr[numLongs+i];
     }
   }
 
@@ -235,7 +231,8 @@ public class ForPrimitives2 {
    */
   public static void decode1(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 1 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 7, MASK8_1);
     shiftLongs(tmp, numLongs, longs, numLongs, 6, MASK8_1);
@@ -253,7 +250,8 @@ public class ForPrimitives2 {
    */
   public static void decode2(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 2 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 2 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 6, MASK8_2);
     shiftLongs(tmp, numLongs, longs, numLongs, 4, MASK8_2);
@@ -267,11 +265,12 @@ public class ForPrimitives2 {
    */
   public static void decode3(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 3 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 3 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 5, MASK8_3);
     shiftLongs(tmp, numLongs, longs, numLongs, 2, MASK8_3);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 2 * numLongs; iter < blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 2) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = 2 * numLongs; iter < factor; ++iter, tmpIdx += 3, longsIdx += 2) {
       long l0 = (tmp[tmpIdx+0] & MASK8_2) << 1;
       l0 |= (tmp[tmpIdx+1] >>> 1) & MASK8_1;
       longs[longsIdx+0] = l0;
@@ -287,7 +286,8 @@ public class ForPrimitives2 {
    */
   public static void decode4(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 4 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 4 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 4, MASK8_4);
     shiftLongs(tmp, numLongs, longs, numLongs, 0, MASK8_4);
@@ -299,10 +299,11 @@ public class ForPrimitives2 {
    */
   public static void decode5(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 5 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 5 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 3, MASK8_5);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 5, longsIdx += 3) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 5, longsIdx += 3) {
       long l0 = (tmp[tmpIdx+0] & MASK8_3) << 2;
       l0 |= (tmp[tmpIdx+1] >>> 1) & MASK8_2;
       longs[longsIdx+0] = l0;
@@ -322,10 +323,11 @@ public class ForPrimitives2 {
    */
   public static void decode6(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 6 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 6 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 2, MASK8_6);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * factor; ++iter, tmpIdx += 3, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK8_2) << 4;
       l0 |= (tmp[tmpIdx+1] & MASK8_2) << 2;
       l0 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
@@ -339,10 +341,11 @@ public class ForPrimitives2 {
    */
   public static void decode7(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 7 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 7 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 1, MASK8_7);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 7, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 7, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK8_1) << 6;
       l0 |= (tmp[tmpIdx+1] & MASK8_1) << 5;
       l0 |= (tmp[tmpIdx+2] & MASK8_1) << 4;
@@ -370,10 +373,11 @@ public class ForPrimitives2 {
    */
   public static void decode9(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 9 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 9 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 7, MASK16_9);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 9, longsIdx += 7) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 9, longsIdx += 7) {
       long l0 = (tmp[tmpIdx+0] & MASK16_7) << 2;
       l0 |= (tmp[tmpIdx+1] >>> 5) & MASK16_2;
       longs[longsIdx+0] = l0;
@@ -405,10 +409,11 @@ public class ForPrimitives2 {
    */
   public static void decode10(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 10 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 10 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 6, MASK16_10);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockSize / 64; ++iter, tmpIdx += 5, longsIdx += 3) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * factor; ++iter, tmpIdx += 5, longsIdx += 3) {
       long l0 = (tmp[tmpIdx+0] & MASK16_6) << 4;
       l0 |= (tmp[tmpIdx+1] >>> 2) & MASK16_4;
       longs[longsIdx+0] = l0;
@@ -428,10 +433,11 @@ public class ForPrimitives2 {
    */
   public static void decode11(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 11 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 11 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 5, MASK16_11);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 11, longsIdx += 5) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 11, longsIdx += 5) {
       long l0 = (tmp[tmpIdx+0] & MASK16_5) << 6;
       l0 |= (tmp[tmpIdx+1] & MASK16_5) << 1;
       l0 |= (tmp[tmpIdx+2] >>> 4) & MASK16_1;
@@ -461,10 +467,11 @@ public class ForPrimitives2 {
    */
   public static void decode12(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 12 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 12 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 4, MASK16_12);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*factor; ++iter, tmpIdx += 3, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK16_4) << 8;
       l0 |= (tmp[tmpIdx+1] & MASK16_4) << 4;
       l0 |= (tmp[tmpIdx+2] & MASK16_4) << 0;
@@ -478,10 +485,11 @@ public class ForPrimitives2 {
    */
   public static void decode13(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 13 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 13 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 3, MASK16_13);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 13, longsIdx += 3) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 13, longsIdx += 3) {
       long l0 = (tmp[tmpIdx+0] & MASK16_3) << 10;
       l0 |= (tmp[tmpIdx+1] & MASK16_3) << 7;
       l0 |= (tmp[tmpIdx+2] & MASK16_3) << 4;
@@ -509,10 +517,11 @@ public class ForPrimitives2 {
    */
   public static void decode14(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 14 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 14 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 2, MASK16_14);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*blockSize / 64; ++iter, tmpIdx += 7, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*factor; ++iter, tmpIdx += 7, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK16_2) << 12;
       l0 |= (tmp[tmpIdx+1] & MASK16_2) << 10;
       l0 |= (tmp[tmpIdx+2] & MASK16_2) << 8;
@@ -530,10 +539,11 @@ public class ForPrimitives2 {
    */
   public static void decode15(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 15 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 15 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 1, MASK16_15);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 15, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 15, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK16_1) << 14;
       l0 |= (tmp[tmpIdx+1] & MASK16_1) << 13;
       l0 |= (tmp[tmpIdx+2] & MASK16_1) << 12;
@@ -559,7 +569,8 @@ public class ForPrimitives2 {
    */
   public static void decode16(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 16 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 16 * factor;
     in.readLELongs(longs, 0, numLongs);
   }
 
@@ -569,10 +580,11 @@ public class ForPrimitives2 {
    */
   public static void decode17(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 17 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 17 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 15, MASK32_17);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 17, longsIdx += 15) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 17, longsIdx += 15) {
       long l0 = (tmp[tmpIdx+0] & MASK32_15) << 2;
       l0 |= (tmp[tmpIdx+1] >>> 13) & MASK32_2;
       longs[longsIdx+0] = l0;
@@ -628,10 +640,11 @@ public class ForPrimitives2 {
    */
   public static void decode18(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 18 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 18 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 14, MASK32_18);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * blockSize / 64; ++iter, tmpIdx += 9, longsIdx += 7) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2 * factor; ++iter, tmpIdx += 9, longsIdx += 7) {
       long l0 = (tmp[tmpIdx+0] & MASK32_14) << 4;
       l0 |= (tmp[tmpIdx+1] >>> 10) & MASK32_4;
       longs[longsIdx+0] = l0;
@@ -663,10 +676,11 @@ public class ForPrimitives2 {
    */
   public static void decode19(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 19 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 19 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 13, MASK32_19);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 19, longsIdx += 13) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 19, longsIdx += 13) {
       long l0 = (tmp[tmpIdx+0] & MASK32_13) << 6;
       l0 |= (tmp[tmpIdx+1] >>> 7) & MASK32_6;
       longs[longsIdx+0] = l0;
@@ -720,10 +734,11 @@ public class ForPrimitives2 {
    */
   public static void decode20(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 20 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 20 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 12, MASK32_20);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*blockSize / 64; ++iter, tmpIdx += 5, longsIdx += 3) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*factor; ++iter, tmpIdx += 5, longsIdx += 3) {
       long l0 = (tmp[tmpIdx+0] & MASK32_12) << 8;
       l0 |= (tmp[tmpIdx+1] >>> 4) & MASK32_8;
       longs[longsIdx+0] = l0;
@@ -743,10 +758,11 @@ public class ForPrimitives2 {
    */
   public static void decode21(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 21 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 21 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 11, MASK32_21);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 21, longsIdx += 11) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 21, longsIdx += 11) {
       long l0 = (tmp[tmpIdx+0] & MASK32_11) << 10;
       l0 |= (tmp[tmpIdx+1] >>> 1) & MASK32_10;
       longs[longsIdx+0] = l0;
@@ -798,10 +814,11 @@ public class ForPrimitives2 {
    */
   public static void decode22(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 22 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 22 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 10, MASK32_22);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*blockSize / 64; ++iter, tmpIdx += 11, longsIdx += 5) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*factor; ++iter, tmpIdx += 11, longsIdx += 5) {
       long l0 = (tmp[tmpIdx+0] & MASK32_10) << 12;
       l0 |= (tmp[tmpIdx+1] & MASK32_10) << 2;
       l0 |= (tmp[tmpIdx+2] >>> 8) & MASK32_2;
@@ -831,10 +848,11 @@ public class ForPrimitives2 {
    */
   public static void decode23(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 23 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 23 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 9, MASK32_23);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < blockSize / 64; ++iter, tmpIdx += 23, longsIdx += 9) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < factor; ++iter, tmpIdx += 23, longsIdx += 9) {
       long l0 = (tmp[tmpIdx+0] & MASK32_9) << 14;
       l0 |= (tmp[tmpIdx+1] & MASK32_9) << 5;
       l0 |= (tmp[tmpIdx+2] >>> 4) & MASK32_5;
@@ -884,10 +902,11 @@ public class ForPrimitives2 {
    */
   public static void decode24(int blockSize, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = 24 * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = 24 * factor;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 8, MASK32_24);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 8*blockSize / 64; ++iter, tmpIdx += 3, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 8*factor; ++iter, tmpIdx += 3, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK32_8) << 16;
       l0 |= (tmp[tmpIdx+1] & MASK32_8) << 8;
       l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
@@ -901,7 +920,8 @@ public class ForPrimitives2 {
    */
   public static void decodeSlow(int blockSize, int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
     assert blockSize % 64 == 0;
-    final int numLongs = bitsPerValue * blockSize / 64;
+    final int factor = blockSize / 64;
+    final int numLongs = bitsPerValue * factor;
     in.readLELongs(tmp, 0, numLongs);
     final long mask = mask32(bitsPerValue);
     int longsIdx = 0;

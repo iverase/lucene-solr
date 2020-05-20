@@ -674,7 +674,8 @@ public class TestBKD extends LuceneTestCase {
 
   /** docIDs can be null, for the single valued case, else it maps value to docID */
   private void verify(byte[][][] docValues, int[] docIDs, int numDataDims, int numIndexDims, int numBytesPerDim) throws Exception {
-    verify(docValues, docIDs, numDataDims, numIndexDims, numBytesPerDim, TestUtil.nextInt(random(), 50, 1000));
+    final int maxPointsPerLeafNode = random().nextBoolean() ?  64 * TestUtil.nextInt(random(), 1, 10) : TestUtil.nextInt(random(), 50, 1000);
+    verify(docValues, docIDs, numDataDims, numIndexDims, numBytesPerDim, maxPointsPerLeafNode);
   }
 
   private void verify(byte[][][] docValues, int[] docIDs, int numDataDims, int numIndexDims, int numBytesPerDim,
