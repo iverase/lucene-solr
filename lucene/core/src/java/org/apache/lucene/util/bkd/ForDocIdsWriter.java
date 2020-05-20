@@ -869,7 +869,8 @@ final class ForDocIdsWriter {
   }
 
   private static void expand8(int count, long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = offset; i < count / 8; ++i, j += 8) {
+    final int numLongs = count / 8;
+    for (int i = 0, j = offset; i < numLongs; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = (int) ((l >>> 56) & 0xFF);
       ints[j+1] = (int) ((l >>> 48) & 0xFF);
@@ -884,7 +885,8 @@ final class ForDocIdsWriter {
 
   private static void expand8Delta(int count, DataInput in, long[] arr, int[] ints, int offset) throws IOException{
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < count / 8; ++i, j += 8) {
+    final int numLongs = count / 8;
+    for (int i = 0, j = offset; i < numLongs; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = base += (int) ((l >>> 56) & 0xFF);
       ints[j+1] = base += (int) ((l >>> 48) & 0xFF);
@@ -899,7 +901,8 @@ final class ForDocIdsWriter {
 
   private static void expand8Base(int count, DataInput in, long[] arr, int[] ints, int offset) throws IOException{
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < count / 8; ++i, j += 8) {
+    final int numLongs = count / 8;
+    for (int i = 0, j = offset; i < numLongs; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = base + (int) ((l >>> 56) & 0xFF);
       ints[j+1] = base + (int) ((l >>> 48) & 0xFF);
@@ -913,7 +916,8 @@ final class ForDocIdsWriter {
   }
 
   private static void expand8(int count, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count / 8; ++i) {
+    final int numLongs = count / 8;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 56) & 0xFF));
       visitor.visit((int) ((l >>> 48) & 0xFF));
@@ -928,7 +932,8 @@ final class ForDocIdsWriter {
 
   private static void expand8Delta(int count, DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < count / 8; ++i) {
+    final int numLongs = count / 8;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) ((l >>> 56) & 0xFF));
       visitor.visit(base += (int) ((l >>> 48) & 0xFF));
@@ -943,7 +948,8 @@ final class ForDocIdsWriter {
 
   private static void expand8Base(int count, DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0; i < count / 8; ++i) {
+    final int numLongs = count / 8;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) ((l >>> 56) & 0xFF));
       visitor.visit(base + (int) ((l >>> 48) & 0xFF));
@@ -957,7 +963,8 @@ final class ForDocIdsWriter {
   }
 
   private static void expand16(int count, long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = offset; i < count / 4; ++i, j += 4) {
+    final int numLongs = count / 4;
+    for (int i = 0, j = offset; i < numLongs; ++i, j += 4) {
       long l = arr[i];
       ints[j]   = (int) ((l >>> 48) & 0xFFFF);
       ints[j+1] = (int) ((l >>> 32) & 0xFFFF);
@@ -968,7 +975,8 @@ final class ForDocIdsWriter {
 
   private static void expand16Delta(int count, DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < count / 4; ++i, j += 4) {
+    final int numLongs = count / 4;
+    for (int i = 0, j = offset; i < numLongs; ++i, j += 4) {
       long l = arr[i];
       ints[j]   = base += (int) ((l >>> 48) & 0xFFFF);
       ints[j+1] = base += (int) ((l >>> 32) & 0xFFFF);
@@ -979,7 +987,8 @@ final class ForDocIdsWriter {
 
   private static void expand16Base(int count, DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < count / 4; ++i, j += 4) {
+    final int numLongs = count / 4;
+    for (int i = 0, j = offset; i < numLongs; ++i, j += 4) {
       long l = arr[i];
       ints[j]   = base + (int) ((l >>> 48) & 0xFFFF);
       ints[j+1] = base + (int) ((l >>> 32) & 0xFFFF);
@@ -989,7 +998,8 @@ final class ForDocIdsWriter {
   }
 
   private static void expand16(int count, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count / 4; ++i) {
+    final int numLongs = count / 4;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 48) & 0xFFFF));
       visitor.visit((int) ((l >>> 32) & 0xFFFF));
@@ -1000,7 +1010,8 @@ final class ForDocIdsWriter {
 
   private static void expand16Delta(int count, DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < count / 4; ++i) {
+    final int numLongs = count / 4;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) ((l >>> 48) & 0xFFFF));
       visitor.visit(base += (int) ((l >>> 32) & 0xFFFF));
@@ -1011,7 +1022,8 @@ final class ForDocIdsWriter {
 
   private static void expand16Base(int count, DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0; i < count / 4; ++i) {
+    final int numLongs = count / 4;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) ((l >>> 48) & 0xFFFF));
       visitor.visit(base + (int) ((l >>> 32) & 0xFFFF));
@@ -1021,7 +1033,8 @@ final class ForDocIdsWriter {
   }
 
   private static void expand32(int count, long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = offset; i < count / 2; i++, j+=2) {
+    final int numLongs = count / 2;
+    for (int i = 0, j = offset; i < numLongs; i++, j+=2) {
       long l = arr[i];
       ints[j] = (int) (l >>> 32);
       ints[j+1] = (int) l;
@@ -1030,7 +1043,8 @@ final class ForDocIdsWriter {
 
   private static void expand32Delta(int count, DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < count / 2; i++, j+=2) {
+    final int numLongs = count / 2;
+    for (int i = 0, j = offset; i < numLongs; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base += (int) (l >>> 32);
       ints[j+1] = base += (int) l;
@@ -1039,7 +1053,8 @@ final class ForDocIdsWriter {
 
   private static void expand32Base(int count, DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < count / 2; i++, j+=2) {
+    final int numLongs = count / 2;
+    for (int i = 0, j = offset; i < numLongs; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base + (int) (l >>> 32);
       ints[j+1] = base + (int) l;
@@ -1047,7 +1062,8 @@ final class ForDocIdsWriter {
   }
 
   private static void expand32(int count, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count / 2; ++i) {
+    final int numLongs = count / 2;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
       visitor.visit((int) l);
@@ -1056,7 +1072,8 @@ final class ForDocIdsWriter {
 
   private static void expand32Delta(int count, DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < count / 2; ++i) {
+    final int numLongs = count / 2;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) (l >>> 32));
       visitor.visit(base += (int) l);
@@ -1065,23 +1082,24 @@ final class ForDocIdsWriter {
 
   private static void expand32Base(int count, DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0; i < count / 2; ++i) {
+    final int numLongs = count / 2;
+    for (int i = 0; i < numLongs; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) (l >>> 32));
       visitor.visit(base + (int) l);
     }
   }
 
-  private static void consecutiveIntegers(int blockSize, DataInput in, int[] ints, int offset) throws IOException {
+  private static void consecutiveIntegers(int count, DataInput in, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < blockSize; i++, j++) {
+    for (int i = 0, j = offset; i < count; i++, j++) {
       ints[j] = base + i;
     }
   }
 
-  private static void consecutiveIntegers(int blockSize, DataInput in, PointValues.IntersectVisitor visitor) throws IOException {
+  private static void consecutiveIntegers(int count, DataInput in, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < blockSize; ++i) {
+    for (int i = 0; i < count; ++i) {
      visitor.visit(base + i);
     }
   }
