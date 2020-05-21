@@ -240,8 +240,8 @@ public class ForPrimitives2 {
     shiftLongs(tmp, numLongs, longs, 3 * numLongs, 4, MASK8_1);
     shiftLongs(tmp, numLongs, longs, 4 * numLongs, 3, MASK8_1);
     shiftLongs(tmp, numLongs, longs, 5 * numLongs, 2, MASK8_1);
-    shiftLongs(tmp, numLongs, longs, 6*numLongs, 1, MASK8_1);
-    shiftLongs(tmp, numLongs, longs, 7*numLongs, 0, MASK8_1);
+    shiftLongs(tmp, numLongs, longs, 6 * numLongs, 1, MASK8_1);
+    shiftLongs(tmp, numLongs, longs, 7 * numLongs, 0, MASK8_1);
   }
 
   /**

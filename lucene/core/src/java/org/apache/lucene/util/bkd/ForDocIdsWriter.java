@@ -164,30 +164,30 @@ final class ForDocIdsWriter {
   private void encode(int count, long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     // re-order values for easier decoding
     if (bitsPerValue <= 8) {
-      int x = count / 8;
-      for (int i = 0, j = 0; i < x; ++i, j += 8) {
+      int numLongs = count / 8;
+      for (int i = 0, j = 0; i < numLongs; ++i, j += 8) {
         tmp[i] = longs[j];
-        tmp[x+i] = longs[j+1];
-        tmp[2*x+i] = longs[j+2];
-        tmp[3*x+i] = longs[j+3];
-        tmp[4*x+i] = longs[j+4];
-        tmp[5*x+i] = longs[j+5];
-        tmp[6*x+i] = longs[j+6];
-        tmp[7*x+i] = longs[j+7];
+        tmp[numLongs+i] = longs[j+1];
+        tmp[2*numLongs+i] = longs[j+2];
+        tmp[3*numLongs+i] = longs[j+3];
+        tmp[4*numLongs+i] = longs[j+4];
+        tmp[5*numLongs+i] = longs[j+5];
+        tmp[6*numLongs+i] = longs[j+6];
+        tmp[7*numLongs+i] = longs[j+7];
       }
     } else if (bitsPerValue <= 16) {
-      int x = count / 4;
+      int numLongs = count / 4;
       for (int i = 0, j = 0; i < count / 4; ++i, j += 4) {
         tmp[i] = longs[j];
-        tmp[x+i] = longs[j+1];
-        tmp[2*x+i] = longs[j+2];
-        tmp[3*x+i] = longs[j+3];
+        tmp[numLongs+i] = longs[j+1];
+        tmp[2*numLongs+i] = longs[j+2];
+        tmp[3*numLongs+i] = longs[j+3];
       }
     } else {
-      int x = count / 2;
+      int numLongs = count / 2;
       for (int i = 0, j = 0; i < count / 2; ++i, j += 2) {
         tmp[i] = longs[j];
-        tmp[x+i] = longs[j+1];
+        tmp[numLongs+i] = longs[j+1];
       }
     }
     ForPrimitives2.encode(count, tmp, bitsPerValue, out, longs);
