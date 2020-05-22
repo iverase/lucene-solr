@@ -35,13 +35,13 @@ import org.apache.lucene.store.DataOutput;
  */
 public class ForPrimitives64 {
 
-  public static final int BLOCK_SIZE = 64;
+  public static final int BLOCK_SIZE = 512;
   public static final int BLOCK_SIZE_8 = BLOCK_SIZE / 8;
   public static final int BLOCK_SIZE_16 = BLOCK_SIZE / 4;
   public static final int BLOCK_SIZE_32 = BLOCK_SIZE / 2;
 
-  private static final int BLOCK_SIZE_LOG2 = 6;
-  private static final int FACTOR = 1;
+  private static final int BLOCK_SIZE_LOG2 = (int)(Math.log(BLOCK_SIZE) / Math.log(2));
+  private static final int FACTOR = BLOCK_SIZE / 64;
 
   private static long expandMask32(long mask32) {
     return mask32 | (mask32 << 32);
@@ -226,7 +226,7 @@ public class ForPrimitives64 {
 
   private static void collapse32(int numLongs, long[] arr) {
     for (int i = 0; i < numLongs; ++i) {
-      arr[i] = (arr[i] << numLongs) | arr[numLongs+i];
+      arr[i] = (arr[i] << 32) | arr[numLongs+i];
     }
   }
 
