@@ -35,7 +35,7 @@ import org.apache.lucene.store.DataOutput;
  */
 public class ForPrimitives64 {
 
-  public static final int BLOCK_SIZE = 512;
+  public static final int BLOCK_SIZE = 64;
   public static final int BLOCK_SIZE_8 = BLOCK_SIZE / 8;
   public static final int BLOCK_SIZE_16 = BLOCK_SIZE / 4;
   public static final int BLOCK_SIZE_32 = BLOCK_SIZE / 2;
