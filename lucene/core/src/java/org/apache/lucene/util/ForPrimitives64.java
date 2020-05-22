@@ -43,6 +43,31 @@ public class ForPrimitives64 {
   private static final int BLOCK_SIZE_LOG2 = (int)(Math.log(BLOCK_SIZE) / Math.log(2));
   private static final int FACTOR = BLOCK_SIZE / 64;
 
+  private static final int FACTOR_2 = 2 * FACTOR;
+  private static final int FACTOR_3 = 3 * FACTOR;
+  private static final int FACTOR_4 = 4 * FACTOR;
+  private static final int FACTOR_5 = 5 * FACTOR;
+  private static final int FACTOR_6 = 6 * FACTOR;
+  private static final int FACTOR_7 = 7 * FACTOR;
+  private static final int FACTOR_8 = 8 * FACTOR;
+  private static final int FACTOR_9 = 9 * FACTOR;
+  private static final int FACTOR_10 = 10 * FACTOR;
+  private static final int FACTOR_11 = 11 * FACTOR;
+  private static final int FACTOR_12 = 12 * FACTOR;
+  private static final int FACTOR_13 = 13 * FACTOR;
+  private static final int FACTOR_14 = 14 * FACTOR;
+  private static final int FACTOR_15 = 15 * FACTOR;
+  private static final int FACTOR_16 = 16 * FACTOR;
+  private static final int FACTOR_17 = 17 * FACTOR;
+  private static final int FACTOR_18 = 18 * FACTOR;
+  private static final int FACTOR_19 = 19 * FACTOR;
+  private static final int FACTOR_20 = 20 * FACTOR;
+  private static final int FACTOR_21 = 21 * FACTOR;
+  private static final int FACTOR_22 = 22 * FACTOR;
+  private static final int FACTOR_23 = 23 * FACTOR;
+  private static final int FACTOR_24 = 24 * FACTOR;
+
+
   private static long expandMask32(long mask32) {
     return mask32 | (mask32 << 32);
   }
@@ -238,12 +263,12 @@ public class ForPrimitives64 {
     in.readLELongs(tmp, 0, FACTOR);
     shiftLongs(tmp, FACTOR, longs, 0, 7, MASK8_1);
     shiftLongs(tmp, FACTOR, longs, FACTOR, 6, MASK8_1);
-    shiftLongs(tmp, FACTOR, longs, 2*FACTOR, 5, MASK8_1);
-    shiftLongs(tmp, FACTOR, longs, 3*FACTOR, 4, MASK8_1);
-    shiftLongs(tmp, FACTOR, longs, 4*FACTOR, 3, MASK8_1);
-    shiftLongs(tmp, FACTOR, longs, 5*FACTOR, 2, MASK8_1);
-    shiftLongs(tmp, FACTOR, longs, 6*FACTOR, 1, MASK8_1);
-    shiftLongs(tmp, FACTOR, longs, 7*FACTOR, 0, MASK8_1);
+    shiftLongs(tmp, FACTOR, longs, FACTOR_2, 5, MASK8_1);
+    shiftLongs(tmp, FACTOR, longs, FACTOR_3, 4, MASK8_1);
+    shiftLongs(tmp, FACTOR, longs, FACTOR_4, 3, MASK8_1);
+    shiftLongs(tmp, FACTOR, longs, FACTOR_5, 2, MASK8_1);
+    shiftLongs(tmp, FACTOR, longs, FACTOR_6, 1, MASK8_1);
+    shiftLongs(tmp, FACTOR, longs, FACTOR_7, 0, MASK8_1);
   }
 
   /**
@@ -251,7 +276,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode2(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 2*FACTOR;
+    int numLongs = FACTOR_2;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 6, MASK8_2);
     shiftLongs(tmp, numLongs, longs, numLongs, 4, MASK8_2);
@@ -264,7 +289,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode3(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 3*FACTOR;
+    int numLongs = FACTOR_3;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 5, MASK8_3);
     shiftLongs(tmp, numLongs, longs, numLongs, 2, MASK8_3);
@@ -283,7 +308,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode4(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 4*FACTOR;
+    int numLongs = FACTOR_4;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 4, MASK8_4);
     shiftLongs(tmp, numLongs, longs, numLongs, 0, MASK8_4);
@@ -294,7 +319,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode5(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 5*FACTOR;
+    int numLongs = FACTOR_5;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 3, MASK8_5);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 5, longsIdx += 3) {
@@ -316,10 +341,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode6(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 6*FACTOR;
+    int numLongs = FACTOR_6;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 2, MASK8_6);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*FACTOR; ++iter, tmpIdx += 3, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_2; ++iter, tmpIdx += 3, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK8_2) << 4;
       l0 |= (tmp[tmpIdx+1] & MASK8_2) << 2;
       l0 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
@@ -332,7 +357,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode7(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 7*FACTOR;
+    int numLongs = FACTOR_7;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 1, MASK8_7);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 7, longsIdx += 1) {
@@ -352,7 +377,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode8(DataInput in, long[] tmp, long[] longs) throws IOException {
-    in.readLELongs(longs, 0, 8*FACTOR);
+    in.readLELongs(longs, 0, FACTOR_8);
   }
 
   /**
@@ -360,7 +385,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode9(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 9*FACTOR;
+    int numLongs = FACTOR_9;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 7, MASK16_9);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 9, longsIdx += 7) {
@@ -394,10 +419,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode10(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 10*FACTOR;
+    int numLongs = FACTOR_10;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 6, MASK16_10);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*FACTOR; ++iter, tmpIdx += 5, longsIdx += 3) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_2; ++iter, tmpIdx += 5, longsIdx += 3) {
       long l0 = (tmp[tmpIdx+0] & MASK16_6) << 4;
       l0 |= (tmp[tmpIdx+1] >>> 2) & MASK16_4;
       longs[longsIdx+0] = l0;
@@ -416,7 +441,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode11(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 11*FACTOR;
+    int numLongs = FACTOR_11;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 5, MASK16_11);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 11, longsIdx += 5) {
@@ -448,10 +473,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode12(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 12*FACTOR;
+    int numLongs = FACTOR_12;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 4, MASK16_12);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*FACTOR; ++iter, tmpIdx += 3, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_4; ++iter, tmpIdx += 3, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK16_4) << 8;
       l0 |= (tmp[tmpIdx+1] & MASK16_4) << 4;
       l0 |= (tmp[tmpIdx+2] & MASK16_4) << 0;
@@ -464,7 +489,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode13(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 13*FACTOR;
+    int numLongs = FACTOR_13;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 3, MASK16_13);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 13, longsIdx += 3) {
@@ -494,10 +519,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode14(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 14*FACTOR;
+    int numLongs = FACTOR_14;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 2, MASK16_14);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*FACTOR; ++iter, tmpIdx += 7, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_2; ++iter, tmpIdx += 7, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK16_2) << 12;
       l0 |= (tmp[tmpIdx+1] & MASK16_2) << 10;
       l0 |= (tmp[tmpIdx+2] & MASK16_2) << 8;
@@ -514,7 +539,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode15(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 15*FACTOR;
+    int numLongs = FACTOR_15;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 1, MASK16_15);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 15, longsIdx += 1) {
@@ -542,7 +567,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode16(DataInput in, long[] tmp, long[] longs) throws IOException {
-    in.readLELongs(longs, 0, 16*FACTOR);
+    in.readLELongs(longs, 0, FACTOR_16);
   }
 
   /**
@@ -550,7 +575,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode17(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 17*FACTOR;
+    int numLongs = FACTOR_17;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 15, MASK32_17);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 17, longsIdx += 15) {
@@ -608,10 +633,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode18(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 18*FACTOR;
+    int numLongs = FACTOR_18;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 14, MASK32_18);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*FACTOR; ++iter, tmpIdx += 9, longsIdx += 7) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter <  FACTOR_2; ++iter, tmpIdx += 9, longsIdx += 7) {
       long l0 = (tmp[tmpIdx+0] & MASK32_14) << 4;
       l0 |= (tmp[tmpIdx+1] >>> 10) & MASK32_4;
       longs[longsIdx+0] = l0;
@@ -642,7 +667,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode19(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 19*FACTOR;
+    int numLongs = FACTOR_19;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 13, MASK32_19);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 19, longsIdx += 13) {
@@ -698,10 +723,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode20(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 20*FACTOR;
+    int numLongs = FACTOR_20;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 12, MASK32_20);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 4*FACTOR; ++iter, tmpIdx += 5, longsIdx += 3) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_4; ++iter, tmpIdx += 5, longsIdx += 3) {
       long l0 = (tmp[tmpIdx+0] & MASK32_12) << 8;
       l0 |= (tmp[tmpIdx+1] >>> 4) & MASK32_8;
       longs[longsIdx+0] = l0;
@@ -720,7 +745,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode21(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 21*FACTOR;
+    int numLongs = FACTOR_21;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 11, MASK32_21);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 21, longsIdx += 11) {
@@ -774,10 +799,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode22(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 22*FACTOR;
+    int numLongs = FACTOR_22;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 10, MASK32_22);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 2*FACTOR; ++iter, tmpIdx += 11, longsIdx += 5) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_2; ++iter, tmpIdx += 11, longsIdx += 5) {
       long l0 = (tmp[tmpIdx+0] & MASK32_10) << 12;
       l0 |= (tmp[tmpIdx+1] & MASK32_10) << 2;
       l0 |= (tmp[tmpIdx+2] >>> 8) & MASK32_2;
@@ -806,7 +831,7 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode23(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 23*FACTOR;
+    int numLongs = FACTOR_23;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 9, MASK32_23);
     for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR; ++iter, tmpIdx += 23, longsIdx += 9) {
@@ -858,10 +883,10 @@ public class ForPrimitives64 {
    * into {@code long} with packed representation.
    */
   public static void decode24(DataInput in, long[] tmp, long[] longs) throws IOException {
-    int numLongs = 24*FACTOR;
+    int numLongs = FACTOR_24;
     in.readLELongs(tmp, 0, numLongs);
     shiftLongs(tmp, numLongs, longs, 0, 8, MASK32_24);
-    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < 8*FACTOR; ++iter, tmpIdx += 3, longsIdx += 1) {
+    for (int iter = 0, tmpIdx = 0, longsIdx = numLongs; iter < FACTOR_8; ++iter, tmpIdx += 3, longsIdx += 1) {
       long l0 = (tmp[tmpIdx+0] & MASK32_8) << 16;
       l0 |= (tmp[tmpIdx+1] & MASK32_8) << 8;
       l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
@@ -887,7 +912,7 @@ public class ForPrimitives64 {
     final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
     int tmpIdx = 0;
     int remainingBits = remainingBitsPerLong;
-    for (; longsIdx < BLOCK_SIZE / 2; ++longsIdx) {
+    for (; longsIdx < BLOCK_SIZE_32; ++longsIdx) {
       int b = bitsPerValue - remainingBits;
       long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
       while (b >= remainingBitsPerLong) {
