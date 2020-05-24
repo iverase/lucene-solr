@@ -1024,11 +1024,76 @@ final class ForDocIdsWriter {
 
   private static void expand32Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < 32; i++, j+=2) {
-      long l = arr[i];
-      ints[j]   = base += (int) (l >>> 32);
-      ints[j+1] = base += (int) l;
-    }
+//    for (int i = 0, j = offset; i < 32; i++, j+=2) {
+//      long l = arr[i];
+//      ints[j]   = base += (int) (l >>> 32);
+//      ints[j+1] = base += (int) l;
+//    }
+
+    ints[offset]   = base + (int) (arr[0] >>> 32);
+    ints[offset+1] = ints[offset] + (int) arr[0];
+    ints[offset+2] = ints[offset+1] + (int) (arr[1] >>> 32);
+    ints[offset+3] = ints[offset+2] + (int) arr[1];
+    ints[offset+4] = ints[offset+3] + (int) (arr[2] >>> 32);
+    ints[offset+5] = ints[offset+4] + (int) arr[2];
+    ints[offset+6]   = ints[offset+5] + (int) (arr[3] >>> 32);
+    ints[offset+7] = ints[offset+6] + (int) arr[3];
+    ints[offset+8]   = ints[offset+7] + (int) (arr[4] >>> 32);
+    ints[offset+9] = ints[offset+8] + (int) arr[4];
+    ints[offset+10]   = ints[offset+9] + (int) (arr[5] >>> 32);
+    ints[offset+11] = ints[offset+10] + (int) arr[5];
+    ints[offset+12]   = ints[offset+11] + (int) (arr[6] >>> 32);
+    ints[offset+13] = ints[offset+12] + (int) arr[6];
+    ints[offset+14]   = ints[offset+13] + (int) (arr[7] >>> 32);
+    ints[offset+15] = ints[offset+14] + (int) arr[7];
+    ints[offset+16]   = ints[offset+15] + (int) (arr[8] >>> 32);
+    ints[offset+17] = ints[offset+16] + (int) arr[8];
+    ints[offset+18]   = ints[offset+17] + (int) (arr[9] >>> 32);
+    ints[offset+19] = ints[offset+18] + (int) arr[9];
+    ints[offset+20]   = ints[offset+19] + (int) (arr[10] >>> 32);
+    ints[offset+21] = ints[offset+20] + (int) arr[10];
+    ints[offset+22]   = ints[offset+21] + (int) (arr[11] >>> 32);
+    ints[offset+23] = ints[offset+22] + (int) arr[11];
+    ints[offset+24]   = ints[offset+23] + (int) (arr[12] >>> 32);
+    ints[offset+25] = ints[offset+24] + (int) arr[12];
+    ints[offset+26]   = ints[offset+25] + (int) (arr[13] >>> 32);
+    ints[offset+27] = ints[offset+26] + (int) arr[13];
+    ints[offset+28]   = ints[offset+27] + (int) (arr[14] >>> 32);
+    ints[offset+29] = ints[offset+28] + (int) arr[14];
+    ints[offset+30]   = ints[offset+29] + (int) (arr[15] >>> 32);
+    ints[offset+31] = ints[offset+30] + (int) arr[15];
+    ints[offset+32]   = ints[offset+31] + (int) (arr[16] >>> 32);
+    ints[offset+33] = ints[offset+32] + (int) arr[16];
+    ints[offset+34]   = ints[offset+33] + (int) (arr[17] >>> 32);
+    ints[offset+35] = ints[offset+34] + (int) arr[17];
+    ints[offset+36]   = ints[offset+35] + (int) (arr[18] >>> 32);
+    ints[offset+37] = ints[offset+36] + (int) arr[18];
+    ints[offset+38]   = ints[offset+37] + (int) (arr[19] >>> 32);
+    ints[offset+39] = ints[offset+38] + (int) arr[19];
+    ints[offset+40]   = ints[offset+39] + (int) (arr[20] >>> 32);
+    ints[offset+41] = ints[offset+40] + (int) arr[20];
+    ints[offset+42]   = ints[offset+41] + (int) (arr[21] >>> 32);
+    ints[offset+43] = ints[offset+42] + (int) arr[21];
+    ints[offset+44]   = ints[offset+43] + (int) (arr[22] >>> 32);
+    ints[offset+45] = ints[offset+44] + (int) arr[22];
+    ints[offset+46]   = ints[offset+45] + (int) (arr[23] >>> 32);
+    ints[offset+47] = ints[offset+46] + (int) arr[23];
+    ints[offset+48]   = ints[offset+47] + (int) (arr[24] >>> 32);
+    ints[offset+49] = ints[offset+48] + (int) arr[24];
+    ints[offset+50]   = ints[offset+49] + (int) (arr[25] >>> 32);
+    ints[offset+51] = ints[offset+50] + (int) arr[25];
+    ints[offset+52]   = ints[offset+51] + (int) (arr[26] >>> 32);
+    ints[offset+53] = ints[offset+52] + (int) arr[26];
+    ints[offset+54]   = ints[offset+53] + (int) (arr[27] >>> 32);
+    ints[offset+55] = ints[offset+54] + (int) arr[27];
+    ints[offset+56]   = ints[offset+55] + (int) (arr[28] >>> 32);
+    ints[offset+57] = ints[offset+56] + (int) arr[28];
+    ints[offset+58]   = ints[offset+57] + (int) (arr[29] >>> 32);
+    ints[offset+59] = ints[offset+58] + (int) arr[29];
+    ints[offset+60]   = ints[offset+59] + (int) (arr[30] >>> 32);
+    ints[offset+61] = ints[offset+60] + (int) arr[30];
+    ints[offset+62]   = ints[offset+61] + (int) (arr[31] >>> 32);
+    ints[offset+63] = ints[offset+62] + (int) arr[31];
   }
 
   private static void expand32Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
