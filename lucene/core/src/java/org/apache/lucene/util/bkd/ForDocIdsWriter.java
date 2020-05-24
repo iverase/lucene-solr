@@ -41,10 +41,10 @@ import java.util.Arrays;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.ForPrimitives;
+import org.apache.lucene.util.ForPrimitives64;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.util.ForPrimitives.BLOCK_SIZE;
+import static org.apache.lucene.util.ForPrimitives64.BLOCK_SIZE;
 
 final class ForDocIdsWriter {
 
@@ -160,135 +160,136 @@ final class ForDocIdsWriter {
   private static void encode(long[] longs, int bitsPerValue, DataOutput out, long[] tmp) throws IOException {
     // re-order values for easier decoding
     if (bitsPerValue <= 8) {
-      for (int i = 0, j = 0; i < 16; ++i, j += 8) {
+      for (int i = 0, j = 0; i < 8; ++i, j += 8) {
+        tmp[i] = longs[j];
+        tmp[8+i] = longs[j+1];
+        tmp[16+i] = longs[j+2];
+        tmp[24+i] = longs[j+3];
+        tmp[32+i] = longs[j+4];
+        tmp[40+i] = longs[j+5];
+        tmp[48+i] = longs[j+6];
+        tmp[56+i] = longs[j+7];
+      }
+    } else if (bitsPerValue <= 16) {
+      for (int i = 0, j = 0; i < 16; ++i, j += 4) {
         tmp[i] = longs[j];
         tmp[16+i] = longs[j+1];
         tmp[32+i] = longs[j+2];
         tmp[48+i] = longs[j+3];
-        tmp[64+i] = longs[j+4];
-        tmp[80+i] = longs[j+5];
-        tmp[96+i] = longs[j+6];
-        tmp[112+i] = longs[j+7];
-      }
-    } else if (bitsPerValue <= 16) {
-      for (int i = 0, j = 0; i < 32; ++i, j += 4) {
-        tmp[i] = longs[j];
-        tmp[32+i] = longs[j+1];
-        tmp[64+i] = longs[j+2];
-        tmp[96+i] = longs[j+3];
       }
     } else {
-      for (int i = 0, j = 0; i < 64; ++i, j += 2) {
+      for (int i = 0, j = 0; i < 32; ++i, j += 2) {
         tmp[i] = longs[j];
-        tmp[64+i] = longs[j+1];
+        tmp[32+i] = longs[j+1];
       }
     }
-    ForPrimitives.encode(tmp, bitsPerValue, out, longs);
+    ForPrimitives64.encode(tmp, bitsPerValue, out, longs);
   }
 
   /**
    * Decode 128 integers into {@code longs}.
    */
   private static void decode(int code, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
+    //System.out.println(code);
     switch (code) {
       case 0:
         final int base = in.readVInt();
         Arrays.fill(ints, offset, offset + BLOCK_SIZE, base);
         break;
       case 1:
-        ForPrimitives.decode1(in, tmp, longs);
+        ForPrimitives64.decode1(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 2:
-        ForPrimitives.decode2(in, tmp, longs);
+        ForPrimitives64.decode2(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 3:
-        ForPrimitives.decode3(in, tmp, longs);
+        ForPrimitives64.decode3(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 4:
-        ForPrimitives.decode4(in, tmp, longs);
+        ForPrimitives64.decode4(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 5:
-        ForPrimitives.decode5(in, tmp, longs);
+        ForPrimitives64.decode5(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 6:
-        ForPrimitives.decode6(in, tmp, longs);
+        ForPrimitives64.decode6(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 7:
-        ForPrimitives.decode7(in, tmp, longs);
+        ForPrimitives64.decode7(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 8:
-        ForPrimitives.decode8(in, tmp, longs);
+        ForPrimitives64.decode8(in, tmp, longs);
         expand8(longs, ints, offset);
         break;
       case 9:
-        ForPrimitives.decode9(in, tmp, longs);
+        ForPrimitives64.decode9(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 10:
-        ForPrimitives.decode10(in, tmp, longs);
+        ForPrimitives64.decode10(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 11:
-        ForPrimitives.decode11(in, tmp, longs);
+        ForPrimitives64.decode11(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 12:
-        ForPrimitives.decode12(in, tmp, longs);
+        ForPrimitives64.decode12(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 13:
-        ForPrimitives.decode13(in, tmp, longs);
+        ForPrimitives64.decode13(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 14:
-        ForPrimitives.decode14(in, tmp, longs);
+        ForPrimitives64.decode14(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 15:
-        ForPrimitives.decode15(in, tmp, longs);
+        ForPrimitives64.decode15(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 16:
-        ForPrimitives.decode16(in, tmp, longs);
+        ForPrimitives64.decode16(in, tmp, longs);
         expand16(longs, ints, offset);
         break;
       case 17:
-        ForPrimitives.decode17(in, tmp, longs);
+        ForPrimitives64.decode17(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 18:
-        ForPrimitives.decode18(in, tmp, longs);
+        ForPrimitives64.decode18(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 19:
-        ForPrimitives.decode19(in, tmp, longs);
+        ForPrimitives64.decode19(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 20:
-        ForPrimitives.decode20(in, tmp, longs);
+        ForPrimitives64.decode20(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 21:
-        ForPrimitives.decode21(in, tmp, longs);
+        ForPrimitives64.decode21(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 22:
-        ForPrimitives.decode22(in, tmp, longs);
+        ForPrimitives64.decode22(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 23:
-        ForPrimitives.decode23(in, tmp, longs);
+        ForPrimitives64.decode23(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 24:
-        ForPrimitives.decode24(in, tmp, longs);
+        ForPrimitives64.decode24(in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 25:
@@ -299,103 +300,103 @@ final class ForDocIdsWriter {
       case 30:
       case 31:
       case 32:
-        ForPrimitives.decodeSlow(code, in, tmp, longs);
+        ForPrimitives64.decodeSlow(code, in, tmp, longs);
         expand32(longs, ints, offset);
         break;
       case 33:
-        ForPrimitives.decode1(in, tmp, longs);
+        ForPrimitives64.decode1(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 34:
-        ForPrimitives.decode2(in, tmp, longs);
+        ForPrimitives64.decode2(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 35:
-        ForPrimitives.decode3(in, tmp, longs);
+        ForPrimitives64.decode3(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 36:
-        ForPrimitives.decode4(in, tmp, longs);
+        ForPrimitives64.decode4(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 37:
-        ForPrimitives.decode5(in, tmp, longs);
+        ForPrimitives64.decode5(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 38:
-        ForPrimitives.decode6(in, tmp, longs);
+        ForPrimitives64.decode6(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 39:
-        ForPrimitives.decode7(in, tmp, longs);
+        ForPrimitives64.decode7(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 40:
-        ForPrimitives.decode8(in, tmp, longs);
+        ForPrimitives64.decode8(in, tmp, longs);
         expand8Delta(in, longs, ints, offset);
         break;
       case 41:
-        ForPrimitives.decode9(in, tmp, longs);
+        ForPrimitives64.decode9(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 42:
-        ForPrimitives.decode10(in, tmp, longs);
+        ForPrimitives64.decode10(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 43:
-        ForPrimitives.decode11(in, tmp, longs);
+        ForPrimitives64.decode11(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 44:
-        ForPrimitives.decode12(in, tmp, longs);
+        ForPrimitives64.decode12(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 45:
-        ForPrimitives.decode13(in, tmp, longs);
+        ForPrimitives64.decode13(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 46:
-        ForPrimitives.decode14(in, tmp, longs);
+        ForPrimitives64.decode14(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 47:
-        ForPrimitives.decode15(in, tmp, longs);
+        ForPrimitives64.decode15(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 48:
-        ForPrimitives.decode16(in, tmp, longs);
+        ForPrimitives64.decode16(in, tmp, longs);
         expand16Delta(in, longs, ints, offset);
         break;
       case 49:
-        ForPrimitives.decode17(in, tmp, longs);
+        ForPrimitives64.decode17(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 50:
-        ForPrimitives.decode18(in, tmp, longs);
+        ForPrimitives64.decode18(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 51:
-        ForPrimitives.decode19(in, tmp, longs);
+        ForPrimitives64.decode19(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 52:
-        ForPrimitives.decode20(in, tmp, longs);
+        ForPrimitives64.decode20(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 53:
-        ForPrimitives.decode21(in, tmp, longs);
+        ForPrimitives64.decode21(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 54:
-        ForPrimitives.decode22(in, tmp, longs);
+        ForPrimitives64.decode22(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 55:
-        ForPrimitives.decode23(in, tmp, longs);
+        ForPrimitives64.decode23(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 56:
-        ForPrimitives.decode24(in, tmp, longs);
+        ForPrimitives64.decode24(in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 57:
@@ -406,103 +407,103 @@ final class ForDocIdsWriter {
       case 62:
       case 63:
       case 64:
-        ForPrimitives.decodeSlow(code - 32, in, tmp, longs);
+        ForPrimitives64.decodeSlow(code - 32, in, tmp, longs);
         expand32Delta(in, longs, ints, offset);
         break;
       case 65:
-        ForPrimitives.decode1(in, tmp, longs);
+        ForPrimitives64.decode1(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 66:
-        ForPrimitives.decode2(in, tmp, longs);
+        ForPrimitives64.decode2(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 67:
-        ForPrimitives.decode3(in, tmp, longs);
+        ForPrimitives64.decode3(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 68:
-        ForPrimitives.decode4(in, tmp, longs);
+        ForPrimitives64.decode4(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 69:
-        ForPrimitives.decode5(in, tmp, longs);
+        ForPrimitives64.decode5(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 70:
-        ForPrimitives.decode6(in, tmp, longs);
+        ForPrimitives64.decode6(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 71:
-        ForPrimitives.decode7(in, tmp, longs);
+        ForPrimitives64.decode7(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 72:
-        ForPrimitives.decode8(in, tmp, longs);
+        ForPrimitives64.decode8(in, tmp, longs);
         expand8Base(in, longs, ints, offset);
         break;
       case 73:
-        ForPrimitives.decode9(in, tmp, longs);
+        ForPrimitives64.decode9(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 74:
-        ForPrimitives.decode10(in, tmp, longs);
+        ForPrimitives64.decode10(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 75:
-        ForPrimitives.decode11(in, tmp, longs);
+        ForPrimitives64.decode11(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 76:
-        ForPrimitives.decode12(in, tmp, longs);
+        ForPrimitives64.decode12(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 77:
-        ForPrimitives.decode13(in, tmp, longs);
+        ForPrimitives64.decode13(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 78:
-        ForPrimitives.decode14(in, tmp, longs);
+        ForPrimitives64.decode14(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 79:
-        ForPrimitives.decode15(in, tmp, longs);
+        ForPrimitives64.decode15(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 80:
-        ForPrimitives.decode16(in, tmp, longs);
+        ForPrimitives64.decode16(in, tmp, longs);
         expand16Base(in, longs, ints, offset);
         break;
       case 81:
-        ForPrimitives.decode17(in, tmp, longs);
+        ForPrimitives64.decode17(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 82:
-        ForPrimitives.decode18(in, tmp, longs);
+        ForPrimitives64.decode18(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 83:
-        ForPrimitives.decode19(in, tmp, longs);
+        ForPrimitives64.decode19(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 84:
-        ForPrimitives.decode20(in, tmp, longs);
+        ForPrimitives64.decode20(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 85:
-        ForPrimitives.decode21(in, tmp, longs);
+        ForPrimitives64.decode21(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 86:
-        ForPrimitives.decode22(in, tmp, longs);
+        ForPrimitives64.decode22(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 87:
-        ForPrimitives.decode23(in, tmp, longs);
+        ForPrimitives64.decode23(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 88:
-        ForPrimitives.decode24(in, tmp, longs);
+        ForPrimitives64.decode24(in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case 89:
@@ -513,7 +514,7 @@ final class ForDocIdsWriter {
       case 94:
       case 95:
       case 96:
-        ForPrimitives.decodeSlow(code - 64, in, tmp, longs);
+        ForPrimitives64.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, ints, offset);
         break;
       case Byte.MAX_VALUE:
@@ -533,99 +534,99 @@ final class ForDocIdsWriter {
         }
         break;
       case 1:
-        ForPrimitives.decode1(in, tmp, longs);
+        ForPrimitives64.decode1(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 2:
-        ForPrimitives.decode2(in, tmp, longs);
+        ForPrimitives64.decode2(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 3:
-        ForPrimitives.decode3(in, tmp, longs);
+        ForPrimitives64.decode3(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 4:
-        ForPrimitives.decode4(in, tmp, longs);
+        ForPrimitives64.decode4(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 5:
-        ForPrimitives.decode5(in, tmp, longs);
+        ForPrimitives64.decode5(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 6:
-        ForPrimitives.decode6(in, tmp, longs);
+        ForPrimitives64.decode6(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 7:
-        ForPrimitives.decode7(in, tmp, longs);
+        ForPrimitives64.decode7(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 8:
-        ForPrimitives.decode8(in, tmp, longs);
+        ForPrimitives64.decode8(in, tmp, longs);
         expand8(longs, visitor);
         break;
       case 9:
-        ForPrimitives.decode9(in, tmp, longs);
+        ForPrimitives64.decode9(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 10:
-        ForPrimitives.decode10(in, tmp, longs);
+        ForPrimitives64.decode10(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 11:
-        ForPrimitives.decode11(in, tmp, longs);
+        ForPrimitives64.decode11(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 12:
-        ForPrimitives.decode12(in, tmp, longs);
+        ForPrimitives64.decode12(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 13:
-        ForPrimitives.decode13(in, tmp, longs);
+        ForPrimitives64.decode13(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 14:
-        ForPrimitives.decode14(in, tmp, longs);
+        ForPrimitives64.decode14(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 15:
-        ForPrimitives.decode15(in, tmp, longs);
+        ForPrimitives64.decode15(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 16:
-        ForPrimitives.decode16(in, tmp, longs);
+        ForPrimitives64.decode16(in, tmp, longs);
         expand16(longs, visitor);
         break;
       case 17:
-        ForPrimitives.decode17(in, tmp, longs);
+        ForPrimitives64.decode17(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 18:
-        ForPrimitives.decode18(in, tmp, longs);
+        ForPrimitives64.decode18(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 19:
-        ForPrimitives.decode19(in, tmp, longs);
+        ForPrimitives64.decode19(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 20:
-        ForPrimitives.decode20(in, tmp, longs);
+        ForPrimitives64.decode20(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 21:
-        ForPrimitives.decode21(in, tmp, longs);
+        ForPrimitives64.decode21(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 22:
-        ForPrimitives.decode22(in, tmp, longs);
+        ForPrimitives64.decode22(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 23:
-        ForPrimitives.decode23(in, tmp, longs);
+        ForPrimitives64.decode23(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 24:
-        ForPrimitives.decode24(in, tmp, longs);
+        ForPrimitives64.decode24(in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 25:
@@ -636,103 +637,103 @@ final class ForDocIdsWriter {
       case 30:
       case 31:
       case 32:
-        ForPrimitives.decodeSlow(code, in, tmp, longs);
+        ForPrimitives64.decodeSlow(code, in, tmp, longs);
         expand32(longs, visitor);
         break;
       case 33:
-        ForPrimitives.decode1(in, tmp, longs);
+        ForPrimitives64.decode1(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 34:
-        ForPrimitives.decode2(in, tmp, longs);
+        ForPrimitives64.decode2(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 35:
-        ForPrimitives.decode3(in, tmp, longs);
+        ForPrimitives64.decode3(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 36:
-        ForPrimitives.decode4(in, tmp, longs);
+        ForPrimitives64.decode4(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 37:
-        ForPrimitives.decode5(in, tmp, longs);
+        ForPrimitives64.decode5(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 38:
-        ForPrimitives.decode6(in, tmp, longs);
+        ForPrimitives64.decode6(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 39:
-        ForPrimitives.decode7(in, tmp, longs);
+        ForPrimitives64.decode7(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 40:
-        ForPrimitives.decode8(in, tmp, longs);
+        ForPrimitives64.decode8(in, tmp, longs);
         expand8Delta(in, longs, visitor);
         break;
       case 41:
-        ForPrimitives.decode9(in, tmp, longs);
+        ForPrimitives64.decode9(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 42:
-        ForPrimitives.decode10(in, tmp, longs);
+        ForPrimitives64.decode10(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 43:
-        ForPrimitives.decode11(in, tmp, longs);
+        ForPrimitives64.decode11(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 44:
-        ForPrimitives.decode12(in, tmp, longs);
+        ForPrimitives64.decode12(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 45:
-        ForPrimitives.decode13(in, tmp, longs);
+        ForPrimitives64.decode13(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 46:
-        ForPrimitives.decode14(in, tmp, longs);
+        ForPrimitives64.decode14(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 47:
-        ForPrimitives.decode15(in, tmp, longs);
+        ForPrimitives64.decode15(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 48:
-        ForPrimitives.decode16(in, tmp, longs);
+        ForPrimitives64.decode16(in, tmp, longs);
         expand16Delta(in, longs, visitor);
         break;
       case 49:
-        ForPrimitives.decode17(in, tmp, longs);
+        ForPrimitives64.decode17(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 50:
-        ForPrimitives.decode18(in, tmp, longs);
+        ForPrimitives64.decode18(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 51:
-        ForPrimitives.decode19(in, tmp, longs);
+        ForPrimitives64.decode19(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 52:
-        ForPrimitives.decode20(in, tmp, longs);
+        ForPrimitives64.decode20(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 53:
-        ForPrimitives.decode21(in, tmp, longs);
+        ForPrimitives64.decode21(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 54:
-        ForPrimitives.decode22(in, tmp, longs);
+        ForPrimitives64.decode22(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 55:
-        ForPrimitives.decode23(in, tmp, longs);
+        ForPrimitives64.decode23(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 56:
-        ForPrimitives.decode24(in, tmp, longs);
+        ForPrimitives64.decode24(in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 57:
@@ -743,103 +744,103 @@ final class ForDocIdsWriter {
       case 62:
       case 63:
       case 64:
-        ForPrimitives.decodeSlow(code - 32, in, tmp, longs);
+        ForPrimitives64.decodeSlow(code - 32, in, tmp, longs);
         expand32Delta(in, longs, visitor);
         break;
       case 65:
-        ForPrimitives.decode1(in, tmp, longs);
+        ForPrimitives64.decode1(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 66:
-        ForPrimitives.decode2(in, tmp, longs);
+        ForPrimitives64.decode2(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 67:
-        ForPrimitives.decode3(in, tmp, longs);
+        ForPrimitives64.decode3(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 68:
-        ForPrimitives.decode4(in, tmp, longs);
+        ForPrimitives64.decode4(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 69:
-        ForPrimitives.decode5(in, tmp, longs);
+        ForPrimitives64.decode5(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 70:
-        ForPrimitives.decode6(in, tmp, longs);
+        ForPrimitives64.decode6(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 71:
-        ForPrimitives.decode7(in, tmp, longs);
+        ForPrimitives64.decode7(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 72:
-        ForPrimitives.decode8(in, tmp, longs);
+        ForPrimitives64.decode8(in, tmp, longs);
         expand8Base(in, longs, visitor);
         break;
       case 73:
-        ForPrimitives.decode9(in, tmp, longs);
+        ForPrimitives64.decode9(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 74:
-        ForPrimitives.decode10(in, tmp, longs);
+        ForPrimitives64.decode10(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 75:
-        ForPrimitives.decode11(in, tmp, longs);
+        ForPrimitives64.decode11(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 76:
-        ForPrimitives.decode12(in, tmp, longs);
+        ForPrimitives64.decode12(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 77:
-        ForPrimitives.decode13(in, tmp, longs);
+        ForPrimitives64.decode13(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 78:
-        ForPrimitives.decode14(in, tmp, longs);
+        ForPrimitives64.decode14(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 79:
-        ForPrimitives.decode15(in, tmp, longs);
+        ForPrimitives64.decode15(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 80:
-        ForPrimitives.decode16(in, tmp, longs);
+        ForPrimitives64.decode16(in, tmp, longs);
         expand16Base(in, longs, visitor);
         break;
       case 81:
-        ForPrimitives.decode17(in, tmp, longs);
+        ForPrimitives64.decode17(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 82:
-        ForPrimitives.decode18(in, tmp, longs);
+        ForPrimitives64.decode18(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 83:
-        ForPrimitives.decode19(in, tmp, longs);
+        ForPrimitives64.decode19(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 84:
-        ForPrimitives.decode20(in, tmp, longs);
+        ForPrimitives64.decode20(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 85:
-        ForPrimitives.decode21(in, tmp, longs);
+        ForPrimitives64.decode21(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 86:
-        ForPrimitives.decode22(in, tmp, longs);
+        ForPrimitives64.decode22(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 87:
-        ForPrimitives.decode23(in, tmp, longs);
+        ForPrimitives64.decode23(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 88:
-        ForPrimitives.decode24(in, tmp, longs);
+        ForPrimitives64.decode24(in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case 89:
@@ -850,7 +851,7 @@ final class ForDocIdsWriter {
       case 94:
       case 95:
       case 96:
-        ForPrimitives.decodeSlow(code - 64, in, tmp, longs);
+        ForPrimitives64.decodeSlow(code - 64, in, tmp, longs);
         expand32Base(in, longs, visitor);
         break;
       case Byte.MAX_VALUE:
@@ -862,7 +863,7 @@ final class ForDocIdsWriter {
   }
 
   private static void expand8(long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = offset; i < 16; ++i, j += 8) {
+    for (int i = 0, j = offset; i < 8; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = (int) ((l >>> 56) & 0xFF);
       ints[j+1] = (int) ((l >>> 48) & 0xFF);
@@ -877,7 +878,7 @@ final class ForDocIdsWriter {
 
   private static void expand8Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException{
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < 16; ++i, j += 8) {
+    for (int i = 0, j = offset; i < 8; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = base += (int) ((l >>> 56) & 0xFF);
       ints[j+1] = base += (int) ((l >>> 48) & 0xFF);
@@ -892,7 +893,7 @@ final class ForDocIdsWriter {
 
   private static void expand8Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException{
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < 16; ++i, j += 8) {
+    for (int i = 0, j = offset; i < 8; ++i, j += 8) {
       long l = arr[i];
       ints[j]   = base + (int) ((l >>> 56) & 0xFF);
       ints[j+1] = base + (int) ((l >>> 48) & 0xFF);
@@ -906,7 +907,7 @@ final class ForDocIdsWriter {
   }
 
   private static void expand8(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < 8; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 56) & 0xFF));
       visitor.visit((int) ((l >>> 48) & 0xFF));
@@ -921,7 +922,7 @@ final class ForDocIdsWriter {
 
   private static void expand8Delta(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < 8; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) ((l >>> 56) & 0xFF));
       visitor.visit(base += (int) ((l >>> 48) & 0xFF));
@@ -936,7 +937,7 @@ final class ForDocIdsWriter {
 
   private static void expand8Base(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0; i < 16; ++i) {
+    for (int i = 0; i < 8; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) ((l >>> 56) & 0xFF));
       visitor.visit(base + (int) ((l >>> 48) & 0xFF));
@@ -950,7 +951,7 @@ final class ForDocIdsWriter {
   }
 
   private static void expand16(long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = offset; i < 32; ++i, j += 4) {
+    for (int i = 0, j = offset; i < 16; ++i, j += 4) {
       long l = arr[i];
       ints[j]   = (int) ((l >>> 48) & 0xFFFF);
       ints[j+1] = (int) ((l >>> 32) & 0xFFFF);
@@ -961,7 +962,7 @@ final class ForDocIdsWriter {
 
   private static void expand16Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < 32; ++i, j += 4) {
+    for (int i = 0, j = offset; i < 16; ++i, j += 4) {
       long l = arr[i];
       ints[j]   = base += (int) ((l >>> 48) & 0xFFFF);
       ints[j+1] = base += (int) ((l >>> 32) & 0xFFFF);
@@ -972,7 +973,7 @@ final class ForDocIdsWriter {
 
   private static void expand16Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < 32; ++i, j += 4) {
+    for (int i = 0, j = offset; i < 16; ++i, j += 4) {
       long l = arr[i];
       ints[j]   = base + (int) ((l >>> 48) & 0xFFFF);
       ints[j+1] = base + (int) ((l >>> 32) & 0xFFFF);
@@ -982,7 +983,7 @@ final class ForDocIdsWriter {
   }
 
   private static void expand16(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0; i < 16; ++i) {
       long l = arr[i];
       visitor.visit((int) ((l >>> 48) & 0xFFFF));
       visitor.visit((int) ((l >>> 32) & 0xFFFF));
@@ -993,7 +994,7 @@ final class ForDocIdsWriter {
 
   private static void expand16Delta(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0; i < 16; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) ((l >>> 48) & 0xFFFF));
       visitor.visit(base += (int) ((l >>> 32) & 0xFFFF));
@@ -1004,7 +1005,7 @@ final class ForDocIdsWriter {
 
   private static void expand16Base(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0; i < 16; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) ((l >>> 48) & 0xFFFF));
       visitor.visit(base + (int) ((l >>> 32) & 0xFFFF));
@@ -1014,7 +1015,7 @@ final class ForDocIdsWriter {
   }
 
   private static void expand32(long[] arr, int[] ints, int offset) {
-    for (int i = 0, j = offset; i < 64; i++, j+=2) {
+    for (int i = 0, j = offset; i < 32; i++, j+=2) {
       long l = arr[i];
       ints[j] = (int) (l >>> 32);
       ints[j+1] = (int) l;
@@ -1023,7 +1024,7 @@ final class ForDocIdsWriter {
 
   private static void expand32Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < 64; i++, j+=2) {
+    for (int i = 0, j = offset; i < 32; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base += (int) (l >>> 32);
       ints[j+1] = base += (int) l;
@@ -1032,7 +1033,7 @@ final class ForDocIdsWriter {
 
   private static void expand32Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < 64; i++, j+=2) {
+    for (int i = 0, j = offset; i < 32; i++, j+=2) {
       long l = arr[i];
       ints[j]   = base + (int) (l >>> 32);
       ints[j+1] = base + (int) l;
@@ -1040,7 +1041,7 @@ final class ForDocIdsWriter {
   }
 
   private static void expand32(long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 32; ++i) {
       long l = arr[i];
       visitor.visit((int) (l >>> 32));
       visitor.visit((int) l);
@@ -1049,7 +1050,7 @@ final class ForDocIdsWriter {
 
   private static void expand32Delta(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     int base = in.readVInt();
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 32; ++i) {
       long l = arr[i];
       visitor.visit(base += (int) (l >>> 32));
       visitor.visit(base += (int) l);
@@ -1058,7 +1059,7 @@ final class ForDocIdsWriter {
 
   private static void expand32Base(DataInput in, long[] arr, PointValues.IntersectVisitor visitor) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 32; ++i) {
       long l = arr[i];
       visitor.visit(base + (int) (l >>> 32));
       visitor.visit(base + (int) l);

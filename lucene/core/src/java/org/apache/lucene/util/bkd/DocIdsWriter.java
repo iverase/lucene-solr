@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ForPrimitives;
+import org.apache.lucene.util.ForPrimitives64;
 
 class DocIdsWriter {
 
@@ -36,9 +36,9 @@ class DocIdsWriter {
     // if the number of points is a multiple of BLOCK_SIZE, then use
     // For encoder to get better encoding compression and most of the times
     // better decoding speed.
-    if (count % ForPrimitives.BLOCK_SIZE == 0) {
+    if (count % ForPrimitives64.BLOCK_SIZE == 0) {
       out.writeByte(SIMD);
-      for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
+      for (int i = 0; i < count; i += ForPrimitives64.BLOCK_SIZE) {
         encoder.encode(docIds, start + i, out);
       }
       return;
@@ -103,7 +103,7 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, int[] docIDs, ForDocIdsWriter decoder) throws IOException {
-    for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
+    for (int i = 0; i < count; i += ForPrimitives64.BLOCK_SIZE) {
       decoder.decode(in, docIDs, i);
     }
   }
@@ -164,7 +164,7 @@ class DocIdsWriter {
   }
 
   private static void readSIMD(IndexInput in, int count, IntersectVisitor visitor, ForDocIdsWriter decoder) throws IOException {
-    for (int i = 0; i < count; i += ForPrimitives.BLOCK_SIZE) {
+    for (int i = 0; i < count; i += ForPrimitives64.BLOCK_SIZE) {
       decoder.decode(in, visitor);
     }
   }
