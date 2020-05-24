@@ -287,18 +287,18 @@ public class ForPrimitives64 {
   public static void decode5(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 5);
     shiftLongs(tmp, 5, longs, 0, 3, MASK8_5);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 5; iter < 1; ++iter, tmpIdx += 5, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_3) << 2;
-      l0 |= (tmp[tmpIdx+1] >>> 1) & MASK8_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK8_1) << 4;
-      l1 |= (tmp[tmpIdx+2] & MASK8_3) << 1;
-      l1 |= (tmp[tmpIdx+3] >>> 2) & MASK8_1;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+3] & MASK8_2) << 3;
-      l2 |= (tmp[tmpIdx+4] & MASK8_3) << 0;
-      longs[longsIdx+2] = l2;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 5; iter < 1; ++iter, tmpIdx += 5, longsIdx += 3) {
+      long l0 = (tmp[0] & MASK8_3) << 2;
+      l0 |= (tmp[1] >>> 1) & MASK8_2;
+      longs[5] = l0;
+      long l1 = (tmp[1] & MASK8_1) << 4;
+      l1 |= (tmp[2] & MASK8_3) << 1;
+      l1 |= (tmp[3] >>> 2) & MASK8_1;
+      longs[6] = l1;
+      long l2 = (tmp[3] & MASK8_2) << 3;
+      l2 |= (tmp[4] & MASK8_3) << 0;
+      longs[7] = l2;
+    //}
   }
 
   /**
@@ -308,12 +308,22 @@ public class ForPrimitives64 {
   public static void decode6(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 6);
     shiftLongs(tmp, 6, longs, 0, 2, MASK8_6);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 6; iter < 2; ++iter, tmpIdx += 3, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_2) << 4;
-      l0 |= (tmp[tmpIdx+1] & MASK8_2) << 2;
-      l0 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
-      longs[longsIdx+0] = l0;
-    }
+//    for (int iter = 0, tmpIdx = 0, longsIdx = 6; iter < 2; ++iter, tmpIdx += 3, longsIdx += 1) {
+//      long l0 = (tmp[0] & MASK8_2) << 4;
+//      l0 |= (tmp[tmpIdx+1] & MASK8_2) << 2;
+//      l0 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
+//      longs[longsIdx+0] = l0;
+//    }
+
+    long l0 = (tmp[0] & MASK8_2) << 4;
+    l0 |= (tmp[1] & MASK8_2) << 2;
+    l0 |= (tmp[2] & MASK8_2) << 0;
+    longs[6] = l0;
+
+    long l1 = (tmp[3] & MASK8_2) << 4;
+    l1 |= (tmp[4] & MASK8_2) << 2;
+    l1 |= (tmp[5] & MASK8_2) << 0;
+    longs[7] = l1;
   }
 
   /**
@@ -323,16 +333,16 @@ public class ForPrimitives64 {
   public static void decode7(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 7);
     shiftLongs(tmp, 7, longs, 0, 1, MASK8_7);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 7; iter < 1; ++iter, tmpIdx += 7, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK8_1) << 6;
-      l0 |= (tmp[tmpIdx+1] & MASK8_1) << 5;
-      l0 |= (tmp[tmpIdx+2] & MASK8_1) << 4;
-      l0 |= (tmp[tmpIdx+3] & MASK8_1) << 3;
-      l0 |= (tmp[tmpIdx+4] & MASK8_1) << 2;
-      l0 |= (tmp[tmpIdx+5] & MASK8_1) << 1;
-      l0 |= (tmp[tmpIdx+6] & MASK8_1) << 0;
-      longs[longsIdx+0] = l0;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 7; iter < 1; ++iter, tmpIdx += 7, longsIdx += 1) {
+      long l0 = (tmp[0] & MASK8_1) << 6;
+      l0 |= (tmp[1] & MASK8_1) << 5;
+      l0 |= (tmp[2] & MASK8_1) << 4;
+      l0 |= (tmp[3] & MASK8_1) << 3;
+      l0 |= (tmp[4] & MASK8_1) << 2;
+      l0 |= (tmp[5] & MASK8_1) << 1;
+      l0 |= (tmp[6] & MASK8_1) << 0;
+      longs[7] = l0;
+   // }
   }
 
   /**
@@ -350,30 +360,30 @@ public class ForPrimitives64 {
   public static void decode9(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 9);
     shiftLongs(tmp, 9, longs, 0, 7, MASK16_9);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 9; iter < 1; ++iter, tmpIdx += 9, longsIdx += 7) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_7) << 2;
-      l0 |= (tmp[tmpIdx+1] >>> 5) & MASK16_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK16_5) << 4;
-      l1 |= (tmp[tmpIdx+2] >>> 3) & MASK16_4;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+2] & MASK16_3) << 6;
-      l2 |= (tmp[tmpIdx+3] >>> 1) & MASK16_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+3] & MASK16_1) << 8;
-      l3 |= (tmp[tmpIdx+4] & MASK16_7) << 1;
-      l3 |= (tmp[tmpIdx+5] >>> 6) & MASK16_1;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+5] & MASK16_6) << 3;
-      l4 |= (tmp[tmpIdx+6] >>> 4) & MASK16_3;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+6] & MASK16_4) << 5;
-      l5 |= (tmp[tmpIdx+7] >>> 2) & MASK16_5;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+7] & MASK16_2) << 7;
-      l6 |= (tmp[tmpIdx+8] & MASK16_7) << 0;
-      longs[longsIdx+6] = l6;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 9; iter < 1; ++iter, tmpIdx += 9, longsIdx += 7) {
+      long l0 = (tmp[0] & MASK16_7) << 2;
+      l0 |= (tmp[1] >>> 5) & MASK16_2;
+      longs[9] = l0;
+      long l1 = (tmp[1] & MASK16_5) << 4;
+      l1 |= (tmp[2] >>> 3) & MASK16_4;
+      longs[10] = l1;
+      long l2 = (tmp[2] & MASK16_3) << 6;
+      l2 |= (tmp[3] >>> 1) & MASK16_6;
+      longs[11] = l2;
+      long l3 = (tmp[3] & MASK16_1) << 8;
+      l3 |= (tmp[4] & MASK16_7) << 1;
+      l3 |= (tmp[5] >>> 6) & MASK16_1;
+      longs[12] = l3;
+      long l4 = (tmp[5] & MASK16_6) << 3;
+      l4 |= (tmp[6] >>> 4) & MASK16_3;
+      longs[13] = l4;
+      long l5 = (tmp[6] & MASK16_4) << 5;
+      l5 |= (tmp[7] >>> 2) & MASK16_5;
+      longs[14] = l5;
+      long l6 = (tmp[7] & MASK16_2) << 7;
+      l6 |= (tmp[8] & MASK16_7) << 0;
+      longs[15] = l6;
+    //}
   }
 
   /**
@@ -383,18 +393,40 @@ public class ForPrimitives64 {
   public static void decode10(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 10);
     shiftLongs(tmp, 10, longs, 0, 6, MASK16_10);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 10; iter < 2; ++iter, tmpIdx += 5, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_6) << 4;
-      l0 |= (tmp[tmpIdx+1] >>> 2) & MASK16_4;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+1] & MASK16_2) << 8;
-      l1 |= (tmp[tmpIdx+2] & MASK16_6) << 2;
-      l1 |= (tmp[tmpIdx+3] >>> 4) & MASK16_2;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+3] & MASK16_4) << 6;
-      l2 |= (tmp[tmpIdx+4] & MASK16_6) << 0;
-      longs[longsIdx+2] = l2;
-    }
+//    for (int iter = 0, tmpIdx = 0, longsIdx = 10; iter < 2; ++iter, tmpIdx += 5, longsIdx += 3) {
+//      long l0 = (tmp[tmpIdx+0] & MASK16_6) << 4;
+//      l0 |= (tmp[tmpIdx+1] >>> 2) & MASK16_4;
+//      longs[longsIdx+0] = l0;
+//      long l1 = (tmp[tmpIdx+1] & MASK16_2) << 8;
+//      l1 |= (tmp[tmpIdx+2] & MASK16_6) << 2;
+//      l1 |= (tmp[tmpIdx+3] >>> 4) & MASK16_2;
+//      longs[longsIdx+1] = l1;
+//      long l2 = (tmp[tmpIdx+3] & MASK16_4) << 6;
+//      l2 |= (tmp[tmpIdx+4] & MASK16_6) << 0;
+//      longs[longsIdx+2] = l2;
+//    }
+
+    long l0 = (tmp[0] & MASK16_6) << 4;
+    l0 |= (tmp[1] >>> 2) & MASK16_4;
+    longs[10] = l0;
+    long l1 = (tmp[1] & MASK16_2) << 8;
+    l1 |= (tmp[2] & MASK16_6) << 2;
+    l1 |= (tmp[3] >>> 4) & MASK16_2;
+    longs[11] = l1;
+    long l2 = (tmp[3] & MASK16_4) << 6;
+    l2 |= (tmp[4] & MASK16_6) << 0;
+    longs[12] = l2;
+
+    long l3 = (tmp[5] & MASK16_6) << 4;
+    l3 |= (tmp[6] >>> 2) & MASK16_4;
+    longs[13] = l3;
+    long l4 = (tmp[6] & MASK16_2) << 8;
+    l4 |= (tmp[7] & MASK16_6) << 2;
+    l4 |= (tmp[8] >>> 4) & MASK16_2;
+    longs[14] = l4;
+    long l5 = (tmp[8] & MASK16_4) << 6;
+    l5 |= (tmp[9] & MASK16_6) << 0;
+    longs[15] = l5;
   }
 
   /**
@@ -404,28 +436,28 @@ public class ForPrimitives64 {
   public static void decode11(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 11);
     shiftLongs(tmp, 11, longs, 0, 5, MASK16_11);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 11; iter < 1; ++iter, tmpIdx += 11, longsIdx += 5) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_5) << 6;
-      l0 |= (tmp[tmpIdx+1] & MASK16_5) << 1;
-      l0 |= (tmp[tmpIdx+2] >>> 4) & MASK16_1;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+2] & MASK16_4) << 7;
-      l1 |= (tmp[tmpIdx+3] & MASK16_5) << 2;
-      l1 |= (tmp[tmpIdx+4] >>> 3) & MASK16_2;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+4] & MASK16_3) << 8;
-      l2 |= (tmp[tmpIdx+5] & MASK16_5) << 3;
-      l2 |= (tmp[tmpIdx+6] >>> 2) & MASK16_3;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+6] & MASK16_2) << 9;
-      l3 |= (tmp[tmpIdx+7] & MASK16_5) << 4;
-      l3 |= (tmp[tmpIdx+8] >>> 1) & MASK16_4;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+8] & MASK16_1) << 10;
-      l4 |= (tmp[tmpIdx+9] & MASK16_5) << 5;
-      l4 |= (tmp[tmpIdx+10] & MASK16_5) << 0;
-      longs[longsIdx+4] = l4;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 11; iter < 1; ++iter, tmpIdx += 11, longsIdx += 5) {
+      long l0 = (tmp[0] & MASK16_5) << 6;
+      l0 |= (tmp[1] & MASK16_5) << 1;
+      l0 |= (tmp[2] >>> 4) & MASK16_1;
+      longs[11] = l0;
+      long l1 = (tmp[2] & MASK16_4) << 7;
+      l1 |= (tmp[3] & MASK16_5) << 2;
+      l1 |= (tmp[4] >>> 3) & MASK16_2;
+      longs[12] = l1;
+      long l2 = (tmp[4] & MASK16_3) << 8;
+      l2 |= (tmp[5] & MASK16_5) << 3;
+      l2 |= (tmp[6] >>> 2) & MASK16_3;
+      longs[13] = l2;
+      long l3 = (tmp[6] & MASK16_2) << 9;
+      l3 |= (tmp[7] & MASK16_5) << 4;
+      l3 |= (tmp[8] >>> 1) & MASK16_4;
+      longs[14] = l3;
+      long l4 = (tmp[8] & MASK16_1) << 10;
+      l4 |= (tmp[9] & MASK16_5) << 5;
+      l4 |= (tmp[10] & MASK16_5) << 0;
+      longs[15] = l4;
+    //}
   }
 
   /**
@@ -435,12 +467,28 @@ public class ForPrimitives64 {
   public static void decode12(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 12);
     shiftLongs(tmp, 12, longs, 0, 4, MASK16_12);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 12; iter < 4; ++iter, tmpIdx += 3, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_4) << 8;
-      l0 |= (tmp[tmpIdx+1] & MASK16_4) << 4;
-      l0 |= (tmp[tmpIdx+2] & MASK16_4) << 0;
-      longs[longsIdx+0] = l0;
-    }
+//    for (int iter = 0, tmpIdx = 0, longsIdx = 12; iter < 4; ++iter, tmpIdx += 3, longsIdx += 1) {
+//      long l0 = (tmp[tmpIdx+0] & MASK16_4) << 8;
+//      l0 |= (tmp[tmpIdx+1] & MASK16_4) << 4;
+//      l0 |= (tmp[tmpIdx+2] & MASK16_4) << 0;
+//      longs[longsIdx+0] = l0;
+//    }
+    long l0 = (tmp[0] & MASK16_4) << 8;
+    l0 |= (tmp[1] & MASK16_4) << 4;
+    l0 |= (tmp[2] & MASK16_4) << 0;
+    longs[12] = l0;
+    long l1 = (tmp[3] & MASK16_4) << 8;
+    l1 |= (tmp[4] & MASK16_4) << 4;
+    l1 |= (tmp[5] & MASK16_4) << 0;
+    longs[13] = l1;
+    long l2 = (tmp[6] & MASK16_4) << 8;
+    l2 |= (tmp[7] & MASK16_4) << 4;
+    l2 |= (tmp[8] & MASK16_4) << 0;
+    longs[14] = l2;
+    long l3 = (tmp[9] & MASK16_4) << 8;
+    l3 |= (tmp[10] & MASK16_4) << 4;
+    l3 |= (tmp[11] & MASK16_4) << 0;
+    longs[15] = l3;
   }
 
   /**
@@ -450,26 +498,26 @@ public class ForPrimitives64 {
   public static void decode13(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 13);
     shiftLongs(tmp, 13, longs, 0, 3, MASK16_13);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 13; iter < 1; ++iter, tmpIdx += 13, longsIdx += 3) {
-      long l0 = (tmp[tmpIdx+0] & MASK16_3) << 10;
-      l0 |= (tmp[tmpIdx+1] & MASK16_3) << 7;
-      l0 |= (tmp[tmpIdx+2] & MASK16_3) << 4;
-      l0 |= (tmp[tmpIdx+3] & MASK16_3) << 1;
-      l0 |= (tmp[tmpIdx+4] >>> 2) & MASK16_1;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+4] & MASK16_2) << 11;
-      l1 |= (tmp[tmpIdx+5] & MASK16_3) << 8;
-      l1 |= (tmp[tmpIdx+6] & MASK16_3) << 5;
-      l1 |= (tmp[tmpIdx+7] & MASK16_3) << 2;
-      l1 |= (tmp[tmpIdx+8] >>> 1) & MASK16_2;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+8] & MASK16_1) << 12;
-      l2 |= (tmp[tmpIdx+9] & MASK16_3) << 9;
-      l2 |= (tmp[tmpIdx+10] & MASK16_3) << 6;
-      l2 |= (tmp[tmpIdx+11] & MASK16_3) << 3;
-      l2 |= (tmp[tmpIdx+12] & MASK16_3) << 0;
-      longs[longsIdx+2] = l2;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 13; iter < 1; ++iter, tmpIdx += 13, longsIdx += 3) {
+      long l0 = (tmp[0] & MASK16_3) << 10;
+      l0 |= (tmp[1] & MASK16_3) << 7;
+      l0 |= (tmp[2] & MASK16_3) << 4;
+      l0 |= (tmp[3] & MASK16_3) << 1;
+      l0 |= (tmp[4] >>> 2) & MASK16_1;
+      longs[13] = l0;
+      long l1 = (tmp[4] & MASK16_2) << 11;
+      l1 |= (tmp[5] & MASK16_3) << 8;
+      l1 |= (tmp[6] & MASK16_3) << 5;
+      l1 |= (tmp[7] & MASK16_3) << 2;
+      l1 |= (tmp[8] >>> 1) & MASK16_2;
+      longs[14] = l1;
+      long l2 = (tmp[8] & MASK16_1) << 12;
+      l2 |= (tmp[9] & MASK16_3) << 9;
+      l2 |= (tmp[10] & MASK16_3) << 6;
+      l2 |= (tmp[11] & MASK16_3) << 3;
+      l2 |= (tmp[12] & MASK16_3) << 0;
+      longs[15] = l2;
+   // }
   }
 
   /**
@@ -858,28 +906,70 @@ public class ForPrimitives64 {
   public static void decode22(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 22);
     shiftLongs(tmp, 22, longs, 0, 10, MASK32_22);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 22; iter < 2; ++iter, tmpIdx += 11, longsIdx += 5) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_10) << 12;
-      l0 |= (tmp[tmpIdx+1] & MASK32_10) << 2;
-      l0 |= (tmp[tmpIdx+2] >>> 8) & MASK32_2;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+2] & MASK32_8) << 14;
-      l1 |= (tmp[tmpIdx+3] & MASK32_10) << 4;
-      l1 |= (tmp[tmpIdx+4] >>> 6) & MASK32_4;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+4] & MASK32_6) << 16;
-      l2 |= (tmp[tmpIdx+5] & MASK32_10) << 6;
-      l2 |= (tmp[tmpIdx+6] >>> 4) & MASK32_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+6] & MASK32_4) << 18;
-      l3 |= (tmp[tmpIdx+7] & MASK32_10) << 8;
-      l3 |= (tmp[tmpIdx+8] >>> 2) & MASK32_8;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+8] & MASK32_2) << 20;
-      l4 |= (tmp[tmpIdx+9] & MASK32_10) << 10;
-      l4 |= (tmp[tmpIdx+10] & MASK32_10) << 0;
-      longs[longsIdx+4] = l4;
-    }
+//    for (int iter = 0, tmpIdx = 0, longsIdx = 22; iter < 2; ++iter, tmpIdx += 11, longsIdx += 5) {
+//      long l0 = (tmp[tmpIdx+0] & MASK32_10) << 12;
+//      l0 |= (tmp[tmpIdx+1] & MASK32_10) << 2;
+//      l0 |= (tmp[tmpIdx+2] >>> 8) & MASK32_2;
+//      longs[longsIdx+0] = l0;
+//      long l1 = (tmp[tmpIdx+2] & MASK32_8) << 14;
+//      l1 |= (tmp[tmpIdx+3] & MASK32_10) << 4;
+//      l1 |= (tmp[tmpIdx+4] >>> 6) & MASK32_4;
+//      longs[longsIdx+1] = l1;
+//      long l2 = (tmp[tmpIdx+4] & MASK32_6) << 16;
+//      l2 |= (tmp[tmpIdx+5] & MASK32_10) << 6;
+//      l2 |= (tmp[tmpIdx+6] >>> 4) & MASK32_6;
+//      longs[longsIdx+2] = l2;
+//      long l3 = (tmp[tmpIdx+6] & MASK32_4) << 18;
+//      l3 |= (tmp[tmpIdx+7] & MASK32_10) << 8;
+//      l3 |= (tmp[tmpIdx+8] >>> 2) & MASK32_8;
+//      longs[longsIdx+3] = l3;
+//      long l4 = (tmp[tmpIdx+8] & MASK32_2) << 20;
+//      l4 |= (tmp[tmpIdx+9] & MASK32_10) << 10;
+//      l4 |= (tmp[tmpIdx+10] & MASK32_10) << 0;
+//      longs[longsIdx+4] = l4;
+//    }
+
+    long l0 = (tmp[0] & MASK32_10) << 12;
+    l0 |= (tmp[1] & MASK32_10) << 2;
+    l0 |= (tmp[2] >>> 8) & MASK32_2;
+    longs[22] = l0;
+    long l1 = (tmp[2] & MASK32_8) << 14;
+    l1 |= (tmp[3] & MASK32_10) << 4;
+    l1 |= (tmp[4] >>> 6) & MASK32_4;
+    longs[23] = l1;
+    long l2 = (tmp[4] & MASK32_6) << 16;
+    l2 |= (tmp[5] & MASK32_10) << 6;
+    l2 |= (tmp[6] >>> 4) & MASK32_6;
+    longs[24] = l2;
+    long l3 = (tmp[6] & MASK32_4) << 18;
+    l3 |= (tmp[7] & MASK32_10) << 8;
+    l3 |= (tmp[8] >>> 2) & MASK32_8;
+    longs[25] = l3;
+    long l4 = (tmp[8] & MASK32_2) << 20;
+    l4 |= (tmp[9] & MASK32_10) << 10;
+    l4 |= (tmp[10] & MASK32_10) << 0;
+    longs[26] = l4;
+
+    long l5 = (tmp[11] & MASK32_10) << 12;
+    l5 |= (tmp[12] & MASK32_10) << 2;
+    l5 |= (tmp[13] >>> 8) & MASK32_2;
+    longs[27] = l5;
+    long l6 = (tmp[13] & MASK32_8) << 14;
+    l6 |= (tmp[14] & MASK32_10) << 4;
+    l6 |= (tmp[15] >>> 6) & MASK32_4;
+    longs[28] = l6;
+    long l7 = (tmp[15] & MASK32_6) << 16;
+    l7 |= (tmp[16] & MASK32_10) << 6;
+    l7 |= (tmp[17] >>> 4) & MASK32_6;
+    longs[29] = l7;
+    long l8 = (tmp[17] & MASK32_4) << 18;
+    l8 |= (tmp[18] & MASK32_10) << 8;
+    l8 |= (tmp[19] >>> 2) & MASK32_8;
+    longs[30] = l8;
+    long l9 = (tmp[19] & MASK32_2) << 20;
+    l9 |= (tmp[20] & MASK32_10) << 10;
+    l9 |= (tmp[21] & MASK32_10) << 0;
+    longs[31] = l9;
   }
 
   /**
@@ -889,48 +979,48 @@ public class ForPrimitives64 {
   public static void decode23(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 23);
     shiftLongs(tmp, 23, longs, 0, 9, MASK32_23);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 23; iter < 1; ++iter, tmpIdx += 23, longsIdx += 9) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_9) << 14;
-      l0 |= (tmp[tmpIdx+1] & MASK32_9) << 5;
-      l0 |= (tmp[tmpIdx+2] >>> 4) & MASK32_5;
-      longs[longsIdx+0] = l0;
-      long l1 = (tmp[tmpIdx+2] & MASK32_4) << 19;
-      l1 |= (tmp[tmpIdx+3] & MASK32_9) << 10;
-      l1 |= (tmp[tmpIdx+4] & MASK32_9) << 1;
-      l1 |= (tmp[tmpIdx+5] >>> 8) & MASK32_1;
-      longs[longsIdx+1] = l1;
-      long l2 = (tmp[tmpIdx+5] & MASK32_8) << 15;
-      l2 |= (tmp[tmpIdx+6] & MASK32_9) << 6;
-      l2 |= (tmp[tmpIdx+7] >>> 3) & MASK32_6;
-      longs[longsIdx+2] = l2;
-      long l3 = (tmp[tmpIdx+7] & MASK32_3) << 20;
-      l3 |= (tmp[tmpIdx+8] & MASK32_9) << 11;
-      l3 |= (tmp[tmpIdx+9] & MASK32_9) << 2;
-      l3 |= (tmp[tmpIdx+10] >>> 7) & MASK32_2;
-      longs[longsIdx+3] = l3;
-      long l4 = (tmp[tmpIdx+10] & MASK32_7) << 16;
-      l4 |= (tmp[tmpIdx+11] & MASK32_9) << 7;
-      l4 |= (tmp[tmpIdx+12] >>> 2) & MASK32_7;
-      longs[longsIdx+4] = l4;
-      long l5 = (tmp[tmpIdx+12] & MASK32_2) << 21;
-      l5 |= (tmp[tmpIdx+13] & MASK32_9) << 12;
-      l5 |= (tmp[tmpIdx+14] & MASK32_9) << 3;
-      l5 |= (tmp[tmpIdx+15] >>> 6) & MASK32_3;
-      longs[longsIdx+5] = l5;
-      long l6 = (tmp[tmpIdx+15] & MASK32_6) << 17;
-      l6 |= (tmp[tmpIdx+16] & MASK32_9) << 8;
-      l6 |= (tmp[tmpIdx+17] >>> 1) & MASK32_8;
-      longs[longsIdx+6] = l6;
-      long l7 = (tmp[tmpIdx+17] & MASK32_1) << 22;
-      l7 |= (tmp[tmpIdx+18] & MASK32_9) << 13;
-      l7 |= (tmp[tmpIdx+19] & MASK32_9) << 4;
-      l7 |= (tmp[tmpIdx+20] >>> 5) & MASK32_4;
-      longs[longsIdx+7] = l7;
-      long l8 = (tmp[tmpIdx+20] & MASK32_5) << 18;
-      l8 |= (tmp[tmpIdx+21] & MASK32_9) << 9;
-      l8 |= (tmp[tmpIdx+22] & MASK32_9) << 0;
-      longs[longsIdx+8] = l8;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 23; iter < 1; ++iter, tmpIdx += 23, longsIdx += 9) {
+      long l0 = (tmp[0] & MASK32_9) << 14;
+      l0 |= (tmp[1] & MASK32_9) << 5;
+      l0 |= (tmp[2] >>> 4) & MASK32_5;
+      longs[23] = l0;
+      long l1 = (tmp[2] & MASK32_4) << 19;
+      l1 |= (tmp[3] & MASK32_9) << 10;
+      l1 |= (tmp[4] & MASK32_9) << 1;
+      l1 |= (tmp[5] >>> 8) & MASK32_1;
+      longs[24] = l1;
+      long l2 = (tmp[5] & MASK32_8) << 15;
+      l2 |= (tmp[6] & MASK32_9) << 6;
+      l2 |= (tmp[7] >>> 3) & MASK32_6;
+      longs[25] = l2;
+      long l3 = (tmp[7] & MASK32_3) << 20;
+      l3 |= (tmp[8] & MASK32_9) << 11;
+      l3 |= (tmp[9] & MASK32_9) << 2;
+      l3 |= (tmp[10] >>> 7) & MASK32_2;
+      longs[26] = l3;
+      long l4 = (tmp[10] & MASK32_7) << 16;
+      l4 |= (tmp[11] & MASK32_9) << 7;
+      l4 |= (tmp[12] >>> 2) & MASK32_7;
+      longs[27] = l4;
+      long l5 = (tmp[12] & MASK32_2) << 21;
+      l5 |= (tmp[13] & MASK32_9) << 12;
+      l5 |= (tmp[14] & MASK32_9) << 3;
+      l5 |= (tmp[15] >>> 6) & MASK32_3;
+      longs[28] = l5;
+      long l6 = (tmp[15] & MASK32_6) << 17;
+      l6 |= (tmp[16] & MASK32_9) << 8;
+      l6 |= (tmp[17] >>> 1) & MASK32_8;
+      longs[29] = l6;
+      long l7 = (tmp[17] & MASK32_1) << 22;
+      l7 |= (tmp[18] & MASK32_9) << 13;
+      l7 |= (tmp[19] & MASK32_9) << 4;
+      l7 |= (tmp[20] >>> 5) & MASK32_4;
+      longs[30] = l7;
+      long l8 = (tmp[20] & MASK32_5) << 18;
+      l8 |= (tmp[21] & MASK32_9) << 9;
+      l8 |= (tmp[22] & MASK32_9) << 0;
+      longs[31] = l8;
+    //}
   }
 
   /**
@@ -940,12 +1030,52 @@ public class ForPrimitives64 {
   public static void decode24(DataInput in, long[] tmp, long[] longs) throws IOException {
     in.readLELongs(tmp, 0, 24);
     shiftLongs(tmp, 24, longs, 0, 8, MASK32_24);
-    for (int iter = 0, tmpIdx = 0, longsIdx = 24; iter < 8; ++iter, tmpIdx += 3, longsIdx += 1) {
-      long l0 = (tmp[tmpIdx+0] & MASK32_8) << 16;
-      l0 |= (tmp[tmpIdx+1] & MASK32_8) << 8;
-      l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
-      longs[longsIdx+0] = l0;
-    }
+    //for (int iter = 0, tmpIdx = 0, longsIdx = 24; iter < 8; ++iter, tmpIdx += 3, longsIdx += 1) {
+//      long l0 = (tmp[tmpIdx+0] & MASK32_8) << 16;
+//      l0 |= (tmp[tmpIdx+1] & MASK32_8) << 8;
+//      l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
+//      longs[longsIdx+0] = l0;
+   // }
+
+    long l0 = (tmp[0] & MASK32_8) << 16;
+    l0 |= (tmp[1] & MASK32_8) << 8;
+    l0 |= (tmp[2] & MASK32_8) << 0;
+    longs[24] = l0;
+
+    long l1 = (tmp[3] & MASK32_8) << 16;
+    l1 |= (tmp[4] & MASK32_8) << 8;
+    l1 |= (tmp[5] & MASK32_8) << 0;
+    longs[25] = l1;
+
+    long l2 = (tmp[6] & MASK32_8) << 16;
+    l2 |= (tmp[7] & MASK32_8) << 8;
+    l2 |= (tmp[8] & MASK32_8) << 0;
+    longs[26] = l2;
+
+    long l3 = (tmp[9] & MASK32_8) << 16;
+    l3 |= (tmp[10] & MASK32_8) << 8;
+    l3 |= (tmp[11] & MASK32_8) << 0;
+    longs[27] = l3;
+
+    long l4 = (tmp[12] & MASK32_8) << 16;
+    l4 |= (tmp[13] & MASK32_8) << 8;
+    l4 |= (tmp[14] & MASK32_8) << 0;
+    longs[28] = l4;
+
+    long l5 = (tmp[15] & MASK32_8) << 16;
+    l5 |= (tmp[16] & MASK32_8) << 8;
+    l5 |= (tmp[17] & MASK32_8) << 0;
+    longs[29] = l5;
+
+    long l6 = (tmp[18] & MASK32_8) << 16;
+    l6 |= (tmp[19] & MASK32_8) << 8;
+    l6 |= (tmp[20] & MASK32_8) << 0;
+    longs[30] = l6;
+
+    long l7 = (tmp[21] & MASK32_8) << 16;
+    l7 |= (tmp[22] & MASK32_8) << 8;
+    l7 |= (tmp[23] & MASK32_8) << 0;
+    longs[31] = l7;
   }
 
   /**
@@ -966,7 +1096,7 @@ public class ForPrimitives64 {
     final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
     int tmpIdx = 0;
     int remainingBits = remainingBitsPerLong;
-    for (; longsIdx < BLOCK_SIZE / 2; ++longsIdx) {
+    for (; longsIdx < 32; ++longsIdx) {
       int b = bitsPerValue - remainingBits;
       long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
       while (b >= remainingBitsPerLong) {
