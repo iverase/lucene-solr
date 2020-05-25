@@ -64,7 +64,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
         int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
-        final int bpv = TestUtil.nextInt(random(), 2, 32);
+        final int bpv = TestUtil.nextInt(random(), 2, 31);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), (1 << bpv - 1), (1 << bpv) - 1);
         }
