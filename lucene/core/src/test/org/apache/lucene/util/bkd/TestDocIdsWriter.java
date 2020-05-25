@@ -25,6 +25,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ForPrimitives64;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ForPrimitives;
 import org.apache.lucene.util.TestUtil;
@@ -63,8 +64,8 @@ public class TestDocIdsWriter extends LuceneTestCase {
     int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
       for (int iter = 0; iter < numIters; ++iter) {
-        int[] docIDs = new int[ForPrimitives.BLOCK_SIZE * random().nextInt(10)];
-        final int bpv = TestUtil.nextInt(random(), 2, 31);
+        int[] docIDs = new int[ForPrimitives64.BLOCK_SIZE];
+        final int bpv = 25;//TestUtil.nextInt(random(), 2, 31);
         for (int i = 0; i < docIDs.length; ++i) {
           docIDs[i] = TestUtil.nextInt(random(), (1 << bpv - 1), (1 << bpv) - 1);
         }

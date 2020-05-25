@@ -91,7 +91,7 @@ final class ForDocIdsWriter {
           out.writeVInt(base);
         } else {
           final int bpv = PackedInts.bitsRequired(max);
-          if (bpvDelta < bpv) {
+          if (primitive(bpvDelta) < primitive(bpv)) {
             // for delta encoding we add 32 to bpv
             encode(tmp1, bpvDelta, out, tmp2, 32);
             out.writeVInt(base);
@@ -111,9 +111,9 @@ final class ForDocIdsWriter {
         minVal = Math.min(minVal, ints[start + j]);
         maxVal = Math.max(maxVal, ints[start + j]);
       }
-      final int bpv = PackedInts.bitsRequired(max);
-      final int bvpDiff = PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal));
-      if (false) {
+      final int bpv = primitive(PackedInts.bitsRequired(max));
+      final int bvpDiff = primitive(PackedInts.bitsRequired(Integer.toUnsignedLong(maxVal - minVal)));
+      if (bvpDiff < bpv) {
         // for base encoding we add 64 to bvp
         for (int i = 0; i < BLOCK_SIZE; ++i) {
           tmp1[i] = ints[start + i] - minVal;
@@ -124,6 +124,18 @@ final class ForDocIdsWriter {
         // standard encoding
         encode(tmp1, bpv, out, tmp2, 0);
       }
+    }
+  }
+
+  private int primitive(int x) {
+    if (x <= 8) {
+      return 8;
+    } else if (x <= 16) {
+      return 16;
+    } else if(x <= 24) {
+      return 24;
+    } else {
+      return 32;
     }
   }
 
@@ -161,7 +173,7 @@ final class ForDocIdsWriter {
    * Decode 128 integers into {@code longs}.
    */
   private static void decode(int code, DataInput in, int[] ints, int offset, long[] longs, long[] tmp) throws IOException {
-    //System.out.println(code);
+   // System.out.println(code);
     switch (code) {
       case 0:
         final int base = in.readVInt();
@@ -554,15 +566,12 @@ final class ForDocIdsWriter {
   }
 
   private static void expand16Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
-    ints[offset]   = in.readVInt();
-    ints[offset+1] = ints[offset] + (int) ((arr[0] >>> 32) & 0xFFFF);
-    ints[offset+2] = ints[offset+1] + (int) ((arr[0] >>> 16) & 0xFFFF);
-    ints[offset+3] = ints[offset+2] + (int) (arr[0] & 0xFFFF);
-    for (int i = 1, j = offset+4; i < 16; ++i, j += 4) {
-      ints[j]   = ints[j-1] + (int) ((arr[i] >>> 48) & 0xFFFF);
-      ints[j+1] = ints[j] + (int) ((arr[i] >>> 32) & 0xFFFF);
-      ints[j+2] = ints[j+1] + (int) ((arr[i] >>> 16) & 0xFFFF);
-      ints[j+3] = ints[j+2] + (int) (arr[i] & 0xFFFF);
+    int base = in.readVInt();
+    for (int i = 0, j = offset; i < 16; ++i, j += 4) {
+      ints[j]   = base += (int) ((arr[i] >>> 48) & 0xFFFF);
+      ints[j+1] = base += (int) ((arr[i] >>> 32) & 0xFFFF);
+      ints[j+2] = base += (int) ((arr[i] >>> 16) & 0xFFFF);
+      ints[j+3] = base += (int) (arr[i] & 0xFFFF);
     }
   }
 
@@ -626,7 +635,7 @@ final class ForDocIdsWriter {
 
   private static void expand24Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     int base = in.readVInt();
-    for (int i = 0, j = offset; i < 24; i+= 3, j += 8) {
+    for (int i = 0, j = offset; i < 24; i += 3, j += 8) {
       long l1 = arr[i];
       long l2 = arr[i+1];
       long l3 = arr[i+2];
@@ -643,18 +652,18 @@ final class ForDocIdsWriter {
 
   private static void expand24Base(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
     final int base = in.readVInt();
-    for (int i = 0, j = offset; i < 24; i+= 3, j += 8) {
+    for (int i = 0, j = offset; i < 24; i += 3, j += 8) {
       long l1 = arr[i];
       long l2 = arr[i+1];
       long l3 = arr[i+2];
-      ints[j] =   base + (int) (l1 >>> 40);
-      ints[j+1] = base + (int) (l1 >>> 16) & 0xffffff;
-      ints[j+2] = base + (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      ints[j+3] = base + (int) (l2 >>> 32) & 0xffffff;
-      ints[j+4] = base + (int) (l2 >>> 8) & 0xffffff;
-      ints[j+5] = base + (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      ints[j+6] = base + (int) (l3 >>> 24) & 0xffffff;
-      ints[j+7] = base + (int) l3 & 0xffffff;
+      ints[j] =   base + ((int) (l1 >>> 40));
+      ints[j+1] = base + ((int) (l1 >>> 16) & 0xffffff);
+      ints[j+2] = base + ((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
+      ints[j+3] = base + ((int) (l2 >>> 32) & 0xffffff);
+      ints[j+4] = base + ((int) (l2 >>> 8) & 0xffffff);
+      ints[j+5] = base + ((int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
+      ints[j+6] = base + ((int) (l3 >>> 24) & 0xffffff);
+      ints[j+7] = base + ((int) l3 & 0xffffff);
     }
   }
 
@@ -697,14 +706,14 @@ final class ForDocIdsWriter {
       long l1 = arr[i];
       long l2 = arr[i+1];
       long l3 = arr[i+2];
-      visitor.visit(base + (int) (l1 >>> 40));
-      visitor.visit(base + (int) (l1 >>> 16) & 0xffffff);
-      visitor.visit(base + (int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
-      visitor.visit(base + (int) (l2 >>> 32) & 0xffffff);
-      visitor.visit(base + (int) (l2 >>> 8) & 0xffffff);
-      visitor.visit(base + (int) (((l2 & 0xff) << 16) | (l3 >>> 48)));
-      visitor.visit(base + (int) (l3 >>> 24) & 0xffffff);
-      visitor.visit(base + (int) l3 & 0xffffff);
+      visitor.visit(base + ((int) (l1 >>> 40)));
+      visitor.visit(base + ((int) (l1 >>> 16) & 0xffffff));
+      visitor.visit(base + ((int) (((l1 & 0xffff) << 8) | (l2 >>> 56))));
+      visitor.visit(base + ((int) (l2 >>> 32) & 0xffffff));
+      visitor.visit(base + ((int) (l2 >>> 8) & 0xffffff));
+      visitor.visit(base + ((int) (((l2 & 0xff) << 16) | (l3 >>> 48))));
+      visitor.visit(base + ((int) (l3 >>> 24) & 0xffffff));
+      visitor.visit(base + ((int) l3 & 0xffffff));
     }
   }
 
@@ -717,11 +726,10 @@ final class ForDocIdsWriter {
   }
 
   private static void expand32Delta(DataInput in, long[] arr, int[] ints, int offset) throws IOException {
-    ints[offset]   = in.readVInt();
-    ints[offset+1] = ints[offset] + (int) arr[0];
-    for (int i = 1, j = offset+2; i < 32; i++, j+=2) {
-      ints[j]   = ints[j-1] + (int) (arr[i] >>> 32);
-      ints[j+1] = ints[j] + (int) arr[i];
+    int base = in.readVInt();
+    for (int i = 0, j = offset; i < 32; i++, j+=2) {
+      ints[j]   = base += (int) (arr[i] >>> 32);
+      ints[j+1] = base += (int) arr[i];
     }
   }
 
