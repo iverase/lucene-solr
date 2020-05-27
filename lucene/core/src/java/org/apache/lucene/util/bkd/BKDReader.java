@@ -479,6 +479,7 @@ public final class BKDReader extends PointValues implements Accountable {
     final IndexInput in;
     final BKDReaderDocIDSetIterator scratchIterator;
     final byte[] scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue;
+    final long[] scratchLongs;
     final int[] commonPrefixLengths;
 
     final IntersectVisitor visitor;
@@ -497,6 +498,7 @@ public final class BKDReader extends PointValues implements Accountable {
       this.scratchDataPackedValue = new byte[packedBytesLength];
       this.scratchMinIndexPackedValue = new byte[packedIndexBytesLength];
       this.scratchMaxIndexPackedValue = new byte[packedIndexBytesLength];
+      this.scratchLongs = new long[maxPointsInLeafNode / 2];
       this.index = indexVisitor;
     }
   }
@@ -527,7 +529,7 @@ public final class BKDReader extends PointValues implements Accountable {
       assert grown;
       //System.out.println("ADDALL");
       if (state.index.nodeExists()) {
-        visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor);
+        visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor, state.scratchLongs);
       }
       // TODO: we can assert that the first value here in fact matches what the index claimed?
     } else {
@@ -556,13 +558,13 @@ public final class BKDReader extends PointValues implements Accountable {
   public void visitLeafBlockValues(IndexTree index, IntersectState state) throws IOException {
 
     // Leaf node; scan and filter all points in this block:
-    int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchIterator);
+    int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchIterator, state.scratchLongs);
 
     // Again, this time reading values and checking with the visitor
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
   }
 
-  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
+  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, long[] tmp) throws IOException {
     // Leaf node
     in.seek(blockFP);
 
@@ -570,16 +572,16 @@ public final class BKDReader extends PointValues implements Accountable {
     int count = in.readVInt();
     // No need to call grow(), it has been called up-front
 
-    DocIdsWriter.readInts(in, count, visitor);
+    DocIdsWriter.readInts(in, count, visitor, tmp);
   }
 
-  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator) throws IOException {
+  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, long[] tmp) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    DocIdsWriter.readInts(in, count, iterator.docIDs);
+    DocIdsWriter.readInts(in, count, iterator.docIDs, tmp);
 
     return count;
   }
@@ -784,7 +786,7 @@ public final class BKDReader extends PointValues implements Accountable {
       // In the unbalanced case it's possible the left most node only has one child:
       if (state.index.nodeExists()) {
         // Leaf node; scan and filter all points in this block:
-        int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchIterator);
+        int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchIterator, state.scratchLongs);
 
         // Again, this time reading values and checking with the visitor
         visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
