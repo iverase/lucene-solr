@@ -216,29 +216,30 @@ class DocIdsWriter {
   }
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
-    assert tmp.length >= count / 2;
-    in.readLELongs(tmp, 0, count / 2);
+    final int numLongs = count / 2;
+    assert tmp.length >= numLongs;
+    in.readLELongs(tmp, 0, numLongs);
     int i;
-    int j;
-    for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+    for ( i = 0 ; i < numLongs; i++) {
+      long l1 = Long.reverseBytes(tmp[i]);
       visitor.visit((int)(l1 >>> 32));
       visitor.visit((int)(l1 & 0xffffffff));
     }
+    i *= 2;
     for (;i < count; i++) {
       visitor.visit(in.readInt());
     }
   }
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
-    assert tmp.length >= 3 * (count / 8);
-    in.readLELongs(tmp, 0, 3 * (count / 8));
+    final int numLongs = 3 * (count / 8);
+    assert tmp.length >= numLongs;
+    in.readLELongs(tmp, 0, numLongs);
     int i;
-    int j;
-    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
-      long l1 = Long.reverseBytes(tmp[j]);
-      long l2 = Long.reverseBytes(tmp[j+1]);
-      long l3 = Long.reverseBytes(tmp[j+2]);
+    for (i = 0; i < numLongs - 2; i += 3) {
+      long l1 = Long.reverseBytes(tmp[i]);
+      long l2 = Long.reverseBytes(tmp[i+1]);
+      long l3 = Long.reverseBytes(tmp[i+2]);
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
@@ -248,35 +249,38 @@ class DocIdsWriter {
       visitor.visit((int) (l3 >>> 24) & 0xffffff);
       visitor.visit((int) l3 & 0xffffff);
     }
+    i /= 3;
+    i *= 8;
     for (; i < count; ++i) {
       visitor.visit((Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte()));
     }
   }
 
   private static void readInts16(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
-    assert tmp.length >=  count / 4;
-    in.readLELongs(tmp, 0, count / 4);
+    final int numLongs = count / 4;
+    assert tmp.length >= numLongs;
+    in.readLELongs(tmp, 0, numLongs);
     int i;
-    int j;
-    for (i = 0, j= 0; i < count - 3; i += 4, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+    for (i = 0; i < numLongs; i++) {
+      long l1 = Long.reverseBytes(tmp[i]);
       visitor.visit((int)(l1 >>> 48) & 0xffff);
       visitor.visit((int)((l1 >>> 32 ) & 0xffff));
       visitor.visit((int)((l1 >>> 16) & 0xffff));
       visitor.visit((int)(l1 & 0xffff));
     }
+    i *= 4;
     for (; i < count; ++i) {
       visitor.visit(Short.toUnsignedInt(in.readShort()));
     }
   }
 
   private static void readInts8(IndexInput in, int count, IntersectVisitor visitor, long[] tmp) throws IOException {
-    assert tmp.length >=  count / 8;
-    in.readLELongs(tmp, 0, count / 8);
+    final int numLongs = count / 8;
+    assert tmp.length >=  numLongs;
+    in.readLELongs(tmp, 0, numLongs);
     int i;
-    int j;
-    for (i = 0, j= 0; i < count - 7; i += 8, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+    for (i = 0; i < numLongs; i++) {
+      long l1 = Long.reverseBytes(tmp[i]);
       visitor.visit((int) (l1 >>> 56) & 0xff);
       visitor.visit((int) ((l1 >>> 48) & 0xff));
       visitor.visit((int) ((l1 >>> 40) & 0xff));
@@ -286,6 +290,7 @@ class DocIdsWriter {
       visitor.visit((int) ((l1 >>> 8 ) & 0xff));
       visitor.visit((int) (l1 & 0xff));
     }
+    i *= 8;
     for (; i < count; ++i) {
       visitor.visit(Byte.toUnsignedInt(in.readByte()));
     }
