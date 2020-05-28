@@ -123,23 +123,25 @@ class DocIdsWriter {
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
-    assert tmp.length >= 3 * (count / 8);
-    in.readLELongs(tmp, 0, 3 * (count / 8));
+    final int numLongs = 3 * (count / 8);
+    assert tmp.length >= numLongs;
+    in.readLELongs(tmp, 0, numLongs);
     int i;
-    int j;
-    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
-      long l1 = Long.reverseBytes(tmp[j]);
-      long l2 = Long.reverseBytes(tmp[j+1]);
-      long l3 = Long.reverseBytes(tmp[j+2]);
-      docIDs[i] =   (int) (l1 >>> 40);
-      docIDs[i+1] = (int) ((l1 >>> 16) & 0xffffff);
-      docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      docIDs[i+3] = (int) ((l2 >>> 32) & 0xffffff);
-      docIDs[i+4] = (int) ((l2 >>> 8) & 0xffffff);
-      docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      docIDs[i+6] = (int) ((l3 >>> 24) & 0xffffff);
-      docIDs[i+7] = (int) (l3 & 0xffffff);
+    for (i = 0; i < numLongs - 2; i += 3) {
+      long l1 = Long.reverseBytes(tmp[i]);
+      long l2 = Long.reverseBytes(tmp[i+1]);
+      long l3 = Long.reverseBytes(tmp[i+2]);
+      docIDs[8*i/3] =   (int) (l1 >>> 40);
+      docIDs[8*i/3+1] = (int) ((l1 >>> 16) & 0xffffff);
+      docIDs[8*i/3+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
+      docIDs[8*i/3+3] = (int) ((l2 >>> 32) & 0xffffff);
+      docIDs[8*i/3+4] = (int) ((l2 >>> 8) & 0xffffff);
+      docIDs[8*i/3+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
+      docIDs[8*i/3+6] = (int) ((l3 >>> 24) & 0xffffff);
+      docIDs[8*i/3+7] = (int) (l3 & 0xffffff);
     }
+    i /= 3;
+    i *= 8;
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
