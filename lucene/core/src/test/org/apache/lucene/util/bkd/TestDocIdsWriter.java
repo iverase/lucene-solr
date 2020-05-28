@@ -68,7 +68,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
         out.writeLong(0); // garbage
       }
     }
-    long[] tmp = new long[ints.length / 2];
+    byte[] tmp = new byte[ints.length * 4];
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
       DocIdsWriter.readInts(in, ints.length, read, tmp);

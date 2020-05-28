@@ -484,7 +484,7 @@ public final class BKDReader extends PointValues implements Accountable {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
-    final long[] scratchLongs;
+    final byte[] scratchLongs;
 
     public IntersectState(IndexInput in, int numDims,
                           int packedBytesLength,
@@ -500,7 +500,7 @@ public final class BKDReader extends PointValues implements Accountable {
       this.scratchMinIndexPackedValue = new byte[packedIndexBytesLength];
       this.scratchMaxIndexPackedValue = new byte[packedIndexBytesLength];
       this.index = indexVisitor;
-      this.scratchLongs = new long[maxPointsInLeafNode / 2];
+      this.scratchLongs = new byte[maxPointsInLeafNode * 4];
     }
   }
 
@@ -565,7 +565,7 @@ public final class BKDReader extends PointValues implements Accountable {
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
   }
 
-  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, long[] scratchLongs) throws IOException {
+  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor, byte[] scratchLongs) throws IOException {
     // Leaf node
     in.seek(blockFP);
 
@@ -576,7 +576,7 @@ public final class BKDReader extends PointValues implements Accountable {
     DocIdsWriter.readInts(in, count, visitor, scratchLongs);
   }
 
-  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, long[] scratchLongs) throws IOException {
+  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, byte[] scratchLongs) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
