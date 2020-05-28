@@ -129,7 +129,18 @@ class DocIdsWriter {
   private static void readInts24(IndexInput in, int count, int[] docIDs, byte[] tmp) throws IOException {
     //assert tmp.length >= 3 * (count / 8);
     in.readBytes(tmp, 0, count * 3);
-    for (int i = 0; i < count; i++) {
+    int i;
+    for (i = 0; i < count - 7; i += 8) {
+      docIDs[i] = (tmp[3*i] & 0xFF) << 16 | (tmp[3*i+1] & 0xFF) << 8 | tmp[3*i+2] & 0xFF;
+      docIDs[i+1] = (tmp[3*i+3] & 0xFF) << 16 | (tmp[3*i+4] & 0xFF) << 8 | tmp[3*i+5] & 0xFF;
+      docIDs[i+2] = (tmp[3*i+6] & 0xFF) << 16 | (tmp[3*i+7] & 0xFF) << 8 | tmp[3*i+8] & 0xFF;
+      docIDs[i+3] = (tmp[3*i+9] & 0xFF) << 16 | (tmp[3*i+10] & 0xFF) << 8 | tmp[3*i+11] & 0xFF;
+      docIDs[i+4] = (tmp[3*i+12] & 0xFF) << 16 | (tmp[3*i+13] & 0xFF) << 8 | tmp[3*i+14] & 0xFF;
+      docIDs[i+5] = (tmp[3*i+15] & 0xFF) << 16 | (tmp[3*i+16] & 0xFF) << 8 | tmp[3*i+17] & 0xFF;
+      docIDs[i+6] = (tmp[3*i+18] & 0xFF) << 16 | (tmp[3*i+19] & 0xFF) << 8 | tmp[3*i+20] & 0xFF;
+      docIDs[i+7] = (tmp[3*i+21] & 0xFF) << 16 | (tmp[3*i+22] & 0xFF) << 8 | tmp[3*i+23] & 0xFF;
+    }
+    for (; i < count; i++) {
       docIDs[i] = (tmp[3*i] & 0xFF) << 16 | (tmp[3*i+1] & 0xFF) << 8 | tmp[3*i+2] & 0xFF;
     }
 //    in.readLELongs(tmp, 0, 3 * (count / 8));
@@ -240,7 +251,18 @@ class DocIdsWriter {
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor, byte[] tmp) throws IOException {
     in.readBytes(tmp, 0, count * 3);
-    for (int i = 0; i < count; i++) {
+    int i;
+    for (i = 0; i < count - 7; i++) {
+      visitor.visit(  (tmp[3*i] & 0xFF) << 16 | (tmp[3*i+1] & 0xFF) << 8 | tmp[3*i+2] & 0xFF);
+      visitor.visit(  (tmp[3*i+3] & 0xFF) << 16 | (tmp[3*i+4] & 0xFF) << 8 | tmp[3*i+5] & 0xFF);
+      visitor.visit(  (tmp[3*i+6] & 0xFF) << 16 | (tmp[3*i+7] & 0xFF) << 8 | tmp[3*i+8] & 0xFF);
+      visitor.visit(  (tmp[3*i+9] & 0xFF) << 16 | (tmp[3*i+10] & 0xFF) << 8 | tmp[3*i+11] & 0xFF);
+      visitor.visit(  (tmp[3*i+12] & 0xFF) << 16 | (tmp[3*i+13] & 0xFF) << 8 | tmp[3*i+14] & 0xFF);
+      visitor.visit(  (tmp[3*i+15] & 0xFF) << 16 | (tmp[3*i+16] & 0xFF) << 8 | tmp[3*i+17] & 0xFF);
+      visitor.visit(  (tmp[3*i+18] & 0xFF) << 16 | (tmp[3*i+19] & 0xFF) << 8 | tmp[3*i+20] & 0xFF);
+      visitor.visit(  (tmp[3*i+21] & 0xFF) << 16 | (tmp[3*i+22] & 0xFF) << 8 | tmp[3*i+23] & 0xFF);
+    }
+    for (; i < count; i++) {
       visitor.visit((tmp[3*i] & 0xFF) << 16 | (tmp[3*i+1] & 0xFF) << 8 | tmp[3*i+2] & 0xFF);
     }
 //    assert tmp.length >= 3 * (count / 8);
