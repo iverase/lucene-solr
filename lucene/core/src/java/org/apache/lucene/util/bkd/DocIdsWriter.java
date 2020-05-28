@@ -123,25 +123,36 @@ class DocIdsWriter {
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs, long[] tmp) throws IOException {
-    final int numLongs = 3 * (count / 8);
-    assert tmp.length >= numLongs;
-    in.readLELongs(tmp, 0, numLongs);
+    assert tmp.length >= 3 * (count / 8);
+    in.readLELongs(tmp, 0, 3 * (count / 8));
     int i;
-    for (i = 0; i < numLongs - 2; i += 3) {
-      long l1 = Long.reverseBytes(tmp[i]);
-      long l2 = Long.reverseBytes(tmp[i+1]);
-      long l3 = Long.reverseBytes(tmp[i+2]);
-      docIDs[8*i/3] =   (int) (l1 >>> 40);
-      docIDs[8*i/3+1] = (int) ((l1 >>> 16) & 0xffffff);
-      docIDs[8*i/3+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      docIDs[8*i/3+3] = (int) ((l2 >>> 32) & 0xffffff);
-      docIDs[8*i/3+4] = (int) ((l2 >>> 8) & 0xffffff);
-      docIDs[8*i/3+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      docIDs[8*i/3+6] = (int) ((l3 >>> 24) & 0xffffff);
-      docIDs[8*i/3+7] = (int) (l3 & 0xffffff);
+    int j;
+    for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
+      long l1 = tmp[j];
+      long l2 = tmp[j+1];
+      long l3 = tmp[j+2];
+      // return (i << 24)            |
+      //               ((i & 0xff00) << 8)  |
+      //               ((i >>> 8) & 0xff00) |
+      //               (i >>> 24);
+      docIDs[i] =   (int) ( (((l1) & 0xff) << 16) | (((l1 >> 8) & 0xff) << 8) | (((l1 >> 16) & 0xff)));//Integer.reverseBytes((int) (l1 & 0xffffff));
+      docIDs[i+1] = (int) ( (((l1 >> 24) & 0xff) << 16) |  (((l1 >> 32) & 0xff) << 8) | (((l1 >> 40) & 0xff))); //((l1 >>> 16) & 0xffffff);
+      docIDs[i+2] = (int) ( (((l1 >> 48) & 0xff) << 16) | (((l1 >> 56) & 0xff) << 8) | ((l2) & 0xff));
+      docIDs[i+3] = (int) ((((l2 >> 8) & 0xff) << 16) | (((l2 >> 16) & 0xff) << 8) | (((l2 >> 24) & 0xff)));
+      docIDs[i+4] = (int) ((((l2 >> 32) & 0xff) << 16) | (((l2 >> 40) & 0xff) << 8) | (((l2 >> 48) & 0xff)));
+      docIDs[i+5] = (int) ((((l2 >> 56) & 0xff) << 16) | (((l3) & 0xff) << 8) | (((l3 >> 8) & 0xff)));
+      docIDs[i+6] = (int) ((((l3 >> 16) & 0xff) << 16) | (((l3 >> 24) & 0xff) << 8) | (((l3 >> 32) & 0xff)));
+      docIDs[i+7] = (int) ((((l3 >> 40) & 0xff) << 16) | (((l3 >> 48) & 0xff) << 8) | (((l3 >> 56) & 0xff)));
+
+//      docIDs[i] =   (int) (l1 >>> 40);
+//      docIDs[i+1] = (int) ((l1 >>> 16) & 0xffffff);
+//      docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
+//      docIDs[i+3] = (int) ((l2 >>> 32) & 0xffffff);
+//      docIDs[i+4] = (int) ((l2 >>> 8) & 0xffffff);
+//      docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
+//      docIDs[i+6] = (int) ((l3 >>> 24) & 0xffffff);
+//      docIDs[i+7] = (int) (l3 & 0xffffff);
     }
-    i /= 3;
-    i *= 8;
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
