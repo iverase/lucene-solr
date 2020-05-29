@@ -52,23 +52,68 @@ class DocIdsWriter {
       }
       if (max <= 0xff) {
         out.writeByte((byte) 8);
-        for (int i = 0; i < count; ++i) {
+        int i;
+        for (i = 0; i < count - 7; i += 8) {
+          out.writeByte((byte) docIds[start + i + 7]);
+          out.writeByte((byte) docIds[start + i + 6]);
+          out.writeByte((byte) docIds[start + i + 5]);
+          out.writeByte((byte) docIds[start + i + 4]);
+          out.writeByte((byte) docIds[start + i + 3]);
+          out.writeByte((byte) docIds[start + i + 2]);
+          out.writeByte((byte) docIds[start + i + 1]);
+          out.writeByte((byte) docIds[start + i]);
+        }
+        for (; i < count; ++i) {
           out.writeByte((byte) (docIds[start + i]));
         }
       } else if (max <= 0xffff) {
         out.writeByte((byte) 16);
-        for (int i = 0; i < count; ++i) {
+        int i;
+        for (i = 0; i < count - 3; i += 4) {
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 3])));
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 2])));
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 1])));
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i])));
+        }
+        for (; i < count; ++i) {
           out.writeShort((short) (docIds[start + i]));
         }
       } else if (max <= 0xffffff) {
         out.writeByte((byte) 24);
-        for (int i = 0; i < count; ++i) {
+        int i;
+        for (i = 0; i < count - 7; i += 8) {
+          // 1st long
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 2] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 1]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 1] >>> 8)));
+          out.writeByte((byte) docIds[start + i]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i] >>> 8)));
+          // 2nd long
+          out.writeByte((byte) (docIds[start + i + 5] >>> 16));
+          out.writeByte((byte) docIds[start + i + 4]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 4] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 3]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 3] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 2]);
+          // 3rd long
+          out.writeByte((byte) docIds[start + i + 7]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 7] >>> 8)));
+          out.writeByte((byte) docIds[start + i + 6]);
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 6] >>> 8)));
+          out.writeShort(Short.reverseBytes((short) (docIds[start + i + 5])));
+        }
+        for (; i < count; ++i) {
           out.writeShort((short) (docIds[start + i] >>> 8));
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
         out.writeByte((byte) 32);
-        for (int i = 0; i < count; ++i) {
+        int i;
+        for (i = 0; i < count - 1; i += 2) {
+          out.writeInt(Integer.reverseBytes(docIds[start + i + 1]));
+          out.writeInt(Integer.reverseBytes(docIds[start + i]));
+        }
+        for (; i < count; ++i) {
           out.writeInt(docIds[start + i]);
         }
       }
@@ -112,7 +157,7 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, count / 2);
     int i, j;
     for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+      long l1 = tmp[j];
       docIDs[i] = (int)(l1 >>> 32);
       docIDs[i+1] = (int)(l1 & 0xffffffff);
     }
@@ -126,9 +171,9 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, 3 * (count / 8));
     int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
-      long l1 = Long.reverseBytes(tmp[j]);
-      long l2 = Long.reverseBytes(tmp[j+1]);
-      long l3 = Long.reverseBytes(tmp[j+2]);
+      long l1 = tmp[j];
+      long l2 = tmp[j+1];
+      long l3 = tmp[j+2];
       docIDs[i] =   (int) (l1 >>> 40);
       docIDs[i+1] = (int) ((l1 >>> 16) & 0xffffff);
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -148,7 +193,7 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, count / 4);
     int i, j;
     for (i = 0, j= 0; i < count - 3; i += 4, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+      long l1 = tmp[j];
       docIDs[i] =   (int) (l1 >>> 48) & 0xffff;
       docIDs[i+1] = (int) ((l1 >>> 32) & 0xffff);
       docIDs[i+2] = (int) ((l1 >>>16 ) & 0xffff);
@@ -164,7 +209,7 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, count / 8);
     int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+      long l1 = tmp[j];
       docIDs[i] =   (int) (l1 >>> 56) & 0xff;
       docIDs[i+1] = (int) ((l1 >>> 48) & 0xff);
       docIDs[i+2] = (int) ((l1 >>> 40) & 0xff);
@@ -216,7 +261,7 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, count / 2);
     int i, j;
     for ( i = 0, j = 0 ; i < count - 1; i += 2, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+      long l1 = tmp[j];
       visitor.visit((int)(l1 >>> 32));
       visitor.visit((int)(l1 & 0xffffffff));
     }
@@ -230,9 +275,9 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, 3 * (count / 8));
     int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j += 3) {
-      long l1 = Long.reverseBytes(tmp[j]);
-      long l2 = Long.reverseBytes(tmp[j+1]);
-      long l3 = Long.reverseBytes(tmp[j+2]);
+      long l1 = tmp[j];
+      long l2 = tmp[j+1];
+      long l3 = tmp[j+2];
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
@@ -252,7 +297,7 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, count / 4);
     int i, j;
     for (i = 0, j= 0; i < count - 3; i += 4, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+      long l1 = tmp[j];
       visitor.visit((int)(l1 >>> 48) & 0xffff);
       visitor.visit((int)((l1 >>> 32 ) & 0xffff));
       visitor.visit((int)((l1 >>> 16) & 0xffff));
@@ -268,7 +313,7 @@ class DocIdsWriter {
     in.readLELongs(tmp, 0, count / 8);
     int i, j;
     for (i = 0, j= 0; i < count - 7; i += 8, j++) {
-      long l1 = Long.reverseBytes(tmp[j]);
+      long l1 = tmp[j];
       visitor.visit((int) (l1 >>> 56) & 0xff);
       visitor.visit((int) ((l1 >>> 48) & 0xff));
       visitor.visit((int) ((l1 >>> 40) & 0xff));
