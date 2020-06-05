@@ -82,7 +82,8 @@ public class BKDWriter implements Closeable {
   public static final int VERSION_LEAF_STORES_BOUNDS = 5;
   public static final int VERSION_SELECTIVE_INDEXING = 6;
   public static final int VERSION_LOW_CARDINALITY_LEAVES = 7;
-  public static final int VERSION_CURRENT = VERSION_LOW_CARDINALITY_LEAVES;
+  public static final int VERSION_DOCID_LITTLE_ENDIAN = 8;
+  public static final int VERSION_CURRENT = VERSION_DOCID_LITTLE_ENDIAN;
 
   /** How many bytes each docs takes in the fixed-width offline format */
   private final int bytesPerDoc;
