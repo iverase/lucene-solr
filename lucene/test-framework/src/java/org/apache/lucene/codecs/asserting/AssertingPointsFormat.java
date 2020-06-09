@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.codecs.asserting;
 
-import java.io.IOException;;
+import java.io.IOException;
 
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
