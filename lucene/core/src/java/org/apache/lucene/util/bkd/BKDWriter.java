@@ -705,8 +705,9 @@ public class BKDWriter implements Closeable {
 
       commonPrefixLengths[0] = prefix;
 
+      writeLeafBlockDocs(dataOut, leafDocs, 0, leafCount);
+
       assert scratchOut.size() == 0;
-      writeLeafBlockDocs(scratchOut, leafDocs, 0, leafCount);
       writeCommonPrefixes(scratchOut, commonPrefixLengths, leafValues);
 
       scratchBytesRef1.length = packedBytesLength;
@@ -723,6 +724,7 @@ public class BKDWriter implements Closeable {
           ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * packedBytesLength, leafCount * packedBytesLength),
           packedValues, leafDocs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues, leafCardinality);
+      dataOut.writeVInt((int) scratchOut.size());
       scratchOut.copyTo(dataOut);
       scratchOut.reset();
     }
@@ -1420,16 +1422,15 @@ public class BKDWriter implements Closeable {
       // Save the block file pointer:
       leafBlockFPs[leavesOffset] = out.getFilePointer();
 
-      assert scratchOut.size() == 0;
-
       // Write doc IDs
       int[] docIDs = spareDocIds;
       for (int i = from; i < to; ++i) {
         docIDs[i - from] = reader.getDocID(i);
       }
       //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
-      writeLeafBlockDocs(scratchOut, docIDs, 0, count);
+      writeLeafBlockDocs(out, docIDs, 0, count);
 
+      assert scratchOut.size() == 0;
       // Write the common prefixes:
       reader.getValue(from, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, packedBytesLength);
@@ -1446,6 +1447,7 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
+      out.writeVInt((int)scratchOut.size());
       scratchOut.copyTo(out);
       scratchOut.reset();
     } else {
@@ -1610,11 +1612,13 @@ public class BKDWriter implements Closeable {
       }
       writeLeafBlockDocs(out, docIDs, 0, count);
 
+      assert scratchOut.size() == 0;
+
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
 
       // Write the common prefixes:
-      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
+      writeCommonPrefixes(scratchOut, commonPrefixLengths, scratch1);
 
       // Write the full values:
       IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
@@ -1632,7 +1636,10 @@ public class BKDWriter implements Closeable {
       };
       assert valuesInOrderAndBounds(count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
-      writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
+      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
+      out.writeVInt((int) scratchOut.size());
+      scratchOut.copyTo(out);
+      scratchOut.reset();
 
     } else {
       // Inner node: partition/recurse
