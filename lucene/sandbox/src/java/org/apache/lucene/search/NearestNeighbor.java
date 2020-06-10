@@ -269,7 +269,7 @@ class NearestNeighbor {
         // Leaf block: visit all points and possibly collect them:
         visitor.curDocBase = docBases.get(cell.readerIndex);
         visitor.curLiveDocs = liveDocs.get(cell.readerIndex);
-        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
+        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex), states.get(cell.readerIndex).scratchLongs);
         //System.out.println("    now " + hitQueue.size() + " hits");
       } else {
         //System.out.println("    non-leaf");

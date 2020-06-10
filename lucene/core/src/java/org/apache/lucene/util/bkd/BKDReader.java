@@ -365,7 +365,7 @@ public final class BKDReader extends PointValues {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
-    final long[] scratchLongs;
+    public final long[] scratchLongs;
 
     public IntersectState(IndexInput in, IndexInput docIn, int numDims,
                           int packedBytesLength,

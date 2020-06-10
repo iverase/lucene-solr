@@ -210,7 +210,7 @@ public class FloatPointNearestNeighbor {
         // Leaf block: visit all points and possibly collect them:
         visitor.curDocBase = docBases.get(cell.readerIndex);
         visitor.curLiveDocs = liveDocs.get(cell.readerIndex);
-        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
+        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex), states.get(cell.readerIndex).scratchLongs);
 
         //assert hitQueue.peek().distanceSquared >= cell.distanceSquared;
         // System.out.println("    now " + hitQueue.size() + " hits");
