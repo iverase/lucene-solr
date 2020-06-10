@@ -365,6 +365,8 @@ public final class BKDReader extends PointValues {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
+    final long[] scratchLongs;
+
     public IntersectState(IndexInput in, IndexInput docIn, int numDims,
                           int packedBytesLength,
                           int packedIndexBytesLength,
@@ -380,6 +382,7 @@ public final class BKDReader extends PointValues {
       this.scratchMinIndexPackedValue = new byte[packedIndexBytesLength];
       this.scratchMaxIndexPackedValue = new byte[packedIndexBytesLength];
       this.index = indexVisitor;
+      this.scratchLongs = new long[maxPointsInLeafNode / 2];
     }
   }
 
@@ -394,37 +397,18 @@ public final class BKDReader extends PointValues {
   }
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
-  private void addAll(IntersectState state, boolean grown) throws IOException {
+  private void addAll(IntersectState state) throws IOException {
     //System.out.println("R: addAll nodeID=" + nodeID);
-    int numLeaves =  state.index.getNumLeaves();
-    if (grown == false) {
-      final long maxPointCount = (long) maxPointsInLeafNode * numLeaves;
-      if (maxPointCount <= Integer.MAX_VALUE) { // could be >MAX_VALUE if there are more than 2B points in total
-        state.visitor.grow((int) maxPointCount);
-        grown = true;
-      }
+    final int numLeaves = state.index.getNumLeaves();
+    final long maxPointCount = (long) maxPointsInLeafNode * numLeaves;
+    if (maxPointCount <= Integer.MAX_VALUE) { // could be >MAX_VALUE if there are more than 2B points in total
+      state.visitor.grow((int) maxPointCount);
     }
     state.docIn.seek(state.index.getDocBlockFP());
     for (int i = 0; i < numLeaves; i++) {
-      int count = state.docIn.readVInt();
-      DocIdsWriter.readInts(state.docIn, count, state.visitor);
+      final int count = state.docIn.readVInt();
+      DocIdsWriter.readInts(state.docIn, count, state.visitor, state.scratchLongs, version);
     }
-//    if (state.index.isLeafNode()) {
-//      assert grown;
-//      //System.out.println("ADDALL");
-//      if (state.index.nodeExists()) {
-//        visitDocIDs(state.docIn, state.index.getDocBlockFP(), state.visitor);
-//      }
-//      // TODO: we can assert that the first value here in fact matches what the index claimed?
-//    } else {
-//      state.index.pushLeft();
-//      addAll(state, grown);
-//      state.index.pop();
-//
-//      state.index.pushRight();
-//      addAll(state, grown);
-//      state.index.pop();
-//    }
   }
 
   /** Create a new {@link IntersectState} */
@@ -439,10 +423,10 @@ public final class BKDReader extends PointValues {
   }
 
   /** Visits all docIDs and packed values in a single leaf block */
-  public void visitLeafBlockValues(IndexTree index, IntersectState state) throws IOException {
+  public void visitLeafBlockValues(IndexTree index, IntersectState state, long[] scratchLongs) throws IOException {
 
     // Leaf node; scan and filter all points in this block:
-    int count = readDocIDs(state.docIn, index.getDocBlockFP(), state.scratchIterator);
+    int count = readDocIDs(state.docIn, index.getDocBlockFP(), state.scratchIterator, scratchLongs);
 
     state.in.seek(index.getLeafBlockFP());
 
@@ -450,24 +434,13 @@ public final class BKDReader extends PointValues {
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
   }
 
-  private void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
-    // Leaf node
-    in.seek(blockFP);
-
-    // How many points are stored in this leaf cell:
-    int count = in.readVInt();
-    // No need to call grow(), it has been called up-front
-
-    DocIdsWriter.readInts(in, count, visitor);
-  }
-
-  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator) throws IOException {
+  int readDocIDs(IndexInput in, long blockFP, BKDReaderDocIDSetIterator iterator, long[] scratchLongs) throws IOException {
     in.seek(blockFP);
 
     // How many points are stored in this leaf cell:
     int count = in.readVInt();
 
-    DocIdsWriter.readInts(in, count, iterator.docIDs);
+    DocIdsWriter.readInts(in, count, iterator.docIDs, scratchLongs, version);
 
     return count;
   }
@@ -663,7 +636,7 @@ public final class BKDReader extends PointValues {
       // This cell is fully outside of the query shape: stop recursing
     } else if (r == Relation.CELL_INSIDE_QUERY) {
       // This cell is fully inside of the query shape: recursively add all points in this cell without filtering
-      addAll(state, false);
+      addAll(state);
       // The cell crosses the shape boundary, or the cell fully contains the query, so we fall through and do full filtering:
     } else if (state.index.isLeafNode()) {
       
@@ -672,7 +645,7 @@ public final class BKDReader extends PointValues {
       // In the unbalanced case it's possible the left most node only has one child:
       if (state.index.nodeExists()) {
         // Leaf node; scan and filter all points in this block:
-        int count = readDocIDs(state.docIn, state.index.getDocBlockFP(), state.scratchIterator);
+        int count = readDocIDs(state.docIn, state.index.getDocBlockFP(), state.scratchIterator, state.scratchLongs);
 
         state.in.seek(state.index.getLeafBlockFP());
 
