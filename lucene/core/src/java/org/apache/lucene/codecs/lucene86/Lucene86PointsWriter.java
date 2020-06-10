@@ -43,7 +43,7 @@ import org.apache.lucene.util.bkd.BKDWriter;
 public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
   /** Outputs used to write the BKD tree data files. */
-  protected final IndexOutput metaOut, indexOut, dataOut;
+  protected final IndexOutput metaOut, indexOut, dataOut, docIdsOut;
 
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
@@ -88,6 +88,17 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
           writeState.segmentInfo.getId(),
           writeState.segmentSuffix);
 
+      String docsFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
+          writeState.segmentSuffix,
+          Lucene86PointsFormat.DOCS_EXTENSION);
+
+      docIdsOut = writeState.directory.createOutput(indexFileName, writeState.context);
+      CodecUtil.writeIndexHeader(docIdsOut,
+          Lucene86PointsFormat.DOCS_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          writeState.segmentInfo.getId(),
+          writeState.segmentSuffix);
+
       success = true;
     } finally {
       if (success == false) {
@@ -117,7 +128,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, docIdsOut, (MutablePointValues) values);
         if (finalizer != null) {
           metaOut.writeInt(fieldInfo.number);
           finalizer.run();
@@ -142,7 +153,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
         });
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-      Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
+      Runnable finalizer = writer.finish(metaOut, indexOut, dataOut, docIdsOut);
       if (finalizer != null) {
         metaOut.writeInt(fieldInfo.number);
         finalizer.run();
@@ -229,7 +240,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            Runnable finalizer = writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
+            Runnable finalizer = writer.merge(metaOut, indexOut, dataOut, docIdsOut, docMaps, bkdReaders);
             if (finalizer != null) {
               metaOut.writeInt(fieldInfo.number);
               finalizer.run();
@@ -254,10 +265,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
     CodecUtil.writeFooter(metaOut);
     CodecUtil.writeFooter(indexOut);
     CodecUtil.writeFooter(dataOut);
+    CodecUtil.writeFooter(docIdsOut);
   }
 
   @Override
   public void close() throws IOException {
-    IOUtils.close(metaOut, indexOut, dataOut);
+    IOUtils.close(metaOut, indexOut, dataOut, docIdsOut);
   }
 }

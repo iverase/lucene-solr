@@ -97,7 +97,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
         int fieldNumber = ent.getKey();
         long fp = ent.getValue();
         dataIn.seek(fp);
-        BKDReader reader = new BKDReader(dataIn, dataIn, dataIn);
+        BKDReader reader = new BKDReader(dataIn, dataIn, dataIn, dataIn);
         readers.put(fieldNumber, reader);
       }
 

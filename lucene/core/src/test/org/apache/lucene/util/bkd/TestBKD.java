@@ -58,15 +58,15 @@ public class TestBKD extends LuceneTestCase {
       }
 
       long indexFP;
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        Runnable finalizer = w.finish(out, out, out);
+      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT); IndexOutput docOut = dir.createOutput("docBkd", IOContext.DEFAULT)) {
+        Runnable finalizer = w.finish(out, out, out, docOut);
         indexFP = out.getFilePointer();
         finalizer.run();
       }
 
-      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
+      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT); IndexInput docIn = dir.openInput("docBkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in);
+        BKDReader r = new BKDReader(in, in, in, docIn);
 
         // Simple 1D range query:
         final int queryMin = 42;
@@ -162,15 +162,15 @@ public class TestBKD extends LuceneTestCase {
       }
 
       long indexFP;
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        Runnable finalizer = w.finish(out, out, out);
+      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT); IndexOutput docOut = dir.createOutput("docBkd", IOContext.DEFAULT)) {
+        Runnable finalizer = w.finish(out, out, out, docOut);
         indexFP = out.getFilePointer();
         finalizer.run();
       }
 
-      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
+      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT); IndexInput docIn = dir.openInput("docBkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in);
+        BKDReader r = new BKDReader(in, in, in, docIn);
 
         byte[] minPackedValue = r.getMinPackedValue();
         byte[] maxPackedValue = r.getMaxPackedValue();
@@ -292,15 +292,15 @@ public class TestBKD extends LuceneTestCase {
       }
 
       long indexFP;
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {        
-        Runnable finalizer = w.finish(out, out, out);
+      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT); IndexOutput docOut = dir.createOutput("docBkd", IOContext.DEFAULT)) {
+        Runnable finalizer = w.finish(out, out, out, docOut);
         indexFP = out.getFilePointer();
         finalizer.run();
       }
 
-      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
+      try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT); IndexInput docIn = dir.openInput("docBkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in);
+        BKDReader r = new BKDReader(in, in, in, docIn);
 
         int iters = atLeast(100);
         for(int iter=0;iter<iters;iter++) {
@@ -709,7 +709,9 @@ public class TestBKD extends LuceneTestCase {
     }
     BKDWriter w = new BKDWriter(numValues, dir, "_" + seg, numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode, maxMB, maxDocs);
     IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+    IndexOutput docOut = dir.createOutput("bkdDoc", IOContext.DEFAULT);
     IndexInput in = null;
+    IndexInput docIn = null;
 
     boolean success = false;
 
@@ -760,7 +762,7 @@ public class TestBKD extends LuceneTestCase {
                 return curDocIDBase + docID;
               }
             });
-          Runnable finalizer = w.finish(out, out, out);
+          Runnable finalizer = w.finish(out, out, out, docOut);
           toMerge.add(out.getFilePointer());
           finalizer.run();
           valuesInThisSeg = TestUtil.nextInt(random(), numValues/10, numValues/2);
@@ -775,10 +777,11 @@ public class TestBKD extends LuceneTestCase {
       }
 
       long indexFP;
+      long docFP;
 
       if (toMerge != null) {
         if (segCount > 0) {
-          Runnable finalizer = w.finish(out, out, out);
+          Runnable finalizer = w.finish(out, out, out, docOut);
           toMerge.add(out.getFilePointer());
           finalizer.run();
           final int curDocIDBase = lastDocIDBase;
@@ -790,31 +793,39 @@ public class TestBKD extends LuceneTestCase {
             });
         }
         out.close();
+        docOut.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
+        docIn = dir.openInput("bkdDoc", IOContext.DEFAULT);
         seg++;
         w = new BKDWriter(numValues, dir, "_" + seg, numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode, maxMB, docValues.length);
         List<BKDReader> readers = new ArrayList<>();
         for(long fp : toMerge) {
           in.seek(fp);
-          readers.add(new BKDReader(in, in, in));
+          readers.add(new BKDReader(in, in, in, docIn));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
-        Runnable finalizer = w.merge(out, out, out, docMaps, readers);
+        docOut = dir.createOutput("bkdDoc2", IOContext.DEFAULT);
+        Runnable finalizer = w.merge(out, out, out, docOut, docMaps, readers);
         indexFP = out.getFilePointer();
         finalizer.run();
         out.close();
+        docOut.close();
         in.close();
+        docIn.close();
         in = dir.openInput("bkd2", IOContext.DEFAULT);
+        docIn = dir.openInput("bkdDoc2", IOContext.DEFAULT);
       } else {
-        Runnable finalizer = w.finish(out, out, out);
+        Runnable finalizer = w.finish(out, out, out, docOut);
         indexFP = out.getFilePointer();
         finalizer.run();
         out.close();
+        docOut.close();
         in = dir.openInput("bkd", IOContext.DEFAULT);
+        docIn = dir.openInput("bkdDoc", IOContext.DEFAULT);
       }
 
       in.seek(indexFP);
-      BKDReader r = new BKDReader(in, in, in);
+      BKDReader r = new BKDReader(in, in, in, docIn);
 
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {
@@ -932,6 +943,7 @@ public class TestBKD extends LuceneTestCase {
         }
       }
       in.close();
+      docIn.close();
       dir.deleteFile("bkd");
       if (toMerge != null) {
         dir.deleteFile("bkd2");
@@ -939,8 +951,8 @@ public class TestBKD extends LuceneTestCase {
       success = true;
     } finally {
       if (success == false) {
-        IOUtils.closeWhileHandlingException(w, in, out);
-        IOUtils.deleteFilesIgnoringExceptions(dir, "bkd", "bkd2");
+        IOUtils.closeWhileHandlingException(w, in, out, docIn, docOut);
+        IOUtils.deleteFilesIgnoringExceptions(dir, "bkd", "bkd2", "bkdDoc", "bkdDoc2");
       }
     }
   }
@@ -1074,520 +1086,520 @@ public class TestBKD extends LuceneTestCase {
     fail("did not see a suppressed CorruptIndexException");
   }
 
-  public void testTieBreakOrder() throws Exception {
-    try (Directory dir = newDirectory()) {
-      int numDocs = 10000;
-      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, 1, Integer.BYTES, 2, 0.01f, numDocs);
-      for(int i=0;i<numDocs;i++) {
-        w.add(new byte[Integer.BYTES], i);
-      }
-
-      IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      Runnable finalizer = w.finish(out, out, out);
-      long fp = out.getFilePointer();
-      finalizer.run();
-      out.close();
-
-      IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
-      in.seek(fp);
-      BKDReader r = new BKDReader(in, in, in);
-      r.intersect(new IntersectVisitor() {
-          int lastDocID = -1;
-
-          @Override
-          public void visit(int docID) {
-            assertTrue("lastDocID=" + lastDocID + " docID=" + docID, docID > lastDocID);
-            lastDocID = docID;
-          }
-
-          @Override
-          public void visit(int docID, byte[] packedValue) {
-            visit(docID);
-          }
-
-          @Override
-          public Relation compare(byte[] minPacked, byte[] maxPacked) {
-            return Relation.CELL_CROSSES_QUERY;
-          }
-      });
-      in.close();
-    }
-  }
-
-  public void testCheckDataDimOptimalOrder() throws IOException {
-    Directory dir = newDirectory();
-    final int numValues = atLeast(5000);
-    final int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final double maxMB = (float) 3.0 + (3*random().nextDouble());
-
-    final int numIndexDims = TestUtil.nextInt(random(), 1, 8);
-    final int numDataDims =  TestUtil.nextInt(random(), numIndexDims, 8);
-
-    final byte[] pointValue1 = new byte[numDataDims * numBytesPerDim];
-    final byte[] pointValue2 = new byte[numDataDims * numBytesPerDim];
-    random().nextBytes(pointValue1);
-    random().nextBytes(pointValue2);
-    // equal index dimensions but different data dimensions
-    for (int i = 0; i < numIndexDims; i++) {
-        System.arraycopy(pointValue1, i * numBytesPerDim, pointValue2, i * numBytesPerDim, numBytesPerDim);
-    }
-
-    BKDWriter w = new BKDWriter(2 * numValues, dir, "_temp", numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode,
-        maxMB, 2 * numValues);
-    for (int i = 0; i < numValues; ++i) {
-      w.add(pointValue1, i);
-      w.add(pointValue2, i);
-    }
-    final long indexFP;
-    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      Runnable finalizer = w.finish(out, out, out);
-      indexFP = out.getFilePointer();
-      finalizer.run();
-      w.close();
-    }
-
-    IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
-    pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
-
-    points.intersect(new IntersectVisitor() {
-
-      byte[] previous = null;
-      boolean hasChanged = false;
-
-      @Override
-      public void visit(int docID) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public void visit(int docID, byte[] packedValue) {
-        if (previous == null) {
-          previous = new byte[numDataDims * numBytesPerDim];
-          System.arraycopy(packedValue, 0, previous, 0, numDataDims * numBytesPerDim);
-        } else {
-          int mismatch = Arrays.mismatch(packedValue, previous);
-          if (mismatch != -1) {
-            if (hasChanged == false) {
-              hasChanged = true;
-              System.arraycopy(packedValue, 0, previous, 0, numDataDims * numBytesPerDim);
-            } else {
-              fail("Points are not in optimal order");
-            }
-          }
-        }
-      }
-
-      @Override
-      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-    });
-
-
-    pointsIn.close();
-    dir.close();
-  }
-
-  public void test2DLongOrdsOffline() throws Exception {
-    try (Directory dir = newDirectory()) {
-      int numDocs = 100000;
-      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 2, 2, Integer.BYTES, 2, 0.01f, numDocs);
-      byte[] buffer = new byte[2*Integer.BYTES];
-      for(int i=0;i<numDocs;i++) {
-        random().nextBytes(buffer);
-        w.add(buffer, i);
-      }
-
-      IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-      Runnable finalizer = w.finish(out, out, out);
-      long fp = out.getFilePointer();
-      finalizer.run();
-      out.close();
-
-      IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
-      in.seek(fp);
-      BKDReader r = new BKDReader(in, in, in);
-      int[] count = new int[1];
-      r.intersect(new IntersectVisitor() {
-
-          @Override
-          public void visit(int docID) {
-            count[0]++;
-          }
-
-          @Override
-          public void visit(int docID, byte[] packedValue) {
-            visit(docID);
-          }
-
-          @Override
-          public Relation compare(byte[] minPacked, byte[] maxPacked) {
-            if (random().nextInt(7) == 1) {
-              return Relation.CELL_CROSSES_QUERY;
-            } else {
-              return Relation.CELL_INSIDE_QUERY;
-            }
-          }
-      });
-      assertEquals(numDocs, count[0]);
-      in.close();
-    }
-  }
-
-  // Claims 16 bytes per dim, but only use the bottom N 1-3 bytes; this would happen e.g. if a user indexes what are actually just short
-  // values as a LongPoint:
-  public void testWastedLeadingBytes() throws Exception {
-    Random random = random();
-    int numDims = TestUtil.nextInt(random, 1, PointValues.MAX_INDEX_DIMENSIONS);
-    int numIndexDims = TestUtil.nextInt(random, 1, numDims);
-    int bytesPerDim = PointValues.MAX_NUM_BYTES;
-    int bytesUsed = TestUtil.nextInt(random, 1, 3);
-
-    Directory dir = newFSDirectory(createTempDir());
-    int numDocs = atLeast(10000);
-    BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", numDims, numIndexDims, bytesPerDim, 32, 1f, numDocs);
-    byte[] tmp = new byte[bytesUsed];
-    byte[] buffer = new byte[numDims * bytesPerDim];
-    for(int i=0;i<numDocs;i++) {
-      for(int dim=0;dim<numDims;dim++) {
-        random.nextBytes(tmp);
-        System.arraycopy(tmp, 0, buffer, dim*bytesPerDim+(bytesPerDim-bytesUsed), tmp.length);
-      }
-      w.add(buffer, i);
-    }
-    
-    IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
-    Runnable finalizer = w.finish(out, out, out);
-    long fp = out.getFilePointer();
-    finalizer.run();
-    out.close();
-
-    IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
-    in.seek(fp);
-    BKDReader r = new BKDReader(in, in, in);
-    int[] count = new int[1];
-    r.intersect(new IntersectVisitor() {
-
-        @Override
-        public void visit(int docID) {
-          count[0]++;
-        }
-
-        @Override
-        public void visit(int docID, byte[] packedValue) {
-          assert packedValue.length == numDims * bytesPerDim;
-          visit(docID);
-        }
-
-        @Override
-        public Relation compare(byte[] minPacked, byte[] maxPacked) {
-          assert minPacked.length == numIndexDims * bytesPerDim;
-          assert maxPacked.length == numIndexDims * bytesPerDim;
-          if (random().nextInt(7) == 1) {
-            return Relation.CELL_CROSSES_QUERY;
-          } else {
-            return Relation.CELL_INSIDE_QUERY;
-          }
-        }
-      });
-    assertEquals(numDocs, count[0]);
-    in.close();
-    dir.close();
-  }
-
-  public void testEstimatePointCount() throws IOException {
-    Directory dir = newDirectory();
-    final int numValues = atLeast(10000); // make sure to have multiple leaves
-    final int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final byte[] pointValue = new byte[numBytesPerDim];
-    final byte[] uniquePointValue = new byte[numBytesPerDim];
-    random().nextBytes(uniquePointValue);
-
-    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, maxPointsInLeafNode,
-        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
-    for (int i = 0; i < numValues; ++i) {
-      if (i == numValues / 2) {
-        w.add(uniquePointValue, i);
-      } else {
-        do {
-          random().nextBytes(pointValue);
-        } while (Arrays.equals(pointValue, uniquePointValue));
-        w.add(pointValue, i);
-      }
-    }
-    final long indexFP;
-    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      Runnable finalizer = w.finish(out, out, out);
-      indexFP = out.getFilePointer();
-      finalizer.run();
-      w.close();
-    }
-    
-    IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
-    pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
-
-    // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    int numLeaves = numValues / maxPointsInLeafNode;
-    if (numValues % maxPointsInLeafNode != 0) {
-      numLeaves++;
-    }
-    assertEquals(numLeaves * maxPointsInLeafNode,
-        points.estimatePointCount(new IntersectVisitor() {
-          @Override
-          public void visit(int docID, byte[] packedValue) throws IOException {}
-          
-          @Override
-          public void visit(int docID) throws IOException {}
-          
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            return Relation.CELL_INSIDE_QUERY;
-          }
-        }));
-
-    // Return 0 if no points match
-    assertEquals(0,
-        points.estimatePointCount(new IntersectVisitor() {
-          @Override
-          public void visit(int docID, byte[] packedValue) throws IOException {}
-          
-          @Override
-          public void visit(int docID) throws IOException {}
-          
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            return Relation.CELL_OUTSIDE_QUERY;
-          }
-        }));
-
-    // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
-    // in general, or maybe 2x that if the point is a split value
-    final long pointCount = points.estimatePointCount(new IntersectVisitor() {
-      @Override
-      public void visit(int docID, byte[] packedValue) throws IOException {}
-
-      @Override
-      public void visit(int docID) throws IOException {}
-
-      @Override
-      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-        if (Arrays.compareUnsigned(uniquePointValue, 0, numBytesPerDim, maxPackedValue, 0, numBytesPerDim) > 0 ||
-            Arrays.compareUnsigned(uniquePointValue, 0, numBytesPerDim, minPackedValue, 0, numBytesPerDim) < 0) {
-          return Relation.CELL_OUTSIDE_QUERY;
-        }
-        return Relation.CELL_CROSSES_QUERY;
-      }
-    });
-    assertTrue(""+pointCount,
-        pointCount == (maxPointsInLeafNode + 1) / 2 || // common case
-        pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
-
-    pointsIn.close();
-    dir.close();
-  }
-
-  public void testTotalPointCountValidation() throws IOException {
-    Directory dir = newDirectory();
-    final int numValues = 10;
-    final int numPointsAdded = 50; // exceeds totalPointCount
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final byte[] pointValue = new byte[numBytesPerDim];
-    random().nextBytes(pointValue);
-
-    MutablePointValues reader = new MutablePointValues() {
-
-      @Override
-      public void intersect(IntersectVisitor visitor) throws IOException {
-        for(int i=0;i<numPointsAdded;i++) {
-          visitor.visit(0, pointValue);
-        }
-      }
-
-      @Override
-      public long estimatePointCount(IntersectVisitor visitor) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public byte[] getMinPackedValue() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public byte[] getMaxPackedValue() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int getNumDimensions() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int getNumIndexDimensions() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int getBytesPerDimension() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long size() {
-        return numPointsAdded;
-      }
-
-      @Override
-      public int getDocCount() {
-        return numPointsAdded;
-      }
-
-      @Override
-      public void swap(int i, int j) {
-        // do nothing
-      }
-
-      @Override
-      public int getDocID(int i) {
-        return 0;
-      }
-
-      @Override
-      public void getValue(int i, BytesRef packedValue) {
-        packedValue.bytes = pointValue;
-      }
-
-      @Override
-      public byte getByteAt(int i, int k) {
-        throw new UnsupportedOperationException();
-      }
-    };
-
-    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
-        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
-    expectThrows(IllegalStateException.class, () -> {
-      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-        w.writeField(out, out, out, "test_field_name", reader);
-      } finally {
-        w.close();
-        dir.close();
-      }
-    });
-  }
-
-  public void testTooManyPoints() throws Exception {
-    Directory dir = newDirectory();
-    final int numValues = 10;
-    final int numPointsAdded = 50; // exceeds totalPointCount
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final byte[] pointValue = new byte[numBytesPerDim];
-    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, 2,
-        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
-    for(int i=0;i<numValues;i++) {
-      random().nextBytes(pointValue);
-      w.add(pointValue, i);
-    }
-    random().nextBytes(pointValue);
-    IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.add(pointValue, numValues);});
-    assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
-    w.close();
-    dir.close();
-  }
-
-  public void testTooManyPoints1D() throws Exception {
-    Directory dir = newDirectory();
-    final int numValues = 10;
-    final int numPointsAdded = 50; // exceeds totalPointCount
-    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
-    final byte[][] pointValue = new byte[11][numBytesPerDim];
-    BKDWriter w = new BKDWriter(numValues + 1, dir, "_temp", 1, 1, numBytesPerDim, 2,
-        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
-    for(int i=0;i<numValues + 1;i++) {
-      random().nextBytes(pointValue[i]);
-    }
-    MutablePointValues val = new MutablePointValues() {
-      @Override
-      public void getValue(int i, BytesRef packedValue) {
-        packedValue.bytes = pointValue[i];
-        packedValue.offset = 0;
-        packedValue.length = numBytesPerDim;
-      }
-
-      @Override
-      public byte getByteAt(int i, int k) {
-        return pointValue[i][k];
-      }
-
-      @Override
-      public int getDocID(int i) {
-        return i;
-      }
-
-      @Override
-      public void swap(int i, int j) {
-        byte[] temp = pointValue[i];
-        pointValue[i] = pointValue[j];
-        pointValue[j] = temp;
-      }
-
-      @Override
-      public void intersect(IntersectVisitor visitor) throws IOException {
-        for (int i = 0; i < size(); i++) {
-          visitor.visit(i, pointValue[i]);
-        }
-      }
-
-      @Override
-      public long estimatePointCount(IntersectVisitor visitor) {
-        return 11;
-      }
-
-      @Override
-      public byte[] getMinPackedValue() {
-        return new byte[numBytesPerDim];
-      }
-
-      @Override
-      public byte[] getMaxPackedValue() {
-        return new byte[numBytesPerDim];
-      }
-
-      @Override
-      public int getNumDimensions() {
-        return 1;
-      }
-
-      @Override
-      public int getNumIndexDimensions() {
-        return 1;
-      }
-
-      @Override
-      public int getBytesPerDimension() {
-        return numBytesPerDim;
-      }
-
-      @Override
-      public long size() {
-        return 11;
-      }
-
-      @Override
-      public int getDocCount() {
-        return 11;
-      }
-    };
-    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
-      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, out, out, "", val);});
-      assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
-      w.close();
-    }
-    dir.close();
-  }
+//  public void testTieBreakOrder() throws Exception {
+//    try (Directory dir = newDirectory()) {
+//      int numDocs = 10000;
+//      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, 1, Integer.BYTES, 2, 0.01f, numDocs);
+//      for(int i=0;i<numDocs;i++) {
+//        w.add(new byte[Integer.BYTES], i);
+//      }
+//
+//      IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+//      Runnable finalizer = w.finish(out, out, out);
+//      long fp = out.getFilePointer();
+//      finalizer.run();
+//      out.close();
+//
+//      IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
+//      in.seek(fp);
+//      BKDReader r = new BKDReader(in, in, in);
+//      r.intersect(new IntersectVisitor() {
+//          int lastDocID = -1;
+//
+//          @Override
+//          public void visit(int docID) {
+//            assertTrue("lastDocID=" + lastDocID + " docID=" + docID, docID > lastDocID);
+//            lastDocID = docID;
+//          }
+//
+//          @Override
+//          public void visit(int docID, byte[] packedValue) {
+//            visit(docID);
+//          }
+//
+//          @Override
+//          public Relation compare(byte[] minPacked, byte[] maxPacked) {
+//            return Relation.CELL_CROSSES_QUERY;
+//          }
+//      });
+//      in.close();
+//    }
+//  }
+
+//  public void testCheckDataDimOptimalOrder() throws IOException {
+//    Directory dir = newDirectory();
+//    final int numValues = atLeast(5000);
+//    final int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
+//    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+//    final double maxMB = (float) 3.0 + (3*random().nextDouble());
+//
+//    final int numIndexDims = TestUtil.nextInt(random(), 1, 8);
+//    final int numDataDims =  TestUtil.nextInt(random(), numIndexDims, 8);
+//
+//    final byte[] pointValue1 = new byte[numDataDims * numBytesPerDim];
+//    final byte[] pointValue2 = new byte[numDataDims * numBytesPerDim];
+//    random().nextBytes(pointValue1);
+//    random().nextBytes(pointValue2);
+//    // equal index dimensions but different data dimensions
+//    for (int i = 0; i < numIndexDims; i++) {
+//        System.arraycopy(pointValue1, i * numBytesPerDim, pointValue2, i * numBytesPerDim, numBytesPerDim);
+//    }
+//
+//    BKDWriter w = new BKDWriter(2 * numValues, dir, "_temp", numDataDims, numIndexDims, numBytesPerDim, maxPointsInLeafNode,
+//        maxMB, 2 * numValues);
+//    for (int i = 0; i < numValues; ++i) {
+//      w.add(pointValue1, i);
+//      w.add(pointValue2, i);
+//    }
+//    final long indexFP;
+//    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+//      Runnable finalizer = w.finish(out, out, out);
+//      indexFP = out.getFilePointer();
+//      finalizer.run();
+//      w.close();
+//    }
+//
+//    IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
+//    pointsIn.seek(indexFP);
+//    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
+//
+//    points.intersect(new IntersectVisitor() {
+//
+//      byte[] previous = null;
+//      boolean hasChanged = false;
+//
+//      @Override
+//      public void visit(int docID) {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public void visit(int docID, byte[] packedValue) {
+//        if (previous == null) {
+//          previous = new byte[numDataDims * numBytesPerDim];
+//          System.arraycopy(packedValue, 0, previous, 0, numDataDims * numBytesPerDim);
+//        } else {
+//          int mismatch = Arrays.mismatch(packedValue, previous);
+//          if (mismatch != -1) {
+//            if (hasChanged == false) {
+//              hasChanged = true;
+//              System.arraycopy(packedValue, 0, previous, 0, numDataDims * numBytesPerDim);
+//            } else {
+//              fail("Points are not in optimal order");
+//            }
+//          }
+//        }
+//      }
+//
+//      @Override
+//      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+//        return Relation.CELL_CROSSES_QUERY;
+//      }
+//    });
+//
+//
+//    pointsIn.close();
+//    dir.close();
+//  }
+//
+//  public void test2DLongOrdsOffline() throws Exception {
+//    try (Directory dir = newDirectory()) {
+//      int numDocs = 100000;
+//      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 2, 2, Integer.BYTES, 2, 0.01f, numDocs);
+//      byte[] buffer = new byte[2*Integer.BYTES];
+//      for(int i=0;i<numDocs;i++) {
+//        random().nextBytes(buffer);
+//        w.add(buffer, i);
+//      }
+//
+//      IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+//      Runnable finalizer = w.finish(out, out, out);
+//      long fp = out.getFilePointer();
+//      finalizer.run();
+//      out.close();
+//
+//      IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
+//      in.seek(fp);
+//      BKDReader r = new BKDReader(in, in, in);
+//      int[] count = new int[1];
+//      r.intersect(new IntersectVisitor() {
+//
+//          @Override
+//          public void visit(int docID) {
+//            count[0]++;
+//          }
+//
+//          @Override
+//          public void visit(int docID, byte[] packedValue) {
+//            visit(docID);
+//          }
+//
+//          @Override
+//          public Relation compare(byte[] minPacked, byte[] maxPacked) {
+//            if (random().nextInt(7) == 1) {
+//              return Relation.CELL_CROSSES_QUERY;
+//            } else {
+//              return Relation.CELL_INSIDE_QUERY;
+//            }
+//          }
+//      });
+//      assertEquals(numDocs, count[0]);
+//      in.close();
+//    }
+//  }
+//
+//  // Claims 16 bytes per dim, but only use the bottom N 1-3 bytes; this would happen e.g. if a user indexes what are actually just short
+//  // values as a LongPoint:
+//  public void testWastedLeadingBytes() throws Exception {
+//    Random random = random();
+//    int numDims = TestUtil.nextInt(random, 1, PointValues.MAX_INDEX_DIMENSIONS);
+//    int numIndexDims = TestUtil.nextInt(random, 1, numDims);
+//    int bytesPerDim = PointValues.MAX_NUM_BYTES;
+//    int bytesUsed = TestUtil.nextInt(random, 1, 3);
+//
+//    Directory dir = newFSDirectory(createTempDir());
+//    int numDocs = atLeast(10000);
+//    BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", numDims, numIndexDims, bytesPerDim, 32, 1f, numDocs);
+//    byte[] tmp = new byte[bytesUsed];
+//    byte[] buffer = new byte[numDims * bytesPerDim];
+//    for(int i=0;i<numDocs;i++) {
+//      for(int dim=0;dim<numDims;dim++) {
+//        random.nextBytes(tmp);
+//        System.arraycopy(tmp, 0, buffer, dim*bytesPerDim+(bytesPerDim-bytesUsed), tmp.length);
+//      }
+//      w.add(buffer, i);
+//    }
+//
+//    IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+//    Runnable finalizer = w.finish(out, out, out);
+//    long fp = out.getFilePointer();
+//    finalizer.run();
+//    out.close();
+//
+//    IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
+//    in.seek(fp);
+//    BKDReader r = new BKDReader(in, in, in);
+//    int[] count = new int[1];
+//    r.intersect(new IntersectVisitor() {
+//
+//        @Override
+//        public void visit(int docID) {
+//          count[0]++;
+//        }
+//
+//        @Override
+//        public void visit(int docID, byte[] packedValue) {
+//          assert packedValue.length == numDims * bytesPerDim;
+//          visit(docID);
+//        }
+//
+//        @Override
+//        public Relation compare(byte[] minPacked, byte[] maxPacked) {
+//          assert minPacked.length == numIndexDims * bytesPerDim;
+//          assert maxPacked.length == numIndexDims * bytesPerDim;
+//          if (random().nextInt(7) == 1) {
+//            return Relation.CELL_CROSSES_QUERY;
+//          } else {
+//            return Relation.CELL_INSIDE_QUERY;
+//          }
+//        }
+//      });
+//    assertEquals(numDocs, count[0]);
+//    in.close();
+//    dir.close();
+//  }
+//
+//  public void testEstimatePointCount() throws IOException {
+//    Directory dir = newDirectory();
+//    final int numValues = atLeast(10000); // make sure to have multiple leaves
+//    final int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
+//    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+//    final byte[] pointValue = new byte[numBytesPerDim];
+//    final byte[] uniquePointValue = new byte[numBytesPerDim];
+//    random().nextBytes(uniquePointValue);
+//
+//    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, maxPointsInLeafNode,
+//        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+//    for (int i = 0; i < numValues; ++i) {
+//      if (i == numValues / 2) {
+//        w.add(uniquePointValue, i);
+//      } else {
+//        do {
+//          random().nextBytes(pointValue);
+//        } while (Arrays.equals(pointValue, uniquePointValue));
+//        w.add(pointValue, i);
+//      }
+//    }
+//    final long indexFP;
+//    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+//      Runnable finalizer = w.finish(out, out, out);
+//      indexFP = out.getFilePointer();
+//      finalizer.run();
+//      w.close();
+//    }
+//
+//    IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
+//    pointsIn.seek(indexFP);
+//    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
+//
+//    // If all points match, then the point count is numLeaves * maxPointsInLeafNode
+//    int numLeaves = numValues / maxPointsInLeafNode;
+//    if (numValues % maxPointsInLeafNode != 0) {
+//      numLeaves++;
+//    }
+//    assertEquals(numLeaves * maxPointsInLeafNode,
+//        points.estimatePointCount(new IntersectVisitor() {
+//          @Override
+//          public void visit(int docID, byte[] packedValue) throws IOException {}
+//
+//          @Override
+//          public void visit(int docID) throws IOException {}
+//
+//          @Override
+//          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+//            return Relation.CELL_INSIDE_QUERY;
+//          }
+//        }));
+//
+//    // Return 0 if no points match
+//    assertEquals(0,
+//        points.estimatePointCount(new IntersectVisitor() {
+//          @Override
+//          public void visit(int docID, byte[] packedValue) throws IOException {}
+//
+//          @Override
+//          public void visit(int docID) throws IOException {}
+//
+//          @Override
+//          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+//            return Relation.CELL_OUTSIDE_QUERY;
+//          }
+//        }));
+//
+//    // If only one point matches, then the point count is (actualMaxPointsInLeafNode + 1) / 2
+//    // in general, or maybe 2x that if the point is a split value
+//    final long pointCount = points.estimatePointCount(new IntersectVisitor() {
+//      @Override
+//      public void visit(int docID, byte[] packedValue) throws IOException {}
+//
+//      @Override
+//      public void visit(int docID) throws IOException {}
+//
+//      @Override
+//      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+//        if (Arrays.compareUnsigned(uniquePointValue, 0, numBytesPerDim, maxPackedValue, 0, numBytesPerDim) > 0 ||
+//            Arrays.compareUnsigned(uniquePointValue, 0, numBytesPerDim, minPackedValue, 0, numBytesPerDim) < 0) {
+//          return Relation.CELL_OUTSIDE_QUERY;
+//        }
+//        return Relation.CELL_CROSSES_QUERY;
+//      }
+//    });
+//    assertTrue(""+pointCount,
+//        pointCount == (maxPointsInLeafNode + 1) / 2 || // common case
+//        pointCount == 2*((maxPointsInLeafNode + 1) / 2)); // if the point is a split value
+//
+//    pointsIn.close();
+//    dir.close();
+//  }
+//
+//  public void testTotalPointCountValidation() throws IOException {
+//    Directory dir = newDirectory();
+//    final int numValues = 10;
+//    final int numPointsAdded = 50; // exceeds totalPointCount
+//    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+//    final byte[] pointValue = new byte[numBytesPerDim];
+//    random().nextBytes(pointValue);
+//
+//    MutablePointValues reader = new MutablePointValues() {
+//
+//      @Override
+//      public void intersect(IntersectVisitor visitor) throws IOException {
+//        for(int i=0;i<numPointsAdded;i++) {
+//          visitor.visit(0, pointValue);
+//        }
+//      }
+//
+//      @Override
+//      public long estimatePointCount(IntersectVisitor visitor) {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public byte[] getMinPackedValue() {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public byte[] getMaxPackedValue() {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public int getNumDimensions() {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public int getNumIndexDimensions() {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public int getBytesPerDimension() {
+//        throw new UnsupportedOperationException();
+//      }
+//
+//      @Override
+//      public long size() {
+//        return numPointsAdded;
+//      }
+//
+//      @Override
+//      public int getDocCount() {
+//        return numPointsAdded;
+//      }
+//
+//      @Override
+//      public void swap(int i, int j) {
+//        // do nothing
+//      }
+//
+//      @Override
+//      public int getDocID(int i) {
+//        return 0;
+//      }
+//
+//      @Override
+//      public void getValue(int i, BytesRef packedValue) {
+//        packedValue.bytes = pointValue;
+//      }
+//
+//      @Override
+//      public byte getByteAt(int i, int k) {
+//        throw new UnsupportedOperationException();
+//      }
+//    };
+//
+//    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
+//        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+//    expectThrows(IllegalStateException.class, () -> {
+//      try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+//        w.writeField(out, out, out, "test_field_name", reader);
+//      } finally {
+//        w.close();
+//        dir.close();
+//      }
+//    });
+//  }
+//
+//  public void testTooManyPoints() throws Exception {
+//    Directory dir = newDirectory();
+//    final int numValues = 10;
+//    final int numPointsAdded = 50; // exceeds totalPointCount
+//    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+//    final byte[] pointValue = new byte[numBytesPerDim];
+//    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, 2,
+//        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+//    for(int i=0;i<numValues;i++) {
+//      random().nextBytes(pointValue);
+//      w.add(pointValue, i);
+//    }
+//    random().nextBytes(pointValue);
+//    IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.add(pointValue, numValues);});
+//    assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
+//    w.close();
+//    dir.close();
+//  }
+//
+//  public void testTooManyPoints1D() throws Exception {
+//    Directory dir = newDirectory();
+//    final int numValues = 10;
+//    final int numPointsAdded = 50; // exceeds totalPointCount
+//    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+//    final byte[][] pointValue = new byte[11][numBytesPerDim];
+//    BKDWriter w = new BKDWriter(numValues + 1, dir, "_temp", 1, 1, numBytesPerDim, 2,
+//        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+//    for(int i=0;i<numValues + 1;i++) {
+//      random().nextBytes(pointValue[i]);
+//    }
+//    MutablePointValues val = new MutablePointValues() {
+//      @Override
+//      public void getValue(int i, BytesRef packedValue) {
+//        packedValue.bytes = pointValue[i];
+//        packedValue.offset = 0;
+//        packedValue.length = numBytesPerDim;
+//      }
+//
+//      @Override
+//      public byte getByteAt(int i, int k) {
+//        return pointValue[i][k];
+//      }
+//
+//      @Override
+//      public int getDocID(int i) {
+//        return i;
+//      }
+//
+//      @Override
+//      public void swap(int i, int j) {
+//        byte[] temp = pointValue[i];
+//        pointValue[i] = pointValue[j];
+//        pointValue[j] = temp;
+//      }
+//
+//      @Override
+//      public void intersect(IntersectVisitor visitor) throws IOException {
+//        for (int i = 0; i < size(); i++) {
+//          visitor.visit(i, pointValue[i]);
+//        }
+//      }
+//
+//      @Override
+//      public long estimatePointCount(IntersectVisitor visitor) {
+//        return 11;
+//      }
+//
+//      @Override
+//      public byte[] getMinPackedValue() {
+//        return new byte[numBytesPerDim];
+//      }
+//
+//      @Override
+//      public byte[] getMaxPackedValue() {
+//        return new byte[numBytesPerDim];
+//      }
+//
+//      @Override
+//      public int getNumDimensions() {
+//        return 1;
+//      }
+//
+//      @Override
+//      public int getNumIndexDimensions() {
+//        return 1;
+//      }
+//
+//      @Override
+//      public int getBytesPerDimension() {
+//        return numBytesPerDim;
+//      }
+//
+//      @Override
+//      public long size() {
+//        return 11;
+//      }
+//
+//      @Override
+//      public int getDocCount() {
+//        return 11;
+//      }
+//    };
+//    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+//      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, out, out, "", val);});
+//      assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
+//      w.close();
+//    }
+//    dir.close();
+//  }
 
 }

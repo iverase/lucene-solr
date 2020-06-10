@@ -36,7 +36,7 @@ import org.apache.lucene.util.bkd.BKDReader;
 
 /** Reads point values previously written with {@link Lucene86PointsWriter} */
 public class Lucene86PointsReader extends PointsReader implements Closeable {
-  final IndexInput indexIn, dataIn;
+  final IndexInput indexIn, dataIn, docIn;
   final SegmentReadState readState;
   final Map<Integer,BKDReader> readers = new HashMap<>();
 
@@ -53,6 +53,9 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
     String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
         readState.segmentSuffix,
         Lucene86PointsFormat.DATA_EXTENSION);
+    String docFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
+        readState.segmentSuffix,
+        Lucene86PointsFormat.DOCS_EXTENSION);
 
     boolean success = false;
     try {
@@ -74,6 +77,15 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           readState.segmentSuffix);
       CodecUtil.retrieveChecksum(dataIn);
 
+      docIn = readState.directory.openInput(docFileName, readState.context);
+      CodecUtil.checkIndexHeader(docIn,
+          Lucene86PointsFormat.DOCS_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_START,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          readState.segmentInfo.getId(),
+          readState.segmentSuffix);
+      CodecUtil.retrieveChecksum(docIn);
+
       try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
         Throwable priorE = null;
         try {
@@ -91,7 +103,7 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
             } else if (fieldNumber < 0) {
               throw new CorruptIndexException("Illegal field number: " + fieldNumber, metaIn);
             }
-            BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
+            BKDReader reader = new BKDReader(metaIn, indexIn, dataIn, docIn);
             readers.put(fieldNumber, reader);
           }
         } catch (Throwable t) {
@@ -134,11 +146,12 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
   public void checkIntegrity() throws IOException {
     CodecUtil.checksumEntireFile(indexIn);
     CodecUtil.checksumEntireFile(dataIn);
+    CodecUtil.checksumEntireFile(docIn);
   }
 
   @Override
   public void close() throws IOException {
-    IOUtils.close(indexIn, dataIn);
+    IOUtils.close(indexIn, dataIn, docIn);
     // Free up heap:
     readers.clear();
   }

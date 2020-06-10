@@ -41,6 +41,7 @@ public final class BKDReader extends PointValues {
   final int bytesPerDim;
   final int numLeaves;
   final IndexInput in;
+  final IndexInput docIn;
   final int maxPointsInLeafNode;
   final byte[] minPackedValue;
   final byte[] maxPackedValue;
@@ -49,13 +50,13 @@ public final class BKDReader extends PointValues {
   final int version;
   protected final int packedBytesLength;
   protected final int packedIndexBytesLength;
-  final long minLeafBlockFP;
+  final long minLeafBlockFP, minDocBlockFP;
 
   final IndexInput packedIndex;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned.
    * BKD tree is always stored off-heap. */
-  public BKDReader(IndexInput metaIn, IndexInput indexIn, IndexInput dataIn) throws IOException {
+  public BKDReader(IndexInput metaIn, IndexInput indexIn, IndexInput dataIn, IndexInput docIn) throws IOException {
     version = CodecUtil.checkHeader(metaIn, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
     numDataDims = metaIn.readVInt();
     if (version >= BKDWriter.VERSION_SELECTIVE_INDEXING) {
@@ -92,18 +93,25 @@ public final class BKDReader extends PointValues {
     long indexStartPointer;
     if (version >= BKDWriter.VERSION_META_FILE) {
       minLeafBlockFP = metaIn.readLong();
+      minDocBlockFP = metaIn.readLong();
       indexStartPointer = metaIn.readLong();
     } else {
       indexStartPointer = indexIn.getFilePointer();
       minLeafBlockFP = indexIn.readVLong();
+      minDocBlockFP = -1;
       indexIn.seek(indexStartPointer);
     }
     this.packedIndex = indexIn.slice("packedIndex", indexStartPointer, numIndexBytes);
     this.in = dataIn;
+    this.docIn = docIn;
   }
 
   long getMinLeafBlockFP() {
     return minLeafBlockFP;
+  }
+
+  long getMinDocBlockFP() {
+    return minDocBlockFP;
   }
 
   /** Used to walk the off-heap index. The format takes advantage of the limited
@@ -120,6 +128,8 @@ public final class BKDReader extends PointValues {
     private final IndexInput in;
     // holds the minimum (left most) leaf block file pointer for each level we've recursed to:
     private final long[] leafBlockFPStack;
+    // holds the minimum (left most) doc leaf block file pointer for each level we've recursed to:
+    private final long[] docBlockFPStack;
     // holds the address, in the off-heap index, of the right-node of each level:
     private final int[] rightNodePositions;
     // holds the splitDim for each level:
@@ -146,6 +156,7 @@ public final class BKDReader extends PointValues {
       this.level = level;
       splitPackedValueStack[level] = new byte[packedIndexBytesLength];
       leafBlockFPStack = new long[treeDepth+1];
+      docBlockFPStack = new long[treeDepth+1];
       rightNodePositions = new int[treeDepth+1];
       splitValuesStack = new byte[treeDepth+1][];
       splitDims = new int[treeDepth+1];
@@ -169,6 +180,7 @@ public final class BKDReader extends PointValues {
       // copy node data
       index.splitDim = splitDim;
       index.leafBlockFPStack[level] = leafBlockFPStack[level];
+      index.docBlockFPStack[level] = docBlockFPStack[level];
       index.rightNodePositions[level] = rightNodePositions[level];
       index.splitValuesStack[index.level] = splitValuesStack[index.level].clone();
       System.arraycopy(negativeDeltas, level*numIndexDims, index.negativeDeltas, level*numIndexDims, numIndexDims);
@@ -234,6 +246,11 @@ public final class BKDReader extends PointValues {
       return leafBlockFPStack[level];
     }
 
+    public long getDocBlockFP() {
+      //assert isLeafNode(): "nodeID=" + nodeID + " is not a leaf";
+      return docBlockFPStack[level];
+    }
+
     /** Return the number of leaves below the current node. */
     public int getNumLeaves() {
       int leftMostLeafNode = nodeID;
@@ -279,10 +296,11 @@ public final class BKDReader extends PointValues {
 
       try {
         leafBlockFPStack[level] = leafBlockFPStack[level - 1];
-
+        docBlockFPStack[level] = docBlockFPStack[level - 1];
         // read leaf block FP delta
         if (isLeft == false) {
           leafBlockFPStack[level] += in.readVLong();
+          docBlockFPStack[level] += in.readVLong();
         }
 
         if (isLeafNode()) {
@@ -339,7 +357,7 @@ public final class BKDReader extends PointValues {
 
   /** Used to track all state for a single call to {@link #intersect}. */
   public static final class IntersectState {
-    final IndexInput in;
+    final IndexInput in, docIn;
     final BKDReaderDocIDSetIterator scratchIterator;
     final byte[] scratchDataPackedValue, scratchMinIndexPackedValue, scratchMaxIndexPackedValue;
     final int[] commonPrefixLengths;
@@ -347,13 +365,14 @@ public final class BKDReader extends PointValues {
     final IntersectVisitor visitor;
     public final IndexTree index;
 
-    public IntersectState(IndexInput in, int numDims,
+    public IntersectState(IndexInput in, IndexInput docIn, int numDims,
                           int packedBytesLength,
                           int packedIndexBytesLength,
                           int maxPointsInLeafNode,
                           IntersectVisitor visitor,
                           IndexTree indexVisitor) {
       this.in = in;
+      this.docIn = docIn;
       this.visitor = visitor;
       this.commonPrefixLengths = new int[numDims];
       this.scratchIterator = new BKDReaderDocIDSetIterator(maxPointsInLeafNode);
@@ -377,37 +396,41 @@ public final class BKDReader extends PointValues {
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
   private void addAll(IntersectState state, boolean grown) throws IOException {
     //System.out.println("R: addAll nodeID=" + nodeID);
-
+    int numLeaves =  state.index.getNumLeaves();
     if (grown == false) {
-      final long maxPointCount = (long) maxPointsInLeafNode * state.index.getNumLeaves();
+      final long maxPointCount = (long) maxPointsInLeafNode * numLeaves;
       if (maxPointCount <= Integer.MAX_VALUE) { // could be >MAX_VALUE if there are more than 2B points in total
         state.visitor.grow((int) maxPointCount);
         grown = true;
       }
     }
-
-    if (state.index.isLeafNode()) {
-      assert grown;
-      //System.out.println("ADDALL");
-      if (state.index.nodeExists()) {
-        visitDocIDs(state.in, state.index.getLeafBlockFP(), state.visitor);
-      }
-      // TODO: we can assert that the first value here in fact matches what the index claimed?
-    } else {
-      state.index.pushLeft();
-      addAll(state, grown);
-      state.index.pop();
-
-      state.index.pushRight();
-      addAll(state, grown);
-      state.index.pop();
+    state.docIn.seek(state.index.getDocBlockFP());
+    for (int i = 0; i < numLeaves; i++) {
+      int count = state.docIn.readVInt();
+      DocIdsWriter.readInts(state.docIn, count, state.visitor);
     }
+//    if (state.index.isLeafNode()) {
+//      assert grown;
+//      //System.out.println("ADDALL");
+//      if (state.index.nodeExists()) {
+//        visitDocIDs(state.docIn, state.index.getDocBlockFP(), state.visitor);
+//      }
+//      // TODO: we can assert that the first value here in fact matches what the index claimed?
+//    } else {
+//      state.index.pushLeft();
+//      addAll(state, grown);
+//      state.index.pop();
+//
+//      state.index.pushRight();
+//      addAll(state, grown);
+//      state.index.pop();
+//    }
   }
 
   /** Create a new {@link IntersectState} */
   public IntersectState getIntersectState(IntersectVisitor visitor) {
     IndexTree index = new IndexTree();
-    return new IntersectState(in.clone(), numDataDims,
+    return new IntersectState(in.clone(), docIn.clone(), numDataDims,
                               packedBytesLength,
                               packedIndexBytesLength,
                               maxPointsInLeafNode,
@@ -419,7 +442,9 @@ public final class BKDReader extends PointValues {
   public void visitLeafBlockValues(IndexTree index, IntersectState state) throws IOException {
 
     // Leaf node; scan and filter all points in this block:
-    int count = readDocIDs(state.in, index.getLeafBlockFP(), state.scratchIterator);
+    int count = readDocIDs(state.docIn, index.getDocBlockFP(), state.scratchIterator);
+
+    state.in.seek(index.getLeafBlockFP());
 
     // Again, this time reading values and checking with the visitor
     visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);
@@ -647,7 +672,9 @@ public final class BKDReader extends PointValues {
       // In the unbalanced case it's possible the left most node only has one child:
       if (state.index.nodeExists()) {
         // Leaf node; scan and filter all points in this block:
-        int count = readDocIDs(state.in, state.index.getLeafBlockFP(), state.scratchIterator);
+        int count = readDocIDs(state.docIn, state.index.getDocBlockFP(), state.scratchIterator);
+
+        state.in.seek(state.index.getLeafBlockFP());
 
         // Again, this time reading values and checking with the visitor
         visitDocValues(state.commonPrefixLengths, state.scratchDataPackedValue, state.scratchMinIndexPackedValue, state.scratchMaxIndexPackedValue, state.in, state.scratchIterator, count, state.visitor);

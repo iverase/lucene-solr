@@ -42,6 +42,7 @@ import org.apache.lucene.index.SegmentWriteState;
  */
 public final class Lucene86PointsFormat extends PointsFormat {
 
+  static final String DOCS_CODEC_NAME = "Lucene86PointsFormatDocs";
   static final String DATA_CODEC_NAME = "Lucene86PointsFormatData";
   static final String INDEX_CODEC_NAME = "Lucene86PointsFormatIndex";
   static final String META_CODEC_NAME = "Lucene86PointsFormatMeta";
@@ -60,6 +61,11 @@ public final class Lucene86PointsFormat extends PointsFormat {
    * Filename extension for the meta per field
    */
   public static final String META_EXTENSION = "kdm";
+
+  /**
+   * Filename extension for the docs per field
+   */
+  public static final String DOCS_EXTENSION = "kdo";
 
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;

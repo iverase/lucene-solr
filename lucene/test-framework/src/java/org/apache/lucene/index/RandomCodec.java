@@ -132,7 +132,7 @@ public class RandomCodec extends AssertingCodec {
                   });
 
                 // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-                Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
+                Runnable finalizer = writer.finish(metaOut, indexOut, dataOut, docIdsOut);
                 if (finalizer != null) {
                   metaOut.writeInt(fieldInfo.number);
                   finalizer.run();

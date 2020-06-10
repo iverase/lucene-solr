@@ -58,19 +58,23 @@ public class Test2BBKDPoints extends LuceneTestCase {
       }
     }
     IndexOutput out = dir.createOutput("1d.bkd", IOContext.DEFAULT);
-    Runnable finalizer = w.finish(out, out, out);
+    IndexOutput docOut = dir.createOutput("1dDoc.bkd", IOContext.DEFAULT);
+    Runnable finalizer = w.finish(out, out, out, docOut);
     long indexFP = out.getFilePointer();
     finalizer.run();
     out.close();
+    docOut.close();
 
     IndexInput in = dir.openInput("1d.bkd", IOContext.DEFAULT);
+    IndexInput docin = dir.openInput("1dDoc.bkd", IOContext.DEFAULT);
     in.seek(indexFP);
-    BKDReader r = new BKDReader(in, in, in);
+    BKDReader r = new BKDReader(in, in, in, docin);
     CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("1d", numDocs, r);
     r.intersect(visitor);
     assertEquals(r.size(), visitor.getPointCountSeen());
     assertEquals(r.getDocCount(), visitor.getDocCountSeen());
     in.close();
+    docin.close();
     dir.close();
   }
 
@@ -100,19 +104,23 @@ public class Test2BBKDPoints extends LuceneTestCase {
       }
     }
     IndexOutput out = dir.createOutput("2d.bkd", IOContext.DEFAULT);
-    Runnable finalizer = w.finish(out, out, out);
+    IndexOutput docOut = dir.createOutput("2dDoc.bkd", IOContext.DEFAULT);
+    Runnable finalizer = w.finish(out, out, out, docOut);
     long indexFP = out.getFilePointer();
     finalizer.run();
     out.close();
+    docOut.close();
 
     IndexInput in = dir.openInput("2d.bkd", IOContext.DEFAULT);
+    IndexInput docIn = dir.openInput("2dDoc.bkd", IOContext.DEFAULT);
     in.seek(indexFP);
-    BKDReader r = new BKDReader(in, in, in);
+    BKDReader r = new BKDReader(in, in, in, docIn);
     CheckIndex.VerifyPointsVisitor visitor = new CheckIndex.VerifyPointsVisitor("2d", numDocs, r);
     r.intersect(visitor);
     assertEquals(r.size(), visitor.getPointCountSeen());
     assertEquals(r.getDocCount(), visitor.getDocCountSeen());
     in.close();
+    docIn.close();
     dir.close();
   }
 }
