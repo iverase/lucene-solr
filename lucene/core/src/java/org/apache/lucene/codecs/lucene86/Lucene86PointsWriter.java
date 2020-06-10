@@ -92,7 +92,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
           writeState.segmentSuffix,
           Lucene86PointsFormat.DOCS_EXTENSION);
 
-      docIdsOut = writeState.directory.createOutput(indexFileName, writeState.context);
+      docIdsOut = writeState.directory.createOutput(docsFileName, writeState.context);
       CodecUtil.writeIndexHeader(docIdsOut,
           Lucene86PointsFormat.DOCS_CODEC_NAME,
           Lucene86PointsFormat.VERSION_CURRENT,
