@@ -25,13 +25,13 @@ import org.apache.lucene.util.BytesRef;
  * */
 public final class HeapPointReader implements PointReader {
   private int curRead;
-  final byte[] block;
+  final byte[][] block;
   final int packedBytesLength;
   final int packedBytesDocIDLength;
   final int end;
   private final HeapPointValue pointValue;
 
-  public HeapPointReader(byte[] block, int packedBytesLength, int start, int end) {
+  public HeapPointReader(byte[][] block, int packedBytesLength, int start, int end) {
     this.block = block;
     curRead = start-1;
     this.end = end;
@@ -53,7 +53,7 @@ public final class HeapPointReader implements PointReader {
 
   @Override
   public PointValue pointValue() {
-    pointValue.setOffset(curRead * packedBytesDocIDLength);
+    pointValue.setOffset(curRead);
     return pointValue;
   }
 
@@ -68,20 +68,22 @@ public final class HeapPointReader implements PointReader {
 
     final BytesRef packedValue;
     final BytesRef packedValueDocID;
+    final byte[][] values;
     final int packedValueLength;
 
-    HeapPointValue(byte[] value, int packedValueLength) {
+    HeapPointValue(byte[][] value, int packedValueLength) {
       this.packedValueLength = packedValueLength;
-      this.packedValue = new BytesRef(value, 0, packedValueLength);
-      this.packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
+      this.packedValue = new BytesRef(value[0], 0, packedValueLength);
+      this.packedValueDocID = new BytesRef(value[0], 0, packedValueLength + Integer.BYTES);
+      this.values = value;
     }
 
     /**
      * Sets a new value by changing the offset.
      */
     public void setOffset(int offset) {
-      packedValue.offset = offset;
-      packedValueDocID.offset = offset;
+      packedValue.bytes = values[offset];
+      packedValueDocID.bytes = values[offset];
     }
 
     @Override

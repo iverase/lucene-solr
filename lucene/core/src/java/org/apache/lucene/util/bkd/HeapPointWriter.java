@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  *  @lucene.internal
  *  */
 public final class HeapPointWriter implements PointWriter {
-  public final byte[] block;
+  public final byte[][] block;
   final int size;
   final int packedBytesLength;
   final int packedBytesDocIDLength;
@@ -40,7 +40,7 @@ public final class HeapPointWriter implements PointWriter {
   public HeapPointWriter(int size, int packedBytesLength) {
     this.packedBytesDocIDLength = packedBytesLength + Integer.BYTES;
     this.packedBytesLength = packedBytesLength;
-    this.block = new byte[packedBytesDocIDLength * size];
+    this.block = new byte[size][packedBytesDocIDLength];
     this.size = size;
     this.scratch = new byte[packedBytesDocIDLength];
     if (size > 0) {
@@ -54,7 +54,7 @@ public final class HeapPointWriter implements PointWriter {
   /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
   public PointValue getPackedValueSlice(int index) {
     assert index < nextWrite : "nextWrite=" + (nextWrite) + " vs index=" + index;
-    pointValue.setOffset(index * packedBytesDocIDLength);
+    pointValue.setOffset(index);
     return pointValue;
   }
 
@@ -63,12 +63,12 @@ public final class HeapPointWriter implements PointWriter {
     assert closed == false : "point writer is already closed";
     assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
-    System.arraycopy(packedValue, 0, block, nextWrite * packedBytesDocIDLength, packedBytesLength);
-    int position = nextWrite * packedBytesDocIDLength + packedBytesLength;
-    block[position] = (byte) (docID >> 24);
-    block[++position] = (byte) (docID >> 16);
-    block[++position] = (byte) (docID >> 8);
-    block[++position] = (byte) (docID >> 0);
+    System.arraycopy(packedValue, 0, block[nextWrite], 0, packedBytesLength);
+    int position = packedBytesLength;
+    block[nextWrite][position] = (byte) (docID >> 24);
+    block[nextWrite][++position] = (byte) (docID >> 16);
+    block[nextWrite][++position] = (byte) (docID >> 8);
+    block[nextWrite][++position] = (byte) (docID >> 0);
     nextWrite++;
   }
 
@@ -78,21 +78,17 @@ public final class HeapPointWriter implements PointWriter {
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
     BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
     assert packedValueDocID.length == packedBytesDocIDLength : "[packedValue] must have length [" + (packedBytesDocIDLength) + "] but was [" + packedValueDocID.length + "]";
-    System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset, block, nextWrite * packedBytesDocIDLength, packedBytesDocIDLength);
+    System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset, block[nextWrite], 0, packedBytesDocIDLength);
     nextWrite++;
   }
 
   public void swap(int i, int j) {
-
-    int indexI = i * packedBytesDocIDLength;
-    int indexJ = j * packedBytesDocIDLength;
-
     // scratch1 = values[i]
-    System.arraycopy(block, indexI, scratch, 0, packedBytesDocIDLength);
+    System.arraycopy(block[i], 0, scratch, 0, packedBytesDocIDLength);
     // values[i] = values[j]
-    System.arraycopy(block, indexJ, block, indexI, packedBytesDocIDLength);
+    System.arraycopy(block[j], 0, block[i], 0, packedBytesDocIDLength);
     // values[j] = scratch1
-    System.arraycopy(scratch, 0, block, indexJ, packedBytesDocIDLength);
+    System.arraycopy(scratch, 0, block[j], 0, packedBytesDocIDLength);
   }
 
   public int computeCardinality(int from, int to, int numDataDims, int bytesPerDim, int[] commonPrefixLengths) {
@@ -102,8 +98,7 @@ public final class HeapPointWriter implements PointWriter {
       for (int dim = 0; dim < numDataDims; dim++) {
         final int start = dim * bytesPerDim + commonPrefixLengths[dim];
         final int end = dim * bytesPerDim + bytesPerDim;
-        if (Arrays.mismatch(block, i * packedBytesDocIDLength + start, i * packedBytesDocIDLength + end,
-            block, (i - 1) * packedBytesDocIDLength  + start, (i - 1) * packedBytesDocIDLength + end) != -1) {
+        if (Arrays.mismatch(block[i], start, end, block[i - 1], start,  end) != -1) {
           leafCardinality++;
           break;
         }
