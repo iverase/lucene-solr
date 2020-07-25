@@ -400,15 +400,10 @@ public class BKDWriter implements Closeable {
       docsSeen.set(values.getDocID(i));
     }
 
-    byte[] minPackedValue = new byte[config.packedBytesLength];
-    byte[] maxPackedValue = new byte[config.packedBytesLength];
-    System.arraycopy(this.minPackedValue, 0, minPackedValue, 0, config.packedIndexBytesLength);
-    System.arraycopy(this.maxPackedValue, 0, maxPackedValue, 0, config.packedIndexBytesLength);
-
     final long dataStartFP = dataOut.getFilePointer();
     final int[] parentSplits = new int[config.numIndexDims];
     build(0, numLeaves, values, 0, Math.toIntExact(pointCount), dataOut,
-          minPackedValue, maxPackedValue, parentSplits,
+          minPackedValue.clone(), maxPackedValue.clone(), parentSplits,
           splitPackedValues, splitDimensionValues, leafBlockFPs,
           new int[config.maxPointsInLeafNode]);
     assert Arrays.equals(parentSplits, new int[config.numIndexDims]);
@@ -772,11 +767,6 @@ public class BKDWriter implements Closeable {
     //We re-use the selector so we do not need to create an object every time.
     BKDRadixSelector radixSelector = new BKDRadixSelector(config, maxPointsSortInHeap, tempDir, tempFileNamePrefix);
 
-    byte[] minPackedValue = new byte[config.packedBytesLength];
-    byte[] maxPackedValue = new byte[config.packedBytesLength];
-    System.arraycopy(this.minPackedValue, 0, minPackedValue, 0, config.packedIndexBytesLength);
-    System.arraycopy(this.maxPackedValue, 0, maxPackedValue, 0, config.packedIndexBytesLength);
-
     final long dataStartFP = dataOut.getFilePointer();
     boolean success = false;
     try {
@@ -784,7 +774,7 @@ public class BKDWriter implements Closeable {
       final int[] parentSplits = new int[config.numIndexDims];
       build(0, numLeaves, points,
              dataOut, radixSelector,
-            minPackedValue, maxPackedValue,
+            minPackedValue.clone(), maxPackedValue.clone(),
             parentSplits,
             splitPackedValues,
             splitDimensionValues,
@@ -1277,8 +1267,8 @@ public class BKDWriter implements Closeable {
       };
 
       // Compute common prefixes
-      computePackedValueBounds(config, packedValues, count, minPackedValue, maxPackedValue);
-      computeCommonPrefixLength(config, minPackedValue, maxPackedValue, commonPrefixLengths);
+      computePackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
+      //computeCommonPrefixLength(config, minPackedValue, maxPackedValue, commonPrefixLengths);
 
       // Find the dimension that has the least number of unique bytes at commonPrefixLengths[dim]
       int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
@@ -1355,8 +1345,8 @@ public class BKDWriter implements Closeable {
       reader.getValue(mid, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * config.bytesPerDim, splitPackedValues, address, config.bytesPerDim);
 
-      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedBytesLength);
-      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedBytesLength);
+      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
+      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * config.bytesPerDim,
           minSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset + splitDim * config.bytesPerDim,
@@ -1442,8 +1432,7 @@ public class BKDWriter implements Closeable {
       };
 
       //we store common prefix on scratch1
-      computePackedValueBounds(config, packedValues, count, minPackedValue, maxPackedValue);
-      computeCommonPrefixLength(config, minPackedValue, maxPackedValue, commonPrefixLengths);
+      computePackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
 
       int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
 
@@ -1469,7 +1458,7 @@ public class BKDWriter implements Closeable {
       // from the index, much like how terms dict does so from the FST:
 
       // Write the common prefixes:
-      writeCommonPrefixes(out, commonPrefixLengths, minPackedValue);
+      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
 
 
       assert valuesInOrderAndBounds(config, count, sortedDim, minPackedValue, maxPackedValue, packedValues,
@@ -1517,10 +1506,10 @@ public class BKDWriter implements Closeable {
       int address = splitValueOffset * config.bytesPerDim;
       System.arraycopy(splitValue, 0, splitPackedValues, address, config.bytesPerDim);
 
-      byte[] minSplitPackedValue = new byte[config.packedBytesLength];
+      byte[] minSplitPackedValue = new byte[config.packedIndexBytesLength];
       System.arraycopy(minPackedValue, 0, minSplitPackedValue, 0, config.packedIndexBytesLength);
 
-      byte[] maxSplitPackedValue = new byte[config.packedBytesLength];
+      byte[] maxSplitPackedValue = new byte[config.packedIndexBytesLength];
       System.arraycopy(maxPackedValue, 0, maxSplitPackedValue, 0, config.packedIndexBytesLength);
 
       System.arraycopy(splitValue, 0, minSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
@@ -1541,13 +1530,14 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private static void computePackedValueBounds(BKDConfig config, IntFunction<BytesRef> packedValues, int count, byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
+  private static void computePackedValueBounds(BKDConfig config, IntFunction<BytesRef> packedValues, int[] commonPrefixLengths, byte[] scratch,
+                                               int count, byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
+    Arrays.fill(commonPrefixLengths, config.bytesPerDim);
     BytesRef value = packedValues.apply(0);
-    System.arraycopy(value.bytes, value.offset, minPackedValue, 0, config.packedBytesLength);
-    System.arraycopy(value.bytes, value.offset, maxPackedValue, 0, config.packedBytesLength);
+    System.arraycopy(value.bytes, value.offset, scratch, 0, config.packedBytesLength);
     for (int i = 1; i < count; i++) {
       value = packedValues.apply(i);
-      for (int dim = 0; dim < config.numDims; dim++) {
+      for (int dim = 0; dim < config.numIndexDims; dim++) {
         final int startOffset = dim * config.bytesPerDim;
         final int endOffset = startOffset + config.bytesPerDim;
         if (Arrays.compareUnsigned(value.bytes, value.offset + startOffset, value.offset + endOffset, minPackedValue, startOffset, endOffset) < 0) {
@@ -1556,15 +1546,21 @@ public class BKDWriter implements Closeable {
           System.arraycopy(value.bytes, value.offset + startOffset, maxPackedValue, startOffset, config.bytesPerDim);
         }
       }
+      for (int dim = config.numIndexDims; dim < config.numDims; dim++) {
+        if (commonPrefixLengths[dim] != 0) {
+          int j = Arrays.mismatch(scratch, dim * config.bytesPerDim, dim * config.bytesPerDim + commonPrefixLengths[dim],
+              value.bytes, value.offset + dim * config.bytesPerDim, value.offset + dim * config.bytesPerDim + commonPrefixLengths[dim]);
+          if (j != -1) {
+            commonPrefixLengths[dim] = j;
+          }
+        }
+      }
     }
-  }
 
-  private static void computeCommonPrefixLength(BKDConfig config, byte[] minPackedValue, byte[] maxPackedValues, int[] commonPrefixLengths) {
-    Arrays.fill(commonPrefixLengths, config.bytesPerDim);
-    for (int dim = 0; dim < config.numDims; dim++) {
+    for (int dim = 0; dim < config.numIndexDims; dim++) {
       if (commonPrefixLengths[dim] != 0) {
         int j = Arrays.mismatch(minPackedValue, dim * config.bytesPerDim, dim * config.bytesPerDim + config.bytesPerDim,
-            maxPackedValues, dim * config.bytesPerDim, dim * config.bytesPerDim + config.bytesPerDim);
+            maxPackedValue, dim * config.bytesPerDim, dim * config.bytesPerDim + config.bytesPerDim);
         if (j != -1) {
           commonPrefixLengths[dim] = j;
         }
