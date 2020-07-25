@@ -38,7 +38,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.NumericUtils;
@@ -1288,25 +1287,9 @@ public class BKDWriter implements Closeable {
       MutablePointsReaderUtils.sortByDim(config, sortedDim, commonPrefixLengths,
           reader, from, to, scratchBytesRef1, scratchBytesRef2);
 
-      BytesRef comparator = scratchBytesRef1;
-      BytesRef collector = scratchBytesRef2;
-      reader.getValue(from, comparator);
-      int leafCardinality = 1;
-      for (int i = from + 1; i < to; ++i) {
-        reader.getValue(i, collector);
-        for (int dim =0; dim < config.numDims; dim++) {
-          final int start = dim * config.bytesPerDim + commonPrefixLengths[dim];
-          final int end = dim * config.bytesPerDim + config.bytesPerDim;
-          if (Arrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
-              comparator.bytes, comparator.offset + start, comparator.offset + end) != -1) {
-            leafCardinality++;
-            BytesRef scratch = collector;
-            collector = comparator;
-            comparator = scratch;
-            break;
-          }
-        }
-      }
+      int leafCardinality = MutablePointsReaderUtils.computeCardinality(config, reader,
+          from, to, commonPrefixLengths, scratchBytesRef1, scratchBytesRef2);
+
       // Save the block file pointer:
       leafBlockFPs[leavesOffset] = out.getFilePointer();
 
