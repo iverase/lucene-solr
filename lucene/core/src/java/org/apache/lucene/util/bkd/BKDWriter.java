@@ -1267,7 +1267,7 @@ public class BKDWriter implements Closeable {
       };
 
       // Compute common prefixes
-      computePackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
+      computeCommonPrefixAndPackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
       //computeCommonPrefixLength(config, minPackedValue, maxPackedValue, commonPrefixLengths);
 
       // Find the dimension that has the least number of unique bytes at commonPrefixLengths[dim]
@@ -1432,7 +1432,7 @@ public class BKDWriter implements Closeable {
       };
 
       //we store common prefix on scratch1
-      computePackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
+      computeCommonPrefixAndPackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
 
       int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
 
@@ -1530,12 +1530,12 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private static void computePackedValueBounds(BKDConfig config, IntFunction<BytesRef> packedValues, int[] commonPrefixLengths, byte[] scratch,
-                                               int count, byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
+  private static void computeCommonPrefixAndPackedValueBounds(BKDConfig config, IntFunction<BytesRef> packedValues, int[] commonPrefixLengths,
+                                                              byte[] scratch, int count, byte[] minPackedValue, byte[] maxPackedValue)  {
     Arrays.fill(commonPrefixLengths, config.bytesPerDim);
     BytesRef value = packedValues.apply(0);
     System.arraycopy(value.bytes, value.offset, scratch, 0, config.packedBytesLength);
-    for (int i = 1; i < count; i++) {
+    for (int i = 0; i < count; i++) {
       value = packedValues.apply(i);
       for (int dim = 0; dim < config.numIndexDims; dim++) {
         final int startOffset = dim * config.bytesPerDim;
