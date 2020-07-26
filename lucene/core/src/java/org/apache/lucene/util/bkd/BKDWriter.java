@@ -1111,8 +1111,10 @@ public class BKDWriter implements Closeable {
 
   private void writeActualBounds(DataOutput out, byte[] minPackedValue, byte[] maxPackedValue, int[] commonPrefixLengths) throws IOException {
     for (int dim = 0; dim < config.numIndexDims; ++dim) {
-      out.writeBytes(minPackedValue, dim * config.bytesPerDim + commonPrefixLengths[dim], config.bytesPerDim - commonPrefixLengths[dim]);
-      out.writeBytes(maxPackedValue, dim * config.bytesPerDim + commonPrefixLengths[dim], config.bytesPerDim - commonPrefixLengths[dim]);
+      final int start = dim * config.bytesPerDim + commonPrefixLengths[dim];
+      final int length = config.bytesPerDim - commonPrefixLengths[dim];
+      out.writeBytes(minPackedValue, start, length);
+      out.writeBytes(maxPackedValue, start, length);
     }
   }
 
@@ -1268,7 +1270,6 @@ public class BKDWriter implements Closeable {
 
       // Compute common prefixes
       computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
-      //computeCommonPrefixLength(config, minPackedValue, maxPackedValue, commonPrefixLengths);
 
       // Find the dimension that has the least number of unique bytes at commonPrefixLengths[dim]
       int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
@@ -1460,7 +1461,6 @@ public class BKDWriter implements Closeable {
       // Write the common prefixes:
       writeCommonPrefixes(out, commonPrefixLengths, scratch1);
 
-
       assert valuesInOrderAndBounds(config, count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality, minPackedValue, maxPackedValue);
@@ -1535,7 +1535,9 @@ public class BKDWriter implements Closeable {
     Arrays.fill(commonPrefixLengths, config.bytesPerDim);
     BytesRef value = packedValues.apply(0);
     System.arraycopy(value.bytes, value.offset, scratch, 0, config.packedBytesLength);
-    for (int i = 0; i < count; i++) {
+    System.arraycopy(value.bytes, value.offset, minPackedValue, 0, config.packedIndexBytesLength);
+    System.arraycopy(value.bytes, value.offset, maxPackedValue, 0, config.packedIndexBytesLength);
+    for (int i = 1; i < count; i++) {
       value = packedValues.apply(i);
       for (int dim = 0; dim < config.numIndexDims; dim++) {
         final int startOffset = dim * config.bytesPerDim;
@@ -1579,8 +1581,8 @@ public class BKDWriter implements Closeable {
       final BytesRef packedValue = packedValues.apply(i);
       for (int dim=0;dim<config.numDims;dim++) {
         if (usedBytes[dim] != null) {
-          final int offset = dim * config.bytesPerDim + commonPrefixLengths[dim];
-          usedBytes[dim].set(Byte.toUnsignedInt(packedValue.bytes[packedValue.offset + offset]));
+          final int offset = packedValue.offset + dim * config.bytesPerDim + commonPrefixLengths[dim];
+          usedBytes[dim].set(Byte.toUnsignedInt(packedValue.bytes[offset]));
         }
       }
     }
