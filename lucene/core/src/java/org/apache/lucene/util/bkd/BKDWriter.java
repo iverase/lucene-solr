@@ -104,6 +104,7 @@ public class BKDWriter implements Closeable {
   final BytesRef scratchBytesRef1 = new BytesRef();
   final BytesRef scratchBytesRef2 = new BytesRef();
   final int[] commonPrefixLengths;
+  final FixedBitSet[] usedBytes;
 
   protected final FixedBitSet docsSeen;
 
@@ -149,6 +150,15 @@ public class BKDWriter implements Closeable {
 
     minPackedValue = new byte[config.packedIndexBytesLength];
     maxPackedValue = new byte[config.packedIndexBytesLength];
+
+    if (config.numDims > 1) {
+      usedBytes = new FixedBitSet[config.numDims];
+      for (int i =0; i < config.numDims; i++) {
+        usedBytes[i] = new FixedBitSet(256);
+      }
+    } else {
+      usedBytes = null;
+    }
 
     // Maximum number of points we hold in memory at any time
     maxPointsSortInHeap = (int) ((maxMBSortInHeap * 1024 * 1024) / (config.bytesPerDoc));
@@ -1272,7 +1282,7 @@ public class BKDWriter implements Closeable {
       computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
 
       // Find the dimension that has the least number of unique bytes at commonPrefixLengths[dim]
-      int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
+      int sortedDim = config.numDims == 1 ? 0 : computeSortedDim(config, usedBytes, packedValues, count, commonPrefixLengths);
 
       // sort by sortedDim
       MutablePointsReaderUtils.sortByDim(config, sortedDim, commonPrefixLengths,
@@ -1435,7 +1445,7 @@ public class BKDWriter implements Closeable {
       //we store common prefix on scratch1
       computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
 
-      int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
+      int sortedDim = config.numDims == 1 ? 0 : computeSortedDim(config, usedBytes, packedValues, count, commonPrefixLengths);
 
       // sort the chosen dimension
       radixSelector.heapRadixSort(heapSource, from, to, sortedDim, commonPrefixLengths[sortedDim]);
@@ -1570,17 +1580,16 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private static int computeSortedDim(BKDConfig config, IntFunction<BytesRef> packedValues, int count, int[] commonPrefixLengths) {
-    final FixedBitSet[] usedBytes = new FixedBitSet[config.numDims];
+  private static int computeSortedDim(BKDConfig config, FixedBitSet[] usedBytes, IntFunction<BytesRef> packedValues, int count, int[] commonPrefixLengths) {
     for (int dim = 0; dim < config.numDims; ++dim) {
       if (commonPrefixLengths[dim] < config.bytesPerDim) {
-        usedBytes[dim] = new FixedBitSet(256);
+        usedBytes[dim].clear(0, 255);
       }
     }
     for (int i = 0; i < count; ++i) {
       final BytesRef packedValue = packedValues.apply(i);
       for (int dim=0;dim<config.numDims;dim++) {
-        if (usedBytes[dim] != null) {
+        if (commonPrefixLengths[dim] < config.bytesPerDim) {
           final int offset = packedValue.offset + dim * config.bytesPerDim + commonPrefixLengths[dim];
           usedBytes[dim].set(Byte.toUnsignedInt(packedValue.bytes[offset]));
         }
@@ -1589,7 +1598,7 @@ public class BKDWriter implements Closeable {
     int sortedDim = 0;
     int sortedDimCardinality = Integer.MAX_VALUE;
     for (int dim = 0; dim < config.numDims; ++dim) {
-      if (usedBytes[dim] != null) {
+      if (commonPrefixLengths[dim] < config.bytesPerDim) {
         final int cardinality = usedBytes[dim].cardinality();
         if (cardinality < sortedDimCardinality) {
           sortedDim = dim;
