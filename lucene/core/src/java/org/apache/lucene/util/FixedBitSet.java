@@ -447,6 +447,10 @@ public final class FixedBitSet extends BitSet implements Bits, Accountable {
     bits[endWord] |= endmask;
   }
 
+  public void clear() {
+    Arrays.fill(bits, 0L);
+  }
+
   @Override
   public void clear(int startIndex, int endIndex) {
     assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;

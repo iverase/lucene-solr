@@ -1583,7 +1583,7 @@ public class BKDWriter implements Closeable {
   private static int computeSortedDim(BKDConfig config, FixedBitSet[] usedBytes, IntFunction<BytesRef> packedValues, int count, int[] commonPrefixLengths) {
     for (int dim = 0; dim < config.numDims; ++dim) {
       if (commonPrefixLengths[dim] < config.bytesPerDim) {
-        usedBytes[dim].clear(0, 255);
+        usedBytes[dim].clear();
       }
     }
     for (int i = 0; i < count; ++i) {
