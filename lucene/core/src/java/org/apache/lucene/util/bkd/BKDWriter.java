@@ -1580,7 +1580,7 @@ public class BKDWriter implements Closeable {
       for (int dim=0;dim<config.numDims;dim++) {
         if (usedBytes[dim] != null) {
           int offset = dim * config.bytesPerDim;
-          int prefix = commonPrefixLengths[dim] + 1;
+          int prefix = commonPrefixLengths[dim];
           byte b = packedValue.bytes[packedValue.offset + offset + prefix];
           usedBytes[dim].set(Byte.toUnsignedInt(b));
         }
