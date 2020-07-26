@@ -1267,7 +1267,7 @@ public class BKDWriter implements Closeable {
       };
 
       // Compute common prefixes
-      computeCommonPrefixAndPackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
+      computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
       //computeCommonPrefixLength(config, minPackedValue, maxPackedValue, commonPrefixLengths);
 
       // Find the dimension that has the least number of unique bytes at commonPrefixLengths[dim]
@@ -1432,7 +1432,7 @@ public class BKDWriter implements Closeable {
       };
 
       //we store common prefix on scratch1
-      computeCommonPrefixAndPackedValueBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
+      computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
 
       int sortedDim = computeSortedDim(config, packedValues, count, commonPrefixLengths);
 
@@ -1530,8 +1530,8 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  private static void computeCommonPrefixAndPackedValueBounds(BKDConfig config, IntFunction<BytesRef> packedValues, int[] commonPrefixLengths,
-                                                              byte[] scratch, int count, byte[] minPackedValue, byte[] maxPackedValue)  {
+  private static void computeCommonPrefixAndBounds(BKDConfig config, IntFunction<BytesRef> packedValues, int[] commonPrefixLengths,
+                                                   byte[] scratch, int count, byte[] minPackedValue, byte[] maxPackedValue)  {
     Arrays.fill(commonPrefixLengths, config.bytesPerDim);
     BytesRef value = packedValues.apply(0);
     System.arraycopy(value.bytes, value.offset, scratch, 0, config.packedBytesLength);
@@ -1569,24 +1569,28 @@ public class BKDWriter implements Closeable {
   }
 
   private static int computeSortedDim(BKDConfig config, IntFunction<BytesRef> packedValues, int count, int[] commonPrefixLengths) {
-    int sortedDim = 0;
-    int sortedDimCardinality = Integer.MAX_VALUE;
     FixedBitSet[] usedBytes = new FixedBitSet[config.numDims];
     for (int dim = 0; dim < config.numDims; ++dim) {
       if (commonPrefixLengths[dim] < config.bytesPerDim) {
         usedBytes[dim] = new FixedBitSet(256);
       }
     }
-    for (int dim = 0; dim < config.numDims; dim++) {
-      int prefix = commonPrefixLengths[dim];
-      if (prefix < config.bytesPerDim) {
-        int offset = dim * config.bytesPerDim;
-        for (int i = 0; i < count; ++i) {
-          BytesRef packedValue = packedValues.apply(i);
-          int bucket = packedValue.bytes[packedValue.offset + offset + prefix] & 0xff;
-          usedBytes[dim].set(bucket);
+    for (int i = 0; i < count; ++i) {
+      BytesRef packedValue = packedValues.apply(i);
+      for (int dim=0;dim<config.numDims;dim++) {
+        if (usedBytes[dim] != null) {
+          int offset = dim * config.bytesPerDim;
+          int prefix = commonPrefixLengths[dim] + 1;
+          byte b = packedValue.bytes[packedValue.offset + offset + prefix];
+          usedBytes[dim].set(Byte.toUnsignedInt(b));
         }
-        int cardinality =usedBytes[dim].cardinality();
+      }
+    }
+    int sortedDim = 0;
+    int sortedDimCardinality = Integer.MAX_VALUE;
+    for (int dim = 0; dim < config.numDims; ++dim) {
+      if (usedBytes[dim] != null) {
+        final int cardinality = usedBytes[dim].cardinality();
         if (cardinality < sortedDimCardinality) {
           sortedDim = dim;
           sortedDimCardinality = cardinality;
@@ -1649,7 +1653,6 @@ public class BKDWriter implements Closeable {
         return false;
       }
     }
-
     return true;
   }
 }
