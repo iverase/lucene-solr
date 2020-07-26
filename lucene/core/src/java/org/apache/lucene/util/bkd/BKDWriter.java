@@ -1294,8 +1294,8 @@ public class BKDWriter implements Closeable {
       writeLeafBlockDocs(scratchOut, docIDs, 0, count);
 
       // Write the common prefixes:
-      reader.getValue(from, scratchBytesRef1);
-      System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, config.packedBytesLength);
+      //reader.getValue(from, scratchBytesRef1);
+      //System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, config.packedBytesLength);
       writeCommonPrefixes(scratchOut, commonPrefixLengths, scratch1);
 
       // Write the full values:
@@ -1542,15 +1542,15 @@ public class BKDWriter implements Closeable {
         final int endOffset = startOffset + config.bytesPerDim;
         if (Arrays.compareUnsigned(value.bytes, value.offset + startOffset, value.offset + endOffset, minPackedValue, startOffset, endOffset) < 0) {
           System.arraycopy(value.bytes, value.offset + startOffset, minPackedValue, startOffset, config.bytesPerDim);
-        }
-        if (Arrays.compareUnsigned(value.bytes, value.offset + startOffset, value.offset + endOffset, maxPackedValue, startOffset, endOffset) > 0) {
+        } else if (Arrays.compareUnsigned(value.bytes, value.offset + startOffset, value.offset + endOffset, maxPackedValue, startOffset, endOffset) > 0) {
           System.arraycopy(value.bytes, value.offset + startOffset, maxPackedValue, startOffset, config.bytesPerDim);
         }
       }
       for (int dim = config.numIndexDims; dim < config.numDims; dim++) {
         if (commonPrefixLengths[dim] != 0) {
-          int j = Arrays.mismatch(scratch, dim * config.bytesPerDim, dim * config.bytesPerDim + commonPrefixLengths[dim],
-              value.bytes, value.offset + dim * config.bytesPerDim, value.offset + dim * config.bytesPerDim + commonPrefixLengths[dim]);
+          final int startOffset = dim * config.bytesPerDim;
+          final int endOffset = dim * config.bytesPerDim + commonPrefixLengths[dim];
+          int j = Arrays.mismatch(scratch, startOffset, endOffset, value.bytes, value.offset + startOffset, value.offset + endOffset);
           if (j != -1) {
             commonPrefixLengths[dim] = j;
           }
@@ -1559,31 +1559,28 @@ public class BKDWriter implements Closeable {
     }
 
     for (int dim = 0; dim < config.numIndexDims; dim++) {
-      if (commonPrefixLengths[dim] != 0) {
-        int j = Arrays.mismatch(minPackedValue, dim * config.bytesPerDim, dim * config.bytesPerDim + config.bytesPerDim,
-            maxPackedValue, dim * config.bytesPerDim, dim * config.bytesPerDim + config.bytesPerDim);
-        if (j != -1) {
-          commonPrefixLengths[dim] = j;
-        }
+      final int startOffset = dim * config.bytesPerDim;
+      final int endOffset = dim * config.bytesPerDim + commonPrefixLengths[dim];
+      final int j = Arrays.mismatch(minPackedValue, startOffset, endOffset, maxPackedValue, startOffset, endOffset);
+      if (j != -1) {
+        commonPrefixLengths[dim] = j;
       }
     }
   }
 
   private static int computeSortedDim(BKDConfig config, IntFunction<BytesRef> packedValues, int count, int[] commonPrefixLengths) {
-    FixedBitSet[] usedBytes = new FixedBitSet[config.numDims];
+    final FixedBitSet[] usedBytes = new FixedBitSet[config.numDims];
     for (int dim = 0; dim < config.numDims; ++dim) {
       if (commonPrefixLengths[dim] < config.bytesPerDim) {
         usedBytes[dim] = new FixedBitSet(256);
       }
     }
     for (int i = 0; i < count; ++i) {
-      BytesRef packedValue = packedValues.apply(i);
+      final BytesRef packedValue = packedValues.apply(i);
       for (int dim=0;dim<config.numDims;dim++) {
         if (usedBytes[dim] != null) {
-          int offset = dim * config.bytesPerDim;
-          int prefix = commonPrefixLengths[dim];
-          byte b = packedValue.bytes[packedValue.offset + offset + prefix];
-          usedBytes[dim].set(Byte.toUnsignedInt(b));
+          final int offset = dim * config.bytesPerDim + commonPrefixLengths[dim];
+          usedBytes[dim].set(Byte.toUnsignedInt(packedValue.bytes[packedValue.offset + offset]));
         }
       }
     }
