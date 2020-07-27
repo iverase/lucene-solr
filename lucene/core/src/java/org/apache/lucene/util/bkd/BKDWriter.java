@@ -1270,47 +1270,34 @@ public class BKDWriter implements Closeable {
       final int count = to - from;
       assert count <= config.maxPointsInLeafNode;
 
-      IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
-        @Override
-        public BytesRef apply(int i) {
-          reader.getValue(from + i, scratchBytesRef1);
-          return scratchBytesRef1;
-        }
+      IntFunction<BytesRef> packedValues = i -> {
+        reader.getValue(from + i, scratchBytesRef1);
+        return scratchBytesRef1;
       };
 
       // Compute common prefixes
       computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
-
       // Find the dimension that has the least number of unique bytes at commonPrefixLengths[dim]
       int sortedDim = config.numDims == 1 ? 0 : computeSortedDim(config, usedBytes, packedValues, count, commonPrefixLengths);
-
       // sort by sortedDim
       MutablePointsReaderUtils.sortByDim(config, sortedDim, commonPrefixLengths,
           reader, from, to, scratchBytesRef1, scratchBytesRef2);
-
+      // compute cardinality
       int leafCardinality = MutablePointsReaderUtils.computeCardinality(config, reader,
           from, to, commonPrefixLengths, scratchBytesRef1, scratchBytesRef2);
-
       // Save the block file pointer:
       leafBlockFPs[leavesOffset] = out.getFilePointer();
 
       assert scratchOut.size() == 0;
-
       // Write doc IDs
       int[] docIDs = spareDocIds;
       for (int i = from; i < to; ++i) {
         docIDs[i - from] = reader.getDocID(i);
       }
-      //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
       writeLeafBlockDocs(scratchOut, docIDs, 0, count);
-
       // Write the common prefixes:
-      //reader.getValue(from, scratchBytesRef1);
-      //System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, config.packedBytesLength);
       writeCommonPrefixes(scratchOut, commonPrefixLengths, scratch1);
-
       // Write the full values:
-
       assert valuesInOrderAndBounds(config, count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality, minPackedValue, maxPackedValue);
@@ -1413,7 +1400,6 @@ public class BKDWriter implements Closeable {
                      int[] spareDocIds) throws IOException {
 
     if (numLeaves == 1) {
-
       // Leaf node: write block
       // We can write the block in any order so by default we write it sorted by the dimension that has the
       // least number of unique bytes at commonPrefixLengths[dim], which makes compression more efficient
@@ -1425,7 +1411,6 @@ public class BKDWriter implements Closeable {
         heapSource = (HeapPointWriter) points.writer;
       }
 
-
       int from = Math.toIntExact(points.start);
       int to = Math.toIntExact(points.start + points.count);
       int count  = to - from;
@@ -1433,29 +1418,21 @@ public class BKDWriter implements Closeable {
       assert count > 0: "numLeaves=" + numLeaves + " leavesOffset=" + leavesOffset;
       assert count <= spareDocIds.length : "count=" + count + " > length=" + spareDocIds.length;
 
-      // Write the full values:
-      IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
-        @Override
-        public BytesRef apply(int i) {
-          PointValue value = heapSource.getPackedValueSlice(from + i);
-          return value.packedValue();
-        }
+      IntFunction<BytesRef> packedValues = i -> {
+        PointValue value = heapSource.getPackedValueSlice(from + i);
+        return value.packedValue();
       };
 
       //we store common prefix on scratch1
       computeCommonPrefixAndBounds(config, packedValues, commonPrefixLengths, scratch1, count, minPackedValue, maxPackedValue);
-
+      // compute dimension
       int sortedDim = config.numDims == 1 ? 0 : computeSortedDim(config, usedBytes, packedValues, count, commonPrefixLengths);
-
       // sort the chosen dimension
       radixSelector.heapRadixSort(heapSource, from, to, sortedDim, commonPrefixLengths[sortedDim]);
       // compute cardinality
       int leafCardinality = heapSource.computeCardinality(from, to, commonPrefixLengths);
-
       // Save the block file pointer:
       leafBlockFPs[leavesOffset] = out.getFilePointer();
-      //System.out.println("  write leaf block @ fp=" + out.getFilePointer());
-
       // Write docIDs first, as their own chunk, so that at intersect time we can add all docIDs w/o
       // loading the values:
       // Write doc IDs
@@ -1464,13 +1441,11 @@ public class BKDWriter implements Closeable {
         docIDs[i] = heapSource.getPackedValueSlice(from + i).docID();
       }
       writeLeafBlockDocs(out, docIDs, 0, count);
-
       // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
       // from the index, much like how terms dict does so from the FST:
-
       // Write the common prefixes:
       writeCommonPrefixes(out, commonPrefixLengths, scratch1);
-
+      // Write the full values:
       assert valuesInOrderAndBounds(config, count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
       writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality, minPackedValue, maxPackedValue);
@@ -1516,13 +1491,9 @@ public class BKDWriter implements Closeable {
       int address = splitValueOffset * config.bytesPerDim;
       System.arraycopy(splitValue, 0, splitPackedValues, address, config.bytesPerDim);
 
-      byte[] minSplitPackedValue = new byte[config.packedIndexBytesLength];
-      System.arraycopy(minPackedValue, 0, minSplitPackedValue, 0, config.packedIndexBytesLength);
-
-      byte[] maxSplitPackedValue = new byte[config.packedIndexBytesLength];
-      System.arraycopy(maxPackedValue, 0, maxSplitPackedValue, 0, config.packedIndexBytesLength);
-
+      byte[] minSplitPackedValue = ArrayUtil.copyOfSubArray(minPackedValue, 0, config.packedIndexBytesLength);
       System.arraycopy(splitValue, 0, minSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
+      byte[] maxSplitPackedValue = ArrayUtil.copyOfSubArray(maxPackedValue, 0, config.packedIndexBytesLength);
       System.arraycopy(splitValue, 0, maxSplitPackedValue, splitDim * config.bytesPerDim, config.bytesPerDim);
 
       parentSplits[splitDim]++;
