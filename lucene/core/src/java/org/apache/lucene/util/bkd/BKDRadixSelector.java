@@ -326,10 +326,10 @@ public final class BKDRadixSelector {
         assert k >= 0 : "negative prefix " + k;
         if (k  < dimCmpBytes) {
           // dim bytes
-          return points.block[i * config.bytesPerDoc + dimOffset + k] & 0xff;
+          return points.block[i][dimOffset + k] & 0xff;
         } else {
           // data bytes
-          return points.block[i * config.bytesPerDoc + dataOffset + k] & 0xff;
+          return points.block[i][dataOffset + k] & 0xff;
         }
       }
 
@@ -351,37 +351,31 @@ public final class BKDRadixSelector {
           @Override
           protected void setPivot(int i) {
             if (skypedBytes < config.bytesPerDim) {
-              System.arraycopy(points.block, i * config.bytesPerDoc + dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
+              System.arraycopy(points.block[i], dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
             }
-            System.arraycopy(points.block, i * config.bytesPerDoc + dataOffset, scratch, config.bytesPerDim, dataLength);
+            System.arraycopy(points.block[i], dataOffset, scratch, config.bytesPerDim, dataLength);
           }
 
           @Override
           protected int compare(int i, int j) {
             if (skypedBytes < config.bytesPerDim) {
-              int iOffset = i * config.bytesPerDoc;
-              int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(points.block, iOffset + dimStart, iOffset + dimEnd, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp = Arrays.compareUnsigned(points.block[i], dimStart, dimEnd, points.block[j], dimStart, dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
-            int iOffset = i * config.bytesPerDoc + dataOffset;
-            int jOffset = j * config.bytesPerDoc + dataOffset;
-            return Arrays.compareUnsigned(points.block, iOffset, iOffset + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(points.block[i], dataOffset, dataOffset + dataLength, points.block[j], dataOffset, dataOffset + dataLength);
           }
 
           @Override
           protected int comparePivot(int j) {
             if (skypedBytes < config.bytesPerDim) {
-              int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, config.bytesPerDim, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, config.bytesPerDim, points.block[j], dimStart, dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
-            int jOffset = j * config.bytesPerDoc + dataOffset;
-            return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block[j], dataOffset, dataOffset + dataLength);
           }
         };
       }
@@ -406,10 +400,10 @@ public final class BKDRadixSelector {
         assert k >= 0 : "negative prefix " + k;
         if (k  < dimCmpBytes) {
           // dim bytes
-          return points.block[i * config.bytesPerDoc + dimOffset + k] & 0xff;
+          return points.block[i][dimOffset + k] & 0xff;
         } else {
           // data bytes
-          return points.block[i * config.bytesPerDoc + dataOffset + k] & 0xff;
+          return points.block[i][dataOffset + k] & 0xff;
         }
       }
 
@@ -436,37 +430,31 @@ public final class BKDRadixSelector {
           @Override
           protected void setPivot(int i) {
             if (skypedBytes < config.bytesPerDim) {
-              System.arraycopy(points.block, i * config.bytesPerDoc + dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
+              System.arraycopy(points.block[i], dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
             }
-            System.arraycopy(points.block, i * config.bytesPerDoc + dataOffset, scratch, config.bytesPerDim, dataLength);
+            System.arraycopy(points.block[i], dataOffset, scratch, config.bytesPerDim, dataLength);
           }
 
           @Override
           protected int compare(int i, int j) {
             if (skypedBytes < config.bytesPerDim) {
-              int iOffset = i * config.bytesPerDoc;
-              int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(points.block, iOffset + dimStart, iOffset + dimEnd, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp = Arrays.compareUnsigned(points.block[i], dimStart, dimEnd, points.block[j], dimStart, dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
-            int iOffset = i * config.bytesPerDoc + dataOffset;
-            int jOffset = j * config.bytesPerDoc + dataOffset;
-            return Arrays.compareUnsigned(points.block, iOffset, iOffset + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(points.block[i], dataOffset, dataOffset + dataLength, points.block[j], dataOffset, dataOffset + dataLength);
           }
 
           @Override
           protected int comparePivot(int j) {
             if (skypedBytes < config.bytesPerDim) {
-              int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, config.bytesPerDim, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, config.bytesPerDim, points.block[j], dimStart, dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
-            int jOffset = j * config.bytesPerDoc + dataOffset;
-            return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block[j], dataOffset, dataOffset + dataLength);
           }
         };
       }

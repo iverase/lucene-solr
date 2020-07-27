@@ -25,12 +25,12 @@ import org.apache.lucene.util.BytesRef;
  * */
 public final class HeapPointReader implements PointReader {
   private int curRead;
-  final byte[] block;
+  final byte[][] block;
   final BKDConfig config;
   final int end;
   private final HeapPointValue pointValue;
 
-  public HeapPointReader(BKDConfig config, byte[] block, int start, int end) {
+  public HeapPointReader(BKDConfig config, byte[][] block, int start, int end) {
     this.block = block;
     curRead = start-1;
     this.end = end;
@@ -51,7 +51,7 @@ public final class HeapPointReader implements PointReader {
 
   @Override
   public PointValue pointValue() {
-    pointValue.setOffset(curRead * config.bytesPerDoc);
+    pointValue.setOffset(curRead);
     return pointValue;
   }
 
@@ -67,19 +67,21 @@ public final class HeapPointReader implements PointReader {
     final BytesRef packedValue;
     final BytesRef packedValueDocID;
     final int packedValueLength;
+    final byte[][] values;
 
-    HeapPointValue(BKDConfig config, byte[] value) {
+    HeapPointValue(BKDConfig config, byte[][] values) {
+      this.values = values;
       this.packedValueLength = config.packedBytesLength;
-      this.packedValue = new BytesRef(value, 0, packedValueLength);
-      this.packedValueDocID = new BytesRef(value, 0, config.bytesPerDoc);
+      this.packedValue = new BytesRef(values[0], 0, packedValueLength);
+      this.packedValueDocID = new BytesRef(values[0], 0, config.bytesPerDoc);
     }
 
     /**
      * Sets a new value by changing the offset.
      */
     public void setOffset(int offset) {
-      packedValue.offset = offset;
-      packedValueDocID.offset = offset;
+      packedValue.bytes = values[offset];
+      packedValueDocID.bytes = values[offset];
     }
 
     @Override
@@ -89,9 +91,8 @@ public final class HeapPointReader implements PointReader {
 
     @Override
     public int docID() {
-      int position = packedValueDocID.offset + packedValueLength;
-      return ((packedValueDocID.bytes[position] & 0xFF) << 24) | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
-          | ((packedValueDocID.bytes[++position] & 0xFF) <<  8) |  (packedValueDocID.bytes[++position] & 0xFF);
+      return ((packedValueDocID.bytes[packedValueLength] & 0xFF) << 24) | ((packedValueDocID.bytes[packedValueLength+1] & 0xFF) << 16)
+          | ((packedValueDocID.bytes[packedValueLength+2] & 0xFF) <<  8) |  (packedValueDocID.bytes[packedValueLength+3] & 0xFF);
     }
 
     @Override
