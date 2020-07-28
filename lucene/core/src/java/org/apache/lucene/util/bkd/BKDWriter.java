@@ -1571,26 +1571,18 @@ public class BKDWriter implements Closeable {
 
   private static int computeSortedDim(BKDConfig config, IntFunction<BytesRef> packedValues,
                                       int[] commonPrefixLengths, int count) {
-    final FixedBitSet[] usedBytes = new FixedBitSet[config.numDims];
-    for (int dim = 0; dim < config.numDims; ++dim) {
-      if (commonPrefixLengths[dim] < config.bytesPerDim) {
-        usedBytes[dim] = new FixedBitSet(256);
-      }
-    }
-    for (int i = 0; i < count; ++i) {
-      final BytesRef packedValue = packedValues.apply(i);
-      for (int dim = 0; dim < config.numDims; dim++) {
-        if (usedBytes[dim] != null) {
-          final int offset = packedValue.offset + dim * config.bytesPerDim + commonPrefixLengths[dim];
-          usedBytes[dim].set(packedValue.bytes[offset] & 0xff);
-        }
-      }
-    }
     int sortedDim = 0;
     int sortedDimCardinality = Integer.MAX_VALUE;
-    for (int dim = 0; dim < config.numDims; ++dim) {
-      if (usedBytes[dim] != null) {
-        final int cardinality = usedBytes[dim].cardinality();
+    for (int dim = 0; dim < config.numDims; dim++) {
+      final int prefix = commonPrefixLengths[dim];
+      if (prefix < config.bytesPerDim) {
+        final FixedBitSet usedBytes = new FixedBitSet(256);
+        final int offset = dim * config.bytesPerDim + prefix;
+        for (int i = 0; i < count; ++i) {
+          final BytesRef packedValue = packedValues.apply(i);
+          usedBytes.set(packedValue.bytes[packedValue.offset + offset] & 0xff);
+        }
+        final int cardinality =usedBytes.cardinality();
         if (cardinality < sortedDimCardinality) {
           sortedDim = dim;
           sortedDimCardinality = cardinality;
