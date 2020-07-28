@@ -207,4 +207,29 @@ public final class MutablePointsReaderUtils {
       }
     }.select(from, to, mid);
   }
+
+  public static int computeCardinality(BKDConfig config, MutablePointValues reader,
+                                       int from, int to, int[] commonPrefixLengths,
+                                       BytesRef scratchBytesRef1, BytesRef scratchBytesRef2) {
+    BytesRef comparator = scratchBytesRef1;
+    BytesRef collector = scratchBytesRef2;
+    reader.getValue(from, comparator);
+    int leafCardinality = 1;
+    for (int i = from + 1; i < to; ++i) {
+      reader.getValue(i, collector);
+      for (int dim =0; dim < config.numDims; dim++) {
+        final int start = dim * config.bytesPerDim + commonPrefixLengths[dim];
+        final int end = dim * config.bytesPerDim + config.bytesPerDim;
+        if (Arrays.mismatch(collector.bytes, collector.offset + start, collector.offset + end,
+            comparator.bytes, comparator.offset + start, comparator.offset + end) != -1) {
+          leafCardinality++;
+          BytesRef scratch = collector;
+          collector = comparator;
+          comparator = scratch;
+          break;
+        }
+      }
+    }
+    return leafCardinality;
+  }
 }
