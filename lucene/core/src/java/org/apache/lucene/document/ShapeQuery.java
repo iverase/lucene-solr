@@ -292,7 +292,10 @@ abstract class ShapeQuery extends Query {
         // process still reads the leaf nodes.
         values.intersect(getShallowInverseDenseVisitor(query, result));
       }
-      assert cost[0] > 0;
+      assert cost[0] > 0 || result.cardinality() == 0;
+      if (cost[0] == 0) {
+        return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+      }
       final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
@@ -304,6 +307,10 @@ abstract class ShapeQuery extends Query {
       final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
       values.intersect(getContainsDenseVisitor(query, result, excluded, cost));
       result.andNot(excluded);
+      assert cost[0] > 0 || result.cardinality() == 0;
+      if (cost[0] == 0) {
+        return new ConstantScoreScorer(weight, boost, scoreMode, DocIdSetIterator.empty());
+      }
       final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
       return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
     }
@@ -392,6 +399,9 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
+        if (excluded.get(docID) == true) {
+          return;
+        }
         if (query.queryMatches(t, scratchTriangle, query.getQueryRelation())) {
           visit(docID);
         } else {
@@ -431,6 +441,9 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
+        if (excluded.get(docID)) {
+          return;
+        }
         Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
         if (within == Component2D.WithinRelation.CANDIDATE) {
           cost[0]++;
@@ -474,6 +487,9 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] packedTriangle) {
+        if (result.get(docID) == false) {
+          return;
+        }
         if (query.queryMatches(packedTriangle, scratchTriangle, query.getQueryRelation()) == false) {
           visit(docID);
         }
