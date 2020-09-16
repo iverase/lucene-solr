@@ -41,6 +41,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.SparseFixedBitSet;
 
 /**
  * Base query class for all spatial geometries: {@link LatLonShape} and {@link XYShape}.
@@ -264,9 +265,9 @@ abstract class ShapeQuery extends Query {
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
-      if (values.size() / values.getDocCount() > 4) {
-        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
-        final long[] cost = new long[]{reader.maxDoc()};
+
+        final SparseFixedBitSet result = new SparseFixedBitSet(reader.maxDoc());
+        final long[] cost = new long[]{0};
         values.intersect(getIntersectsVisitor(query, result, cost));
         assert cost[0] > 0 || result.cardinality() == 0;
         if (cost[0] == 0) {
@@ -274,12 +275,6 @@ abstract class ShapeQuery extends Query {
         }
         final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
-      } else {
-        final DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(reader.maxDoc(), values, query.getField());
-        values.intersect(getSparseVisitor(query, docIdSetBuilder));
-        final DocIdSetIterator iterator = docIdSetBuilder.build().iterator();
-        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
-      }
     }
 
     /** Scorer used for WITHIN and DISJOINT **/
@@ -398,7 +393,7 @@ abstract class ShapeQuery extends Query {
     };
   }
 
-  private static IntersectVisitor getIntersectsVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
+  private static IntersectVisitor getIntersectsVisitor(final ShapeQuery query, final SparseFixedBitSet result, final long[] cost) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
