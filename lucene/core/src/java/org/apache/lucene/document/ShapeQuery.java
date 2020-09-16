@@ -266,7 +266,7 @@ abstract class ShapeQuery extends Query {
         return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
       }
 
-        final SparseFixedBitSet result = new SparseFixedBitSet(reader.maxDoc());
+        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
         final long[] cost = new long[]{0};
         values.intersect(getIntersectsVisitor(query, result, cost));
         assert cost[0] > 0 || result.cardinality() == 0;
@@ -393,7 +393,7 @@ abstract class ShapeQuery extends Query {
     };
   }
 
-  private static IntersectVisitor getIntersectsVisitor(final ShapeQuery query, final SparseFixedBitSet result, final long[] cost) {
+  private static IntersectVisitor getIntersectsVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
