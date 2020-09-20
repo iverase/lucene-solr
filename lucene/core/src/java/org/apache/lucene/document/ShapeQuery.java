@@ -40,7 +40,7 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.PagedFixedBitSet;
 
 /**
  * Base query class for all spatial geometries: {@link LatLonShape} and {@link XYShape}.
@@ -257,7 +257,7 @@ abstract class ShapeQuery extends Query {
         // If all docs have exactly one value and the cost is greater
         // than half the leaf size then maybe we can make things faster
         // by computing the set of documents that do NOT match the query
-        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        final PagedFixedBitSet result = new PagedFixedBitSet(reader.maxDoc());
         result.set(0, reader.maxDoc());
         final long[] cost = new long[]{reader.maxDoc()};
         values.intersect(getInverseDenseVisitor(query, result, cost));
@@ -266,7 +266,7 @@ abstract class ShapeQuery extends Query {
       }
       if (values.getDocCount() < (values.size() >>> 2)) {
         // we use a dense structure so we can skip already visited documents
-        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        final PagedFixedBitSet result = new PagedFixedBitSet(reader.maxDoc());
         final long[] cost = new long[]{0};
         values.intersect(getIntersectsDenseVisitor(query, result, cost));
         assert cost[0] > 0 || result.cardinality() == 0;
@@ -282,7 +282,7 @@ abstract class ShapeQuery extends Query {
 
     /** Scorer used for WITHIN and DISJOINT **/
     private Scorer getDenseScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
-      final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+      final PagedFixedBitSet result = new PagedFixedBitSet(reader.maxDoc());
       final long[] cost;
       if (values.getDocCount() == reader.maxDoc()) {
         cost = new long[]{values.size()};
@@ -294,7 +294,7 @@ abstract class ShapeQuery extends Query {
       } else {
         cost = new long[]{0};
         // Get potential  documents.
-        final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
+        final PagedFixedBitSet excluded = new PagedFixedBitSet(reader.maxDoc());
         values.intersect(getDenseVisitor(query, result, excluded, cost));
         result.andNot(excluded);
         // Remove false positives, we only care about the inner nodes as intersecting
@@ -308,10 +308,10 @@ abstract class ShapeQuery extends Query {
     }
 
     private Scorer getContainsDenseScorer(LeafReader reader, Weight weight, final float boost, ScoreMode scoreMode) throws IOException {
-      final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+      final PagedFixedBitSet result = new PagedFixedBitSet(reader.maxDoc());
       final long[] cost = new long[]{0};
       // Get potential  documents.
-      final FixedBitSet excluded = new FixedBitSet(reader.maxDoc());
+      final PagedFixedBitSet excluded = new PagedFixedBitSet(reader.maxDoc());
       values.intersect(getContainsDenseVisitor(query, result, excluded, cost));
       result.andNot(excluded);
       assert cost[0] > 0 || result.cardinality() == 0;
@@ -392,7 +392,7 @@ abstract class ShapeQuery extends Query {
   }
 
   /** Scorer used for INTERSECTS when the number of points > 4 * number of docs **/
-  private static IntersectVisitor getIntersectsDenseVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
+  private static IntersectVisitor getIntersectsDenseVisitor(final ShapeQuery query, final PagedFixedBitSet result, final long[] cost) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
@@ -429,7 +429,7 @@ abstract class ShapeQuery extends Query {
   }
 
   /** create a visitor that adds documents that match the query using a dense bitset; used with WITHIN & DISJOINT */
-  private static IntersectVisitor getDenseVisitor(final ShapeQuery query, final FixedBitSet result, final FixedBitSet excluded, final long[] cost) {
+  private static IntersectVisitor getDenseVisitor(final ShapeQuery query, final PagedFixedBitSet result, final PagedFixedBitSet excluded, final long[] cost) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
@@ -471,7 +471,7 @@ abstract class ShapeQuery extends Query {
   }
 
   /** create a visitor that adds documents that match the query using a dense bitset; used with CONTAINS */
-  private static IntersectVisitor getContainsDenseVisitor(final ShapeQuery query, final FixedBitSet result, final FixedBitSet excluded, final long[] cost) {
+  private static IntersectVisitor getContainsDenseVisitor(final ShapeQuery query, final PagedFixedBitSet result, final PagedFixedBitSet excluded, final long[] cost) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
@@ -515,7 +515,7 @@ abstract class ShapeQuery extends Query {
   }
 
   /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN & DISJOINT */
-  private static IntersectVisitor getInverseDenseVisitor(final ShapeQuery query, final FixedBitSet result, final long[] cost) {
+  private static IntersectVisitor getInverseDenseVisitor(final ShapeQuery query, final PagedFixedBitSet result, final long[] cost) {
     return new IntersectVisitor() {
       final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
 
@@ -553,7 +553,7 @@ abstract class ShapeQuery extends Query {
 
   /** create a visitor that clears documents that do not match the polygon query using a dense bitset; used with WITHIN & DISJOINT.
    * This visitor only takes into account inner nodes */
-  private static IntersectVisitor getShallowInverseDenseVisitor(final ShapeQuery query, final FixedBitSet result) {
+  private static IntersectVisitor getShallowInverseDenseVisitor(final ShapeQuery query, final PagedFixedBitSet result) {
     return new IntersectVisitor() {
 
       @Override
