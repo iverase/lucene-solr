@@ -119,12 +119,12 @@ public final class PagedFixedBitSet extends BitSet implements Bits, Accountable 
     pages = new long[numPages][WORDS_PER_PAGE];
   }
 
-  final int pageIndex(long index) {
-    return (int) (index >>> PAGE_SHIFT);
+  private static int pageIndex(int index) {
+    return  index >>> PAGE_SHIFT;
   }
 
-  final int indexInPage(long index) {
-    return (int) (index & PAGE_MASK);
+  private static int indexInPage(int index) {
+    return index & PAGE_MASK;
   }
 
   /**
