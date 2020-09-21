@@ -331,14 +331,14 @@ public final class PagedFixedBitSet extends BitSet implements Bits, Accountable 
     assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
     int wordNum = index >> 6;
     int pageIndex = pageIndex(wordNum);
-    long[] page = pages[pageIndex];
     int pagePosition = indexInPage(wordNum);
-    long word = page[pagePosition] >> index;  // skip all the bits to the right of index
+    long word = pages[pageIndex][pagePosition] >> index;  // skip all the bits to the right of index
 
     if (word!=0) {
       return index + Long.numberOfTrailingZeros(word);
     }
     while(pageIndex < numPages) {
+      page = pages[pageIndex];
       int end = pageIndex == lastPage ? lastPageSize : WORDS_PER_PAGE;
       while(++pagePosition < end) {
         word = page[pagePosition];
@@ -347,7 +347,7 @@ public final class PagedFixedBitSet extends BitSet implements Bits, Accountable 
         }
       }
       pagePosition = -1;
-      page = pages[++pageIndex];
+      pageIndex++;
     }
     return DocIdSetIterator.NO_MORE_DOCS;
   }
