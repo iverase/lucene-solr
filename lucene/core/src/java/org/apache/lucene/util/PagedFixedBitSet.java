@@ -347,7 +347,7 @@ public final class PagedFixedBitSet extends BitSet implements Bits, Accountable 
         }
       }
       pagePosition = -1;
-      pageIndex++;
+      page = pages[++pageIndex];
     }
     return DocIdSetIterator.NO_MORE_DOCS;
   }
