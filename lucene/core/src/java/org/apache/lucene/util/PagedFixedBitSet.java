@@ -338,7 +338,7 @@ public final class PagedFixedBitSet extends BitSet implements Bits, Accountable 
       return index + Long.numberOfTrailingZeros(word);
     }
     while(pageIndex < numPages) {
-      page = pages[pageIndex];
+      long[] page = pages[pageIndex];
       int end = pageIndex == lastPage ? lastPageSize : WORDS_PER_PAGE;
       while(++pagePosition < end) {
         word = page[pagePosition];
