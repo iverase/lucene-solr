@@ -172,10 +172,15 @@ public class XYPointField extends Field {
     return newGeometryQuery(field, polygons);
   }
 
-  /** create a query to find all indexed geo shapes that intersect a provided geometry collection
-   *  note: Components do not support dateline crossing
-   **/
-  public static Query newGeometryQuery(String field, XYGeometry... xyGeometries) {
-    return new XYPointInGeometryQuery(field, xyGeometries);
+  /**
+   * Create a query for matching one or more geometries.
+   * @param field field name. must not be null.
+   * @param geometries array of geoemtries. must not be null or empty
+   * @return query matching points within this polygon
+   * @throws IllegalArgumentException if {@code field} is null, {@code geometries} is null or empty
+   * @see XYGeometry
+   */
+  public static Query newGeometryQuery(String field, XYGeometry... geometries) {
+    return new XYPointInGeometryQuery(field, geometries);
   }
 }
