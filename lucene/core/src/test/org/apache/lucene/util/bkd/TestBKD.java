@@ -1414,12 +1414,12 @@ public class TestBKD extends LuceneTestCase {
 
       @Override
       public byte[] getMinPackedValue() {
-        throw new UnsupportedOperationException();
+        return pointValue;
       }
 
       @Override
       public byte[] getMaxPackedValue() {
-        throw new UnsupportedOperationException();
+        return pointValue;
       }
 
       @Override
@@ -1510,6 +1510,12 @@ public class TestBKD extends LuceneTestCase {
     for(int i=0;i<numValues + 1;i++) {
       random().nextBytes(pointValue[i]);
     }
+    byte[] max = new byte[numBytesPerDim];
+    byte[] min = new byte[numBytesPerDim];
+    for (int i =0; i < numBytesPerDim; i++) {
+      max[i] = Byte.MAX_VALUE;
+      min[i] = Byte.MIN_VALUE;
+    }
     MutablePointValues val = new MutablePointValues() {
       @Override
       public void getValue(int i, BytesRef packedValue) {
@@ -1549,12 +1555,12 @@ public class TestBKD extends LuceneTestCase {
 
       @Override
       public byte[] getMinPackedValue() {
-        return new byte[numBytesPerDim];
+        return min;
       }
 
       @Override
       public byte[] getMaxPackedValue() {
-        return new byte[numBytesPerDim];
+        return max;
       }
 
       @Override

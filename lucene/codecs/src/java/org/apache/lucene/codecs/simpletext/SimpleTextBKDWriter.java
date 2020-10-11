@@ -285,7 +285,8 @@ final class SimpleTextBKDWriter implements Closeable {
   /* In the 1D case, we can simply sort points in ascending order and use the
    * same writing logic as we use at merge time. */
   private long writeField1Dim(IndexOutput out, String fieldName, MutablePointValues reader) throws IOException {
-    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, Math.toIntExact(reader.size()));
+    final int commonPrefixLength = Arrays.mismatch(reader.getMinPackedValue(), 0, config.bytesPerDim, reader.getMaxPackedValue(), 0, config.bytesPerDim);
+    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, Math.toIntExact(reader.size()), commonPrefixLength);
 
     final OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(out);
 

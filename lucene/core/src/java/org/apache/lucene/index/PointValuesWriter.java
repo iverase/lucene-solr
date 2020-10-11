@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.codecs.PointsReader;
@@ -36,6 +37,11 @@ class PointValuesWriter {
   private int numDocs;
   private int lastDocID = -1;
   private final int packedBytesLength;
+  private final int packedIndexBytesLength;
+  private final int numIndexDims;
+  private final int bytesPerDim;
+  private final byte[] minPackedValue;
+  private final byte[] maxPackedValue;
 
   PointValuesWriter(ByteBlockPool.Allocator allocator, Counter bytesUsed, FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
@@ -43,7 +49,12 @@ class PointValuesWriter {
     this.bytes = new ByteBlockPool(allocator);
     docIDs = new int[16];
     iwBytesUsed.addAndGet(16 * Integer.BYTES);
+    numIndexDims =  fieldInfo.getPointDimensionCount();
+    bytesPerDim = fieldInfo.getPointNumBytes();
     packedBytesLength = fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes();
+    packedIndexBytesLength = numIndexDims * bytesPerDim;
+    minPackedValue = new byte[packedIndexBytesLength];
+    maxPackedValue =  new byte[packedIndexBytesLength];
   }
 
   // TODO: if exactly the same value is added to exactly the same doc, should we dedup?
@@ -61,6 +72,21 @@ class PointValuesWriter {
     }
     bytes.append(value);
     docIDs[numPoints] = docID;
+    
+    if (numPoints == 0) {
+      System.arraycopy(value.bytes, value.offset, minPackedValue, 0, packedIndexBytesLength);
+      System.arraycopy(value.bytes, value.offset, maxPackedValue, 0, packedIndexBytesLength);
+    } else {
+      for (int dim = 0; dim < numIndexDims; dim++) {
+        int offset = dim * bytesPerDim;
+        if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + offset + bytesPerDim, minPackedValue, offset, offset + bytesPerDim) < 0) {
+          System.arraycopy(value.bytes, value.offset + offset, minPackedValue, offset, bytesPerDim);
+        } else if (Arrays.compareUnsigned(value.bytes, value.offset + offset, value.offset + offset + bytesPerDim, maxPackedValue, offset, offset + bytesPerDim) > 0) {
+          System.arraycopy(value.bytes, value.offset + offset, maxPackedValue, offset, bytesPerDim);
+        }
+      }
+    }
+    
     if (docID != lastDocID) {
       numDocs++;
       lastDocID = docID;
@@ -97,12 +123,12 @@ class PointValuesWriter {
 
       @Override
       public byte[] getMinPackedValue() {
-        throw new UnsupportedOperationException();
+        return minPackedValue;
       }
 
       @Override
       public byte[] getMaxPackedValue() {
-        throw new UnsupportedOperationException();
+        return maxPackedValue;
       }
 
       @Override

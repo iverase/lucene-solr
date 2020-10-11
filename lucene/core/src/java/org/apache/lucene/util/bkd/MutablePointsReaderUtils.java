@@ -36,9 +36,10 @@ public final class MutablePointsReaderUtils {
 
   /** Sort the given {@link MutablePointValues} based on its packed value then doc ID. */
   public static void sort(BKDConfig config, int maxDoc,
-                          MutablePointValues reader, int from, int to) {
+                          MutablePointValues reader, int from, int to, int commonPrefixLength) {
+    final int len = config.packedBytesLength - commonPrefixLength;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
-    new MSBRadixSorter(config.packedBytesLength + (bitsPerDocId + 7) / 8) {
+    new MSBRadixSorter(len + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected void swap(int i, int j) {
@@ -47,16 +48,18 @@ public final class MutablePointsReaderUtils {
 
       @Override
       protected int byteAt(int i, int k) {
-        if (k < config.packedBytesLength) {
-          return Byte.toUnsignedInt(reader.getByteAt(i, k));
+        if (k < len) {
+          return Byte.toUnsignedInt(reader.getByteAt(i, commonPrefixLength + k));
         } else {
-          final int shift = bitsPerDocId - ((k - config.packedBytesLength + 1) << 3);
+          final int shift = bitsPerDocId - ((k - len + 1) << 3);
           return (reader.getDocID(i) >>> Math.max(0, shift)) & 0xff;
         }
       }
 
       @Override
       protected org.apache.lucene.util.Sorter getFallbackSorter(int k) {
+        final int dataStart = commonPrefixLength + k;
+        final int dataEnd = config.packedBytesLength;
         return new IntroSorter() {
 
           final BytesRef pivot = new BytesRef();
@@ -76,10 +79,10 @@ public final class MutablePointsReaderUtils {
 
           @Override
           protected int comparePivot(int j) {
-            if (k < config.packedBytesLength) {
+            if (k < len) {
               reader.getValue(j, scratch);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + config.packedBytesLength - k,
-                  scratch.bytes, scratch.offset + k, scratch.offset + k + config.packedBytesLength - k);
+              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dataStart, pivot.offset + dataEnd,
+                  scratch.bytes, scratch.offset + dataStart, scratch.offset + dataEnd);
               if (cmp != 0) {
                 return cmp;
               }

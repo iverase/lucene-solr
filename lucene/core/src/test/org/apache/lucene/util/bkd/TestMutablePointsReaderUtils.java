@@ -38,9 +38,10 @@ public class TestMutablePointsReaderUtils extends LuceneTestCase {
     final int bytesPerDim = TestUtil.nextInt(random(), 1, 16);
     final int maxDoc = TestUtil.nextInt(random(), 1, 1 << random().nextInt(30));
     BKDConfig config = new BKDConfig(1, 1, bytesPerDim, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    Point[] points = createRandomPoints(config, maxDoc, new int[1]);
+    int[] commonPrefixLen = new int[1]; 
+    Point[] points = createRandomPoints(config, maxDoc, commonPrefixLen);
     DummyPointsReader reader = new DummyPointsReader(points);
-    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, points.length);
+    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, points.length, commonPrefixLen[0]);
     Arrays.sort(points, new Comparator<Point>() {
       @Override
       public int compare(Point o1, Point o2) {

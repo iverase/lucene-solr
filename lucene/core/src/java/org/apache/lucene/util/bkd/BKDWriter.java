@@ -297,17 +297,20 @@ public class BKDWriter implements Closeable {
 
   private static class BKDMergeQueue extends PriorityQueue<MergeReader> {
     private final int bytesPerDim;
+    final int commonPrefixLen;
 
-    public BKDMergeQueue(int bytesPerDim, int maxSize) {
+    public BKDMergeQueue(int bytesPerDim, int maxSize, int commonPrefixLen) {
       super(maxSize);
       this.bytesPerDim = bytesPerDim;
+      this.commonPrefixLen = commonPrefixLen;
     }
 
     @Override
     public boolean lessThan(MergeReader a, MergeReader b) {
       assert a != b;
 
-      int cmp = Arrays.compareUnsigned(a.state.scratchDataPackedValue, 0, bytesPerDim, b.state.scratchDataPackedValue, 0, bytesPerDim);
+      int cmp = Arrays.compareUnsigned(a.state.scratchDataPackedValue, commonPrefixLen, bytesPerDim, 
+              b.state.scratchDataPackedValue, commonPrefixLen, bytesPerDim);
       if (cmp < 0) {
         return true;
       } else if (cmp > 0) {
@@ -396,7 +399,9 @@ public class BKDWriter implements Closeable {
     final long[] leafBlockFPs = new long[numLeaves];
 
     // compute the min/max for this slice
-    computePackedValueBounds(values, 0, Math.toIntExact(pointCount), minPackedValue, maxPackedValue, scratchBytesRef1);
+    System.arraycopy(values.getMinPackedValue(), 0, minPackedValue, 0, config.packedIndexBytesLength);
+    System.arraycopy(values.getMaxPackedValue(), 0, maxPackedValue, 0, config.packedIndexBytesLength);
+    //computePackedValueBounds(values, 0, Math.toIntExact(pointCount), minPackedValue, maxPackedValue, scratchBytesRef1);
     for (int i = 0; i < Math.toIntExact(pointCount); ++i) {
       docsSeen.set(values.getDocID(i));
     }
@@ -447,7 +452,11 @@ public class BKDWriter implements Closeable {
   /* In the 1D case, we can simply sort points in ascending order and use the
    * same writing logic as we use at merge time. */
   private Runnable writeField1Dim(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, String fieldName, MutablePointValues reader) throws IOException {
-    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, Math.toIntExact(reader.size()));
+    int commonPrefixLength = Arrays.mismatch(reader.getMinPackedValue(), 0, config.bytesPerDim, reader.getMaxPackedValue(), 0, config.bytesPerDim);
+    if (commonPrefixLength == -1) {
+      commonPrefixLength = config.bytesPerDim;
+    }
+    MutablePointsReaderUtils.sort(config, maxDoc, reader, 0, Math.toIntExact(reader.size()), commonPrefixLength);
 
     final OneDimensionBKDWriter oneDimWriter = new OneDimensionBKDWriter(metaOut, indexOut, dataOut);
 
@@ -478,7 +487,33 @@ public class BKDWriter implements Closeable {
   public Runnable merge(IndexOutput metaOut, IndexOutput indexOut, IndexOutput dataOut, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
     assert docMaps == null || readers.size() == docMaps.size();
 
-    BKDMergeQueue queue = new BKDMergeQueue(config.bytesPerDim, readers.size());
+    int commonPrefixLen = config.bytesPerDim;
+    if(readers.size() > 0) {
+      System.arraycopy(minPackedValue, 0, readers.get(0).getMinPackedValue(), 0, config.bytesPerDim);
+      commonPrefixLen = Math.min(commonPrefixLen,
+              Arrays.mismatch(minPackedValue, 0, config.bytesPerDim, readers.get(0).getMaxPackedValue(), 0, config.bytesPerDim));
+      if (commonPrefixLen == -1) {
+        commonPrefixLen = config.bytesPerDim;
+      }
+    }
+    
+    for(int i=1;i<readers.size();i++) {
+      if (commonPrefixLen == 0) {
+        break;
+      }
+      BKDReader bkd = readers.get(i);
+      final int min = Arrays.mismatch(bkd.getMinPackedValue(), 0, config.bytesPerDim, minPackedValue, 0, config.bytesPerDim);
+      if (min != -1) {
+        commonPrefixLen = Math.min(commonPrefixLen, min);
+      }
+      final int max = Arrays.mismatch(bkd.getMaxPackedValue(), 0, config.bytesPerDim, maxPackedValue, 0, config.bytesPerDim);
+      if (max != -1) {
+        commonPrefixLen = Math.min(commonPrefixLen, max);
+      }
+      
+    }
+
+    BKDMergeQueue queue = new BKDMergeQueue(config.bytesPerDim, readers.size(), commonPrefixLen);
 
     for(int i=0;i<readers.size();i++) {
       BKDReader bkd = readers.get(i);
