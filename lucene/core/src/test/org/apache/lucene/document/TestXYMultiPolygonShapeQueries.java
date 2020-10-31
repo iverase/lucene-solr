@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYGeometry;
@@ -45,7 +44,7 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
         // if we can't tessellate; then random polygon generator created a malformed shape
         XYPolygon p = (XYPolygon) getShapeType().nextShape();
         try {
-          Tessellator.tessellate(p, true);
+          XYShape.createIndexableFields("dummy", p, true);
           //polygons are disjoint so CONTAINS works. Note that if we intersect
           //any shape then contains return false.
           if (isDisjoint(polygons, p, i)) {

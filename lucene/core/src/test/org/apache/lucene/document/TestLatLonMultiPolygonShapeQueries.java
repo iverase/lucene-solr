@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Tessellator;
 
 /** random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon} types */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -42,7 +41,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         // if we can't tessellate; then random polygon generator created a malformed shape
         Polygon p = (Polygon) getShapeType().nextShape();
         try {
-          Tessellator.tessellate(p, random().nextBoolean());
+          LatLonShape.createIndexableFields("dummy", p, true);
           //polygons are disjoint so CONTAINS works. Note that if we intersect
           //any shape then contains return false.
           if (isDisjoint(polygons, p)) {

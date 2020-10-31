@@ -21,7 +21,6 @@ import java.util.Random;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
-import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
@@ -127,7 +126,7 @@ public class TestXYShape extends LuceneTestCase {
       if (areBoxDisjoint(r1, r2)) {
         p = toPolygon(r2);
         try {
-          Tessellator.tessellate(p, true);
+          XYShape.createIndexableFields("dummy", p, true);
           break;
         } catch (Exception e) {
           // ignore, try other combination

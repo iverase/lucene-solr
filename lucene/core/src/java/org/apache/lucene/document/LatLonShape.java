@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
@@ -73,12 +74,15 @@ public class LatLonShape {
    * the provided polygon is checked with a small performance penalty. */
   public static Field[] createIndexableFields(String fieldName, Polygon polygon, boolean checkSelfIntersections) {
     // the lionshare of the indexing is done by the tessellator
-    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon, checkSelfIntersections);
-    Triangle[] fields = new Triangle[tessellation.size()];
-    for (int i = 0; i < tessellation.size(); i++) {
-      fields[i] = new Triangle(fieldName, tessellation.get(i));
-    }
-    return fields;
+    final List<Triangle> fields = new ArrayList<>();
+    Tessellator.Collector collector = (aX, aY, ab, bX, bY, bc, cX, cY, ca) -> {
+      fields.add(new Triangle(fieldName,
+              encodeLongitude(aX), encodeLatitude(aY), ab,
+              encodeLongitude(bX), encodeLatitude(bY), bc,
+              encodeLongitude(cX), encodeLatitude(cY), ca));
+    };
+    Tessellator.tessellate(polygon, checkSelfIntersections, collector);
+    return fields.toArray(new Triangle[fields.size()]);
   }
 
   /** create indexable fields for line geometry */

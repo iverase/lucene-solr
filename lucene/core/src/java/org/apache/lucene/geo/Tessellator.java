@@ -82,7 +82,7 @@ final public class Tessellator {
   // No Instance:
   private Tessellator() {}
 
-  public static final List<Triangle> tessellate(final Polygon polygon, boolean checkSelfIntersections) {
+  public static final void tessellate(final Polygon polygon, boolean checkSelfIntersections, Collector collector) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.
     Node outerNode = createDoublyLinkedList(polygon.getPolyLons(), polygon.getPolyLats(),polygon.getWindingOrder(), true,
@@ -116,16 +116,11 @@ final public class Tessellator {
       checkIntersection(outerNode, mortonOptimized);
     }
     // Calculate the tessellation using the doubly LinkedList.
-    List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
-    if (result.size() == 0) {
-      throw new IllegalArgumentException("Unable to Tessellate shape. Possible malformed shape detected.");
-    }
-
-    return result;
+    earcutLinkedList(polygon, outerNode, State.INIT, mortonOptimized, collector);
   }
 
 
-  public static final List<Triangle> tessellate(final XYPolygon polygon, boolean checkSelfIntersections) {
+  public static final void tessellate(final XYPolygon polygon, boolean checkSelfIntersections, Collector collector) {
     // Attempt to establish a doubly-linked list of the provided shell points (should be CCW, but this will correct);
     // then filter instances of intersections.0
     Node outerNode = createDoublyLinkedList(XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
@@ -159,12 +154,7 @@ final public class Tessellator {
       checkIntersection(outerNode, mortonOptimized);
     }
     // Calculate the tessellation using the doubly LinkedList.
-    List<Triangle> result = earcutLinkedList(polygon, outerNode, new ArrayList<>(), State.INIT, mortonOptimized);
-    if (result.size() == 0) {
-      throw new IllegalArgumentException("Unable to Tessellate shape. Possible malformed shape detected.");
-    }
-
-    return result;
+    earcutLinkedList(polygon, outerNode, State.INIT, mortonOptimized, collector);
   }
 
   /** Creates a circular doubly linked list using polygon points. The order is governed by the specified winding order */
@@ -424,11 +414,11 @@ final public class Tessellator {
   }
 
   /** Main ear slicing loop which triangulates the vertices of a polygon, provided as a doubly-linked list. **/
-  private static final List<Triangle> earcutLinkedList(Object polygon, Node currEar, final List<Triangle> tessellation,
-                                                       State state, final boolean mortonOptimized) {
+  private static final void earcutLinkedList(Object polygon, Node currEar, 
+                                                       State state, final boolean mortonOptimized, Collector collector) {
     earcut : do {
       if (currEar == null || currEar.previous == currEar.next) {
-        return tessellation;
+        return;
       }
 
       Node stop = currEar;
@@ -446,8 +436,9 @@ final public class Tessellator {
           boolean abFromPolygon = prevNode.isNextEdgeFromPolygon;
           boolean bcFromPolygon = currEar.isNextEdgeFromPolygon;
           boolean caFromPolygon =  isEdgeFromPolygon(prevNode, nextNode, mortonOptimized);
+          collector.add(prevNode.getX(), prevNode.getY(), abFromPolygon, currEar.getX(), currEar.getY(), bcFromPolygon, nextNode.getX(), nextNode.getY(), caFromPolygon);
           // Return the triangulated data
-          tessellation.add(new Triangle(prevNode, abFromPolygon, currEar, bcFromPolygon, nextNode, caFromPolygon));
+          //tessellation.add(new Triangle(prevNode, abFromPolygon, currEar, bcFromPolygon, nextNode, caFromPolygon));
           // Remove the ear node.
           removeNode(currEar, caFromPolygon);
 
@@ -467,12 +458,12 @@ final public class Tessellator {
               continue earcut;
             case CURE:
               // if this didn't work, try curing all small self-intersections locally
-              currEar = cureLocalIntersections(currEar, tessellation, mortonOptimized);
+              currEar = cureLocalIntersections(currEar, collector, mortonOptimized);
               state = State.SPLIT;
               continue earcut;
             case SPLIT:
               // as a last resort, try splitting the remaining polygon into two
-              if (splitEarcut(polygon, currEar, tessellation, mortonOptimized) == false) {
+              if (splitEarcut(polygon, currEar, collector, mortonOptimized) == false) {
                 //we could not process all points. Tessellation failed
                 throw new IllegalArgumentException("Unable to Tessellate shape. Possible malformed shape detected.");
               }
@@ -484,7 +475,6 @@ final public class Tessellator {
       break;
     } while (true);
     // Return the calculated tessellation
-    return tessellation;
   }
 
   /** Determines whether a polygon node forms a valid ear with adjacent nodes. **/
@@ -559,7 +549,7 @@ final public class Tessellator {
   }
 
   /** Iterate through all polygon nodes and remove small local self-intersections **/
-  private static final Node cureLocalIntersections(Node startNode, final List<Triangle> tessellation, final boolean mortonOptimized) {
+  private static final Node cureLocalIntersections(Node startNode, final Collector collector, final boolean mortonOptimized) {
     Node node = startNode;
     Node nextNode;
     do {
@@ -576,9 +566,9 @@ final public class Tessellator {
         boolean abFromPolygon = (a.next == node) ? a.isNextEdgeFromPolygon : isEdgeFromPolygon(a, node, mortonOptimized);
         boolean bcFromPolygon = (node.next == b) ? node.isNextEdgeFromPolygon : isEdgeFromPolygon(node, b, mortonOptimized);
         boolean caFromPolygon = (b.next == a) ? b.isNextEdgeFromPolygon : isEdgeFromPolygon(a, b, mortonOptimized);
-        tessellation.add(new Triangle(a, abFromPolygon, node, bcFromPolygon,  b, caFromPolygon));
+        collector.add(a.getX(), a.getY(), abFromPolygon, node.getX(), node.getY(), bcFromPolygon,  b.getX(), b.getY(), caFromPolygon);
         // Return the triangulated vertices to the tessellation
-        tessellation.add(new Triangle(a, abFromPolygon, node, bcFromPolygon, b, caFromPolygon));
+        collector.add(a.getX(), a.getY(), abFromPolygon, node.getX(), node.getY(), bcFromPolygon, b.getX(), b.getY(), caFromPolygon);
 
         // remove two nodes involved
         removeNode(node, caFromPolygon);
@@ -592,7 +582,7 @@ final public class Tessellator {
   }
 
   /** Attempt to split a polygon and independently triangulate each side. Return true if the polygon was splitted **/
-  private static final boolean splitEarcut(final Object polygon, final Node start, final List<Triangle> tessellation, final boolean mortonOptimized) {
+  private static final boolean splitEarcut(final Object polygon, final Node start, final Collector collector, final boolean mortonOptimized) {
     // Search for a valid diagonal that divides the polygon into two.
     Node searchNode = start;
     Node nextNode;
@@ -611,8 +601,8 @@ final public class Tessellator {
             sortByMortonWithReset(searchNode);
             sortByMortonWithReset(splitNode);
           }
-          earcutLinkedList(polygon, searchNode, tessellation, State.INIT, mortonOptimized);
-          earcutLinkedList(polygon, splitNode,  tessellation, State.INIT, mortonOptimized);
+          earcutLinkedList(polygon, searchNode, State.INIT, mortonOptimized, collector);
+          earcutLinkedList(polygon, splitNode, State.INIT, mortonOptimized, collector);
           // Finish the iterative search
           return true;
         }
@@ -1129,20 +1119,7 @@ final public class Tessellator {
       return false;
     }
   }
-
-  /** Brute force compute if a point is in the polygon by traversing entire triangulation
-   * todo: speed this up using either binary tree or prefix coding (filtering by bounding box of triangle)
-   **/
-  public static final boolean pointInPolygon(final List<Triangle> tessellation, double lat, double lon) {
-    // each triangle
-    for (int i = 0; i < tessellation.size(); ++i) {
-      if (tessellation.get(i).containsPoint(lat, lon)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
+  
   /** Circular Doubly-linked list used for polygon coordinates */
   protected static class Node {
     // node index in the linked list
@@ -1228,55 +1205,12 @@ final public class Tessellator {
     }
   }
 
-  /** Triangle in the tessellated mesh */
-  public final static class Triangle {
-    Node[] vertex;
-    boolean[] edgeFromPolygon;
+  /** Collector interface called for every triangle generated by the tessellation process */
+  public interface Collector {
 
-    protected Triangle(Node a, boolean isABfromPolygon, Node b, boolean isBCfromPolygon, Node c, boolean isCAfromPolygon) {
-      this.vertex = new Node[] {a, b, c};
-      this.edgeFromPolygon = new boolean[] {isABfromPolygon, isBCfromPolygon, isCAfromPolygon};
-    }
-
-    /** get quantized x value for the given vertex */
-    public int getEncodedX(int vertex) {
-      return this.vertex[vertex].x;
-    }
-
-    /** get quantized y value for the given vertex */
-    public int getEncodedY(int vertex) {
-      return this.vertex[vertex].y;
-    }
-
-    /** get y value for the given vertex */
-    public double getY(int vertex) {
-      return this.vertex[vertex].getY();
-    }
-
-    /** get x value for the given vertex */
-    public double getX(int vertex) {
-      return this.vertex[vertex].getX();
-    }
-
-    /** get if edge is shared with the polygon for the given edge */
-    public boolean isEdgefromPolygon(int startVertex) {
-      return edgeFromPolygon[startVertex];
-    }
-
-    /** utility method to compute whether the point is in the triangle */
-    protected boolean containsPoint(double lat, double lon) {
-      return pointInTriangle(lon, lat,
-          vertex[0].getX(), vertex[0].getY(),
-          vertex[1].getX(), vertex[1].getY(),
-          vertex[2].getX(), vertex[2].getY());
-    }
-
-    /** pretty print the triangle vertices */
-    public String toString() {
-      String result = vertex[0].x + ", " + vertex[0].y + " [" + edgeFromPolygon[0] + "] " +
-                      vertex[1].x + ", " + vertex[1].y + " [" + edgeFromPolygon[1] + "] " +
-                      vertex[2].x + ", " + vertex[2].y + " [" + edgeFromPolygon[2] + "]";
-      return result;
-    }
+    /**
+     * Main method to collect triangles created by the Tessellator
+     */
+    void add(double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca);
   }
 }

@@ -25,7 +25,6 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -724,7 +723,7 @@ public class TestLatLonShape extends LuceneTestCase {
           lons[i] = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
         }
         polygon = new Polygon(lats, lons);
-        Tessellator.tessellate(polygon, true);
+        LatLonShape.createIndexableFields("dummy", polygon, true);
         break;
       } catch (Exception e) {
         // invalid polygon, try a new one

@@ -21,7 +21,6 @@ import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Tessellator;
 
 /** random bounding box, line, and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -38,7 +37,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
       // if we can't tessellate; then random polygon generator created a malformed shape
       p = (Polygon)getShapeType().nextShape();
       try {
-        Tessellator.tessellate(p, random().nextBoolean());
+        LatLonShape.createIndexableFields("dummy", p, true);
         return p;
       } catch (IllegalArgumentException e) {
         continue;

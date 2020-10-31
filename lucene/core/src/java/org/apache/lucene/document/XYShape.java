@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
@@ -32,6 +33,8 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
 
 /**
@@ -63,13 +66,15 @@ public class XYShape {
   /** create indexable fields for cartesian polygon geometry. If {@code checkSelfIntersections} is set to true, the validity of
    * the provided polygon is checked with a small performance penalty. */
   public static Field[] createIndexableFields(String fieldName, XYPolygon polygon, boolean checkSelfIntersections) {
-
-    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon, checkSelfIntersections);
-    Triangle[] fields = new Triangle[tessellation.size()];
-    for (int i = 0; i < tessellation.size(); i++) {
-      fields[i] = new Triangle(fieldName, tessellation.get(i));
-    }
-    return fields;
+    final List<Triangle> fields = new ArrayList<>();
+    Tessellator.Collector collector = (aX, aY, ab, bX, bY, bc, cX, cY, ca) -> {
+      fields.add(new Triangle(fieldName,
+              encodeLongitude(aX), encodeLatitude(aY), ab,
+              encodeLongitude(bX), encodeLatitude(bY), bc,
+              encodeLongitude(cX), encodeLatitude(cY), ca));
+    };
+    Tessellator.tessellate(polygon, checkSelfIntersections, collector);
+    return fields.toArray(new Triangle[fields.size()]);
   }
 
   /** create indexable fields for cartesian line geometry */

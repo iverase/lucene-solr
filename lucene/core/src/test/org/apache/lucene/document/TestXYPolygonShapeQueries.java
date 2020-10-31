@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
@@ -38,7 +37,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
       // if we can't tessellate; then random polygon generator created a malformed shape
       p = (XYPolygon)getShapeType().nextShape();
       try {
-        Tessellator.tessellate(p, true);
+        XYShape.createIndexableFields("dummy", p, true);
         return p;
       } catch (IllegalArgumentException e) {
         continue;
