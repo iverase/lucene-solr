@@ -186,9 +186,9 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   public void testAlignedLittleEndianLongs() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testAlignedLittleEndianLongs"))) {
       try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
-        out.writeLong(Long.reverseBytes(3L));
-        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
-        out.writeLong(Long.reverseBytes(-3L));
+        out.writeLong(3);
+        out.writeLong(Long.MAX_VALUE);
+        out.writeLong(-3L);
       }
       try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
         assertEquals(24, input.length());
@@ -204,9 +204,9 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     try (Directory dir = getDirectory(createTempDir("testUnalignedLittleEndianLongs"))) {
       try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
         out.writeByte((byte) 2);
-        out.writeLong(Long.reverseBytes(3L));
-        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
-        out.writeLong(Long.reverseBytes(-3L));
+        out.writeLong(3L);
+        out.writeLong(Long.MAX_VALUE);
+        out.writeLong(-3L);
       }
       try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
         assertEquals(25, input.length());

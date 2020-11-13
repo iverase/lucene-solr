@@ -92,7 +92,8 @@ class Packed64 extends PackedInts.MutableImpl {
     blocks = new long[longCount];
     // read as many longs as we can
     for (int i = 0; i < byteCount / 8; ++i) {
-      blocks[i] = in.readLong();
+      blocks[i] = in.readBELong();
+     // blocks[i] = in.readLong();
     }
     final int remaining = (int) (byteCount % 8);
     if (remaining != 0) {

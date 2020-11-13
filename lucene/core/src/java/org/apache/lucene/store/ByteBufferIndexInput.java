@@ -163,6 +163,21 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
+  public final short readBEShort() throws IOException {
+    try {
+      curBuf.order(ByteOrder.BIG_ENDIAN);
+      short s = guard.getShort(curBuf);
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return s;
+    } catch (BufferUnderflowException e) {
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return super.readBEShort();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
   public final int readInt() throws IOException {
     try {
       return guard.getInt(curBuf);
@@ -174,11 +189,41 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
+  public final int readBEInt() throws IOException {
+    try {
+      curBuf.order(ByteOrder.BIG_ENDIAN);
+      int i = guard.getInt(curBuf);
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return i;
+    } catch (BufferUnderflowException e) {
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return super.readBEInt();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
   public final long readLong() throws IOException {
     try {
       return guard.getLong(curBuf);
     } catch (BufferUnderflowException e) {
       return super.readLong();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public final long readBELong() throws IOException {
+    try {
+      curBuf.order(ByteOrder.BIG_ENDIAN);
+      long l = guard.getLong(curBuf);
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return l;
+    } catch (BufferUnderflowException e) {
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return super.readBELong();
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
@@ -256,6 +301,24 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
+  public short readBEShort(long pos) throws IOException {
+    final int bi = (int) (pos >> chunkSizePower);
+    try {
+      curBuf.order(ByteOrder.BIG_ENDIAN);
+      short s = guard.getShort(buffers[bi], (int) (pos & chunkSizeMask));
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return s;
+    } catch (IndexOutOfBoundsException ioobe) {
+      // either it's a boundary, or read past EOF, fall back:
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      setPos(pos, bi);
+      return readBEShort();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+  
+  @Override
   public int readInt(long pos) throws IOException {
     final int bi = (int) (pos >> chunkSizePower);
     try {
@@ -270,6 +333,24 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
+  public int readBEInt(long pos) throws IOException {
+    final int bi = (int) (pos >> chunkSizePower);
+    try {
+      curBuf.order(ByteOrder.BIG_ENDIAN);
+      int i = guard.getInt(buffers[bi], (int) (pos & chunkSizeMask));
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return i;
+    } catch (IndexOutOfBoundsException ioobe) {
+      // either it's a boundary, or read past EOF, fall back:
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      setPos(pos, bi);
+      return readBEInt();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
   public long readLong(long pos) throws IOException {
     final int bi = (int) (pos >> chunkSizePower);
     try {
@@ -278,6 +359,24 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       // either it's a boundary, or read past EOF, fall back:
       setPos(pos, bi);
       return readLong();
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public long readBELong(long pos) throws IOException {
+    final int bi = (int) (pos >> chunkSizePower);
+    try {
+      curBuf.order(ByteOrder.BIG_ENDIAN);
+      long l = guard.getLong(buffers[bi], (int) (pos & chunkSizeMask));
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      return l;
+    } catch (IndexOutOfBoundsException ioobe) {
+      // either it's a boundary, or read past EOF, fall back:
+      curBuf.order(ByteOrder.LITTLE_ENDIAN);
+      setPos(pos, bi);
+      return readBELong();
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
@@ -332,7 +431,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected ByteBufferIndexInput newCloneInstance(String newResourceDescription, ByteBuffer[] newBuffers, int offset, long length) {
     if (newBuffers.length == 1) {
       newBuffers[0].position(offset);
-      return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice(), length, chunkSizePower, this.guard);
+      return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice().order(ByteOrder.LITTLE_ENDIAN), length, chunkSizePower, this.guard);
     } else {
       return new MultiBufferImpl(newResourceDescription, newBuffers, offset, length, chunkSizePower, guard);
     }
@@ -351,7 +450,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     final ByteBuffer slices[] = new ByteBuffer[endIndex - startIndex + 1];
     
     for (int i = 0; i < slices.length; i++) {
-      slices[i] = buffers[startIndex + i].duplicate();
+      slices[i] = buffers[startIndex + i].duplicate().order(ByteOrder.LITTLE_ENDIAN);
     }
 
     // set the last buffer's limit for the sliced view.
@@ -394,6 +493,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     SingleBufferImpl(String resourceDescription, ByteBuffer buffer, long length, int chunkSizePower, ByteBufferGuard guard) {
       super(resourceDescription, new ByteBuffer[] { buffer }, length, chunkSizePower, guard);
       this.curBufIndex = 0;
+      assert buffer.order() == ByteOrder.LITTLE_ENDIAN;
       setCurBuf(buffer);
       buffer.position(0);
     }
@@ -523,13 +623,28 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     }
 
     @Override
+    public short readBEShort(long pos) throws IOException {
+      return super.readBEShort(pos + offset);
+    }
+
+    @Override
     public int readInt(long pos) throws IOException {
       return super.readInt(pos + offset);
     }
 
     @Override
+    public int readBEInt(long pos) throws IOException {
+      return super.readBEInt(pos + offset);
+    }
+
+    @Override
     public long readLong(long pos) throws IOException {
       return super.readLong(pos + offset);
+    }
+
+    @Override
+    public long readBELong(long pos) throws IOException {
+      return super.readBELong(pos + offset);
     }
 
     @Override

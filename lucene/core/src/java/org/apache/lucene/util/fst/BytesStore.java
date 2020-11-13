@@ -266,10 +266,10 @@ class BytesStore extends DataOutput implements Accountable {
     int blockIndex = (int) (pos >> blockBits);
     int upto = (int) (pos & blockMask);
     byte[] block = blocks.get(blockIndex);
-    int shift = 24;
+    int shift = 0;
     for(int i=0;i<4;i++) {
       block[upto++] = (byte) (value >> shift);
-      shift -= 8;
+      shift += 8;
       if (upto == blockSize) {
         upto = 0;
         blockIndex++;

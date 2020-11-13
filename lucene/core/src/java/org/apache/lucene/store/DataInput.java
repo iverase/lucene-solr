@@ -92,6 +92,15 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeByte(byte)
    */
   public short readShort() throws IOException {
+    byte b1 = readByte();
+    byte b2 = readByte();
+    return (short) ((b2 << 8) | (b1 & 0xFF));
+  }
+
+  /** Reads two bytes and returns a short.
+   * @see DataOutput#writeByte(byte)
+   */
+  public short readBEShort() throws IOException {
     return (short) (((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF));
   }
 
@@ -99,8 +108,19 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeInt(int)
    */
   public int readInt() throws IOException {
+    byte b1 = readByte();
+    byte b2 = readByte();
+    byte b3 = readByte();
+    byte b4 = readByte();
+    return (b4 << 24) | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
+  }
+
+  /** Reads four bytes and returns an int.
+   * @see DataOutput#writeInt(int)
+   */
+  public int readBEInt() throws IOException {
     return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
-         | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
+            | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
   }
 
   /** Reads an int stored in variable-length format.  Reads between one and
@@ -155,7 +175,23 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeLong(long)
    */
   public long readLong() throws IOException {
-    return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
+    byte b1 = readByte();
+    byte b2 = readByte();
+    byte b3 = readByte();
+    byte b4 = readByte();
+    byte b5 = readByte();
+    byte b6 = readByte();
+    byte b7 = readByte();
+    byte b8 = readByte();
+    return ((b8 & 0xFFL) << 56) | (b7 & 0xFFL) << 48 | (b6 & 0xFFL) << 40 | (b5 & 0xFFL) << 32
+            | (b4 & 0xFFL) << 24 | (b3 & 0xFFL) << 16 | (b2 & 0xFFL) << 8 | (b1 & 0xFFL);
+  }
+
+  /** Reads eight bytes and returns a long.
+   * @see DataOutput#writeLong(long)
+   */
+  public long readBELong() throws IOException {
+    return (((long)readBEInt()) << 32) | (readBEInt() & 0xFFFFFFFFL);
   }
 
   /**
@@ -174,7 +210,7 @@ public abstract class DataInput implements Cloneable {
   public void readLELongs(long[] dst, int offset, int length) throws IOException {
     Objects.checkFromIndexSize(offset, length, dst.length);
     for (int i = 0; i < length; ++i) {
-      dst[offset + i] = Long.reverseBytes(readLong());
+      dst[offset + i] = readLong();
     }
   }
 

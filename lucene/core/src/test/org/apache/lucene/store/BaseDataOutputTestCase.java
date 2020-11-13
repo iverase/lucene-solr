@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -86,7 +87,7 @@ public abstract class BaseDataOutputTestCase<T extends DataOutput> extends Rando
         ByteBuffersDataOutput rdo = dst instanceof ByteBuffersDataOutput ? (ByteBuffersDataOutput) dst : null;
 
         if (rnd.nextBoolean() && rdo != null) {
-          rdo.writeBytes(ByteBuffer.wrap(bytes));
+          rdo.writeBytes(ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN));
         } else {
           dst.writeBytes(bytes, bytes.length);
         }
@@ -95,7 +96,7 @@ public abstract class BaseDataOutputTestCase<T extends DataOutput> extends Rando
         return (src) -> {
           byte [] read = new byte [bytes.length];
           if (useBuffersForRead && src instanceof ByteBuffersDataInput) {
-            ((ByteBuffersDataInput) src).readBytes(ByteBuffer.wrap(read), read.length);
+            ((ByteBuffersDataInput) src).readBytes(ByteBuffer.wrap(read).order(ByteOrder.LITTLE_ENDIAN), read.length);
             assertArrayEquals("readBytes(ByteBuffer)", bytes, read);
           } else {
             src.readBytes(read, 0, read.length);

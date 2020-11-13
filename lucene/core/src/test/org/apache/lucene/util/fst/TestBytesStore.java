@@ -87,10 +87,10 @@ public class TestBytesStore extends LuceneTestCase {
                 System.out.println("    abs writeInt pos=" + randomPos + " x=" + x);
               }
               bytes.writeInt(randomPos, x);
-              expected[randomPos++] = (byte) (x >> 24);
-              expected[randomPos++] = (byte) (x >> 16);
+              expected[randomPos++] = (byte) (x);
               expected[randomPos++] = (byte) (x >> 8);
-              expected[randomPos++] = (byte) x;
+              expected[randomPos++] = (byte) (x >> 16);
+              expected[randomPos++] = (byte) (x >> 24);
             }
           }
           break;
@@ -335,16 +335,16 @@ public class TestBytesStore extends LuceneTestCase {
           int expectedInt = 0;
           if (reversed) {
             expectedPos -= skipBytes;
-            expectedInt |= (expected[expectedPos--]&0xFF)<<24;
-            expectedInt |= (expected[expectedPos--]&0xFF)<<16;
-            expectedInt |= (expected[expectedPos--]&0xFF)<<8;
             expectedInt |= (expected[expectedPos--]&0xFF);
+            expectedInt |= (expected[expectedPos--]&0xFF)<<8;
+            expectedInt |= (expected[expectedPos--]&0xFF)<<16;
+            expectedInt |= (expected[expectedPos--]&0xFF)<<24;
           } else {
             expectedPos += skipBytes;
-            expectedInt |= (expected[expectedPos++]&0xFF)<<24;
-            expectedInt |= (expected[expectedPos++]&0xFF)<<16;
-            expectedInt |= (expected[expectedPos++]&0xFF)<<8;
             expectedInt |= (expected[expectedPos++]&0xFF);
+            expectedInt |= (expected[expectedPos++]&0xFF)<<8;
+            expectedInt |= (expected[expectedPos++]&0xFF)<<16;
+            expectedInt |= (expected[expectedPos++]&0xFF)<<24;
           }
 
           if (VERBOSE) {

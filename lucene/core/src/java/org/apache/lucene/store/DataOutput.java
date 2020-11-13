@@ -67,6 +67,19 @@ public abstract class DataOutput {
    * @see DataInput#readInt()
    */
   public void writeInt(int i) throws IOException {
+    writeByte((byte) (i));
+    writeByte((byte)((i >>  8)));
+    writeByte((byte)((i >> 16)));
+    writeByte((byte)((i >> 24)));
+  }
+
+  /** Writes an int as four bytes.
+   * <p>
+   * 32-bit unsigned integer written as four bytes, high-order bytes first.
+   *
+   * @see DataInput#readInt()
+   */
+  public void writeBEInt(int i) throws IOException {
     writeByte((byte)(i >> 24));
     writeByte((byte)(i >> 16));
     writeByte((byte)(i >>  8));
@@ -77,6 +90,14 @@ public abstract class DataOutput {
    * @see DataInput#readShort()
    */
   public void writeShort(short i) throws IOException {
+    writeByte((byte) (i));
+    writeByte((byte)((i >> 8)));
+  }
+
+  /** Writes a short as two bytes.
+   * @see DataInput#readShort()
+   */
+  public void writeBEShort(short i) throws IOException {
     writeByte((byte)(i >>  8));
     writeByte((byte) i);
   }
@@ -210,8 +231,25 @@ public abstract class DataOutput {
    * @see DataInput#readLong()
    */
   public void writeLong(long i) throws IOException {
-    writeInt((int) (i >> 32));
-    writeInt((int) i);
+    writeByte((byte) (i & 0xFFL));
+    writeByte((byte)((i >>  8)));
+    writeByte((byte)((i >> 16)));
+    writeByte((byte)((i >> 24)));
+    writeByte((byte)((i >> 32)));
+    writeByte((byte)((i >> 40)));
+    writeByte((byte)((i >> 48)));
+    writeByte((byte)((i >> 56)));
+  }
+
+  /** Writes a long as eight bytes.
+   * <p>
+   * 64-bit unsigned integer written as eight bytes, high-order bytes first.
+   *
+   * @see DataInput#readLong()
+   */
+  public void writeBELong(long i) throws IOException {
+    writeBEInt((int) (i >> 32));
+    writeBEInt((int) i);
   }
 
   /** Writes an long in a variable-length format.  Writes between one and nine

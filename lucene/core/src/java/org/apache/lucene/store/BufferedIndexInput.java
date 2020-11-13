@@ -25,7 +25,7 @@ import java.nio.ByteOrder;
 /** Base implementation class for buffered {@link IndexInput}. */
 public abstract class BufferedIndexInput extends IndexInput implements RandomAccessInput {
 
-  private static final ByteBuffer EMPTY_BYTEBUFFER = ByteBuffer.allocate(0);
+  private static final ByteBuffer EMPTY_BYTEBUFFER = ByteBuffer.allocate(0).order(ByteOrder.LITTLE_ENDIAN);
 
   /** Default buffer size set to {@value #BUFFER_SIZE}. */
   public static final int BUFFER_SIZE = 1024;
@@ -141,6 +141,18 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return super.readShort();
     }
   }
+
+  @Override
+  public final short readBEShort() throws IOException {
+    if (Short.BYTES <= buffer.remaining()) {
+      buffer.order(ByteOrder.BIG_ENDIAN);
+      short s = buffer.getShort();
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
+      return s;
+    } else {
+      return super.readBEShort();
+    }
+  }
   
   @Override
   public final int readInt() throws IOException {
@@ -150,6 +162,18 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return super.readInt();
     }
   }
+
+  @Override
+  public final int readBEInt() throws IOException {
+    if (Integer.BYTES <= buffer.remaining()) {
+      buffer.order(ByteOrder.BIG_ENDIAN);
+      int i = buffer.getInt();
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
+      return i;
+    } else {
+      return super.readBEInt();
+    }
+  }
   
   @Override
   public final long readLong() throws IOException {
@@ -157,6 +181,18 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return buffer.getLong();
     } else {
       return super.readLong();
+    }
+  }
+
+  @Override
+  public final long readBELong() throws IOException {
+    if (Long.BYTES <= buffer.remaining()) {
+      buffer.order(ByteOrder.BIG_ENDIAN);
+      long l = buffer.getLong();
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
+      return l;
+    } else {
+      return super.readBELong();
     }
   }
 
@@ -248,6 +284,22 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
+  public final short readBEShort(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= buffer.limit()-1) {
+      bufferStart = pos;
+      buffer.limit(0);  // trigger refill() on read
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    short s = buffer.getShort((int) index);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return s;
+  }
+
+  @Override
   public final int readInt(long pos) throws IOException {
     long index = pos - bufferStart;
     if (index < 0 || index >= buffer.limit()-3) {
@@ -258,6 +310,22 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       index = 0;
     }
     return buffer.getInt((int) index);
+  }
+
+  @Override
+  public final int readBEInt(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= buffer.limit()-3) {
+      bufferStart = pos;
+      buffer.limit(0);  // trigger refill() on read
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    int i = buffer.getInt((int) index);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return i;
   }
 
   @Override
@@ -272,6 +340,22 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     }
     return buffer.getLong((int) index);
   }
+
+  @Override
+  public final long readBELong(long pos) throws IOException {
+    long index = pos - bufferStart;
+    if (index < 0 || index >= buffer.limit()-7) {
+      bufferStart = pos;
+      buffer.limit(0);  // trigger refill() on read
+      seekInternal(pos);
+      refill();
+      index = 0;
+    }
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    long l = buffer.getLong((int) index);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return l;
+  }
   
   private void refill() throws IOException {
     long start = bufferStart + buffer.position();
@@ -284,6 +368,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
 
     if (buffer == EMPTY_BYTEBUFFER) {
       buffer = ByteBuffer.allocate(bufferSize);  // allocate buffer lazily
+      buffer.order(ByteOrder.LITTLE_ENDIAN);
       seekInternal(bufferStart);
     }
     buffer.position(0);
@@ -291,7 +376,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     bufferStart = start;
     readInternal(buffer);
     // Make sure sub classes don't mess up with the buffer.
-    assert buffer.order() == ByteOrder.BIG_ENDIAN : buffer.order();
+    assert buffer.order() == ByteOrder.LITTLE_ENDIAN : buffer.order();
     assert buffer.remaining() == 0 : "should have thrown EOFException";
     assert buffer.position() == newLength;
     buffer.flip();

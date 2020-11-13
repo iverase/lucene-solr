@@ -302,7 +302,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       return (b & 0x7f) - 1;
     } else {
       // positive float
-      int bits = b << 24 | ((in.readShort() & 0xFFFF) << 8) | (in.readByte() & 0xFF);
+      int bits = b << 24 | ((in.readBEShort() & 0xFFFF) << 8) | (in.readByte() & 0xFF);
       return Float.intBitsToFloat(bits);
     }
   }
@@ -324,11 +324,11 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       return (b & 0x7f) - 1;
     } else {
       // positive double
-      long bits = ((long) b) << 56 | ((in.readInt() & 0xFFFFFFFFL) << 24) | ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+      long bits = ((long) b) << 56 | ((in.readBEInt() & 0xFFFFFFFFL) << 24) | ((in.readBEShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
       return Double.longBitsToDouble(bits);
     }
   }
-
+  
   /**
    * Reads a long in a variable-length format.  Reads between one andCorePropLo
    * nine bytes. Small values typically take fewer bytes.

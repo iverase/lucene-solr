@@ -287,7 +287,7 @@ final class ForUtil {
 
     for (int i = 0; i < numLongsPerShift; ++i) {
       // Java longs are big endian and we want to read little endian longs, so we need to reverse bytes
-      long l = Long.reverseBytes(tmp[i]);
+      long l = tmp[i];
       out.writeLong(l);
     }
   }

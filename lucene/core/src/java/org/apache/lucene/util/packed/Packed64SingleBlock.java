@@ -212,7 +212,8 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       int valueCount, int bitsPerValue) throws IOException {
     Packed64SingleBlock reader = create(valueCount, bitsPerValue);
     for (int i = 0; i < reader.blocks.length; ++i) {
-      reader.blocks[i] = in.readLong();
+      //reader.blocks[i] = in.readLong();
+      reader.blocks[i] = in.readBELong();
     }
     return reader;
   }

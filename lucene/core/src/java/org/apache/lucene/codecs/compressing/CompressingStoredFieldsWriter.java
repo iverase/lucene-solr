@@ -357,7 +357,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       out.writeByte((byte) (0x80 | (1 + intVal)));
     } else if ((floatBits >>> 31) == 0) {
       // other positive floats: 4 bytes
-      out.writeInt(floatBits);
+      out.writeBEInt(floatBits);
     } else {
       // other negative float: 5 bytes
       out.writeByte((byte) 0xFF);
@@ -400,7 +400,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       out.writeInt(Float.floatToIntBits((float) d));
     } else if ((doubleBits >>> 63) == 0) {
       // other positive doubles: 8 bytes
-      out.writeLong(doubleBits);
+      out.writeBELong(doubleBits);
     } else {
       // other negative doubles: 9 bytes
       out.writeByte((byte) 0xFF);

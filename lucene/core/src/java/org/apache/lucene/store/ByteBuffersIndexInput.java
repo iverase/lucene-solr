@@ -94,9 +94,21 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
+  public short readBEShort() throws IOException {
+    ensureOpen();
+    return in.readBEShort();
+  }
+
+  @Override
   public int readInt() throws IOException {
     ensureOpen();
     return in.readInt();
+  }
+
+  @Override
+  public int readBEInt() throws IOException {
+    ensureOpen();
+    return in.readBEInt();
   }
 
   @Override
@@ -115,6 +127,12 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   public long readLong() throws IOException {
     ensureOpen();
     return in.readLong();
+  }
+
+  @Override
+  public long readBELong() throws IOException {
+    ensureOpen();
+    return in.readBELong();
   }
 
   @Override
@@ -166,15 +184,33 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
+  public short readBEShort(long pos) throws IOException {
+    ensureOpen();
+    return in.readBEShort(pos);
+  }
+
+  @Override
   public int readInt(long pos) throws IOException {
     ensureOpen();
     return in.readInt(pos);
   }
 
   @Override
+  public int readBEInt(long pos) throws IOException {
+    ensureOpen();
+    return in.readBEInt(pos);
+  }
+
+  @Override
   public long readLong(long pos) throws IOException {
     ensureOpen();
     return in.readLong(pos);
+  }
+
+  @Override
+  public long readBELong(long pos) throws IOException {
+    ensureOpen();
+    return in.readBELong(pos);
   }
   
   @Override

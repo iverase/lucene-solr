@@ -137,17 +137,35 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
           slice.seek(pos);
           return slice.readShort();
         }
+
+        @Override
+        public short readBEShort(long pos) throws IOException {
+          slice.seek(pos);
+          return slice.readBEShort();
+        }
         
         @Override
         public int readInt(long pos) throws IOException {
           slice.seek(pos);
           return slice.readInt();
         }
+
+        @Override
+        public int readBEInt(long pos) throws IOException {
+          slice.seek(pos);
+          return slice.readBEInt();
+        }
         
         @Override
         public long readLong(long pos) throws IOException {
           slice.seek(pos);
           return slice.readLong();
+        }
+
+        @Override
+        public long readBELong(long pos) throws IOException {
+          slice.seek(pos);
+          return slice.readBELong();
         }
 
         @Override
