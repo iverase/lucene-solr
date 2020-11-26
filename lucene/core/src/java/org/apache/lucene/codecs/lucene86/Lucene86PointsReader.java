@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
@@ -83,22 +82,19 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
                   Lucene86PointsFormat.VERSION_CURRENT,
                   readState.segmentInfo.getId(),
                   readState.segmentSuffix);
-          IndexInput metaInWrapped = new EndiannessReverserIndexInput(metaIn);
-          IndexInput indexInWrapped = new EndiannessReverserIndexInput(indexIn);
-          IndexInput dataInWrapped = new EndiannessReverserIndexInput(dataIn);
           while (true) {
-            int fieldNumber = metaInWrapped.readInt();
+            int fieldNumber = metaIn.readInt();
             if (fieldNumber == -1) {
               break;
             } else if (fieldNumber < 0) {
               throw new CorruptIndexException("Illegal field number: " + fieldNumber, metaIn);
             }
 
-            BKDReader reader = new BKDReader(metaInWrapped, indexInWrapped, dataInWrapped);
+            BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
             readers.put(fieldNumber, reader);
           }
-          indexLength = metaInWrapped.readLong();
-          dataLength = metaInWrapped.readLong();
+          indexLength = metaIn.readLong();
+          dataLength = metaIn.readLong();
         } catch (Throwable t) {
           priorE = t;
         } finally {
