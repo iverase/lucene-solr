@@ -175,6 +175,18 @@ public abstract class DataInput implements Cloneable {
     }
   }
 
+  /**
+   * Read a specified number of ints.
+   *
+   * @lucene.experimental
+   */
+  public void readInts(int[] dst, int offset, int length) throws IOException {
+    Objects.checkFromIndexSize(offset, length, dst.length);
+    for (int i = 0; i < length; ++i) {
+      dst[offset + i] = readInt();
+    }
+  }
+
   /** Reads a long stored in variable-length format.  Reads between one and
    * nine bytes.  Smaller values take fewer bytes.  Negative numbers are not
    * supported.

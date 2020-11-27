@@ -89,7 +89,7 @@ class DocIdsWriter {
         readDeltaVInts(in, count, docIDs);
         break;
       case 32:
-        readInts32(in, count, docIDs, scratch);
+        readInts32(in, count, docIDs);
         break;
       case 24:
         readInts24(in, count, docIDs, scratch);
@@ -107,19 +107,8 @@ class DocIdsWriter {
     }
   }
 
-  static void readInts32(IndexInput in, int count, int[] docIDs, long[] scratch) throws IOException {
-    final int iter = count / 2;
-    in.readLongs(scratch, 0, iter);
-    int i, j;
-    for (i = 0, j = 0; i < count - 1; i += 2, j++) {
-      long l = scratch[j];
-      docIDs[i] = (int)(l & 0xffffffff);
-      docIDs[i+1] = (int)(l >>> 32);
-      
-    }
-    for (; i < count; i++) {
-      docIDs[i] = in.readInt();
-    }
+  static void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
+    in.readInts(docIDs, 0, count);
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs, long[] scratch) throws IOException {

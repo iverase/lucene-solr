@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 /**
@@ -37,6 +38,7 @@ import java.nio.LongBuffer;
  */
 public abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
   private static final LongBuffer EMPTY_LONGBUFFER = LongBuffer.allocate(0);
+  private static final IntBuffer EMPTY_INTBUFFER = IntBuffer.allocate(0);
 
   protected final long length;
   protected final long chunkSizeMask;
@@ -47,6 +49,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected int curBufIndex = -1;
   protected ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   private LongBuffer[] curLongBufferViews;
+  private IntBuffer[] curIntBufferViews;
 
   protected boolean isClone = false;
   
@@ -132,7 +135,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         // because #asLongBuffer() has some cost that we don't want to pay on
         // each invocation of #readLELongs.
         if (i < curBuf.limit()) {
-          curLongBufferViews[i] = curBuf.duplicate().order(ByteOrder.LITTLE_ENDIAN).position(i).asLongBuffer();
+          curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
         } else {
           curLongBufferViews[i] = EMPTY_LONGBUFFER;
         }
@@ -145,6 +148,39 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       curBuf.position(position + (length << 3));
     } catch (BufferUnderflowException e) {
       super.readLongs(dst, offset, length);
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  public void readInts(int[] dst, int offset, int length) throws IOException {
+    // ByteBuffer#getLong could work but it has some per-long overhead and there
+    // is no ByteBuffer#getLongs to read multiple longs at once. So we use the
+    // below trick in order to be able to leverage LongBuffer#get(long[]) to
+    // read multiple longs at once with as little overhead as possible.
+    if (curIntBufferViews == null) {
+      // readLELongs is only used for postings today, so we compute the long
+      // views lazily so that other data-structures don't have to pay for the
+      // associated initialization/memory overhead.
+      curIntBufferViews = new IntBuffer[Integer.BYTES];
+      for (int i = 0; i < Integer.BYTES; ++i) {
+        // Compute a view for each possible alignment. We cache these views
+        // because #asLongBuffer() has some cost that we don't want to pay on
+        // each invocation of #readLELongs.
+        if (i < curBuf.limit()) {
+          curIntBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
+        } else {
+          curIntBufferViews[i] = EMPTY_INTBUFFER;
+        }
+      }
+    }
+    try {
+      final int position = curBuf.position();
+      guard.getInts(curIntBufferViews[position & 0x07].position(position >>> 2), dst, offset, length);
+      // if the above call succeeded, then we know the below sum cannot overflow
+      curBuf.position(position + (length << 2));
+    } catch (BufferUnderflowException e) {
+      super.readInts(dst, offset, length);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }

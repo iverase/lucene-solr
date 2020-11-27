@@ -409,4 +409,23 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
     }
   }
 
+  public void testLittleEndianIntsCrossBoundary() throws Exception {
+    try (Directory dir = new MMapDirectory(createTempDir("testLittleEndianLongsCrossBoundary"), 16)) {
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        out.writeByte((byte) 2);
+        out.writeInt(3);
+        out.writeInt(Integer.MAX_VALUE);
+        out.writeInt(-3);
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        assertEquals(13, input.length());
+        assertEquals(2, input.readByte());
+        int[] l = new int[4];
+        input.readInts(l, 1, 3);
+        assertArrayEquals(new int[] {0, 3, Integer.MAX_VALUE, -3}, l);
+        assertEquals(13, input.getFilePointer());
+      }
+    }
+  }
+
 }
