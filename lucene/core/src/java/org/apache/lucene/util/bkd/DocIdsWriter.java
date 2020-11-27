@@ -89,7 +89,7 @@ class DocIdsWriter {
         readDeltaVInts(in, count, docIDs);
         break;
       case 32:
-        readInts32(in, count, docIDs);
+        readInts32(in, count, docIDs, scratch);
         break;
       case 24:
         readInts24(in, count, docIDs, scratch);
@@ -107,8 +107,17 @@ class DocIdsWriter {
     }
   }
 
-  static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
-    for (int i = 0; i < count; i++) {
+  static void readInts32(IndexInput in, int count, int[] docIDs, long[] scratch) throws IOException {
+    final int iter = count / 2;
+    in.readLongs(scratch, 0, iter);
+    int i, j;
+    for (i = 0, j = 0; i < count - 1; i += 2, j++) {
+      long l = scratch[j];
+      docIDs[i] = (int)(l & 0xffffffff);
+      docIDs[i+1] = (int)(l >>> 32);
+      
+    }
+    for (; i < count; i++) {
       docIDs[i] = in.readInt();
     }
   }
@@ -144,7 +153,7 @@ class DocIdsWriter {
         readDeltaVInts(in, count, visitor);
         break;
       case 32:
-        readInts32(in, count, visitor);
+        readInts32(in, count, visitor, scratch);
         break;
       case 24:
         readInts24(in, count, visitor, scratch);
@@ -162,8 +171,16 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    for (int i = 0; i < count; i++) {
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, long[] scratch) throws IOException {
+    final int iter = count / 2;
+    in.readLongs(scratch, 0, iter);
+    int i, j;
+    for (i = 0, j = 0; i < count - 1; i += 2, j++) {
+      long l = scratch[j];
+      visitor.visit((int)(l & 0xffffffff));
+      visitor.visit((int)(l >>> 32));
+    }
+    for (; i < count; i++) {
       visitor.visit(in.readInt());
     }
   }
