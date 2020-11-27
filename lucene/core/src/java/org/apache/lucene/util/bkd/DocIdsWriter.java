@@ -82,7 +82,7 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers into {@code docIDs}. */
-  static void readInts(IndexInput in, int count, int[] docIDs) throws IOException {
+  static void readInts(IndexInput in, int count, int[] docIDs, long[] scratch) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
@@ -92,7 +92,7 @@ class DocIdsWriter {
         readInts32(in, count, docIDs);
         break;
       case 24:
-        readInts24(in, count, docIDs);
+        readInts24(in, count, docIDs, scratch);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -113,12 +113,14 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int i;
-    for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+  private static void readInts24(IndexInput in, int count, int[] docIDs, long[] scratch) throws IOException {
+    final int iter = count / 8;
+    in.readLongs(scratch, 0, 3 * iter);
+    int i, j;
+    for (i = 0, j = 0; i < count - 7; i += 8, j += 3) {
+      long l1 = scratch[j];
+      long l2 = scratch[j + 1];
+      long l3 = scratch[j + 2];
       docIDs[i] =  (int) (l1 >>> 40);
       docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -128,13 +130,14 @@ class DocIdsWriter {
       docIDs[i+6] = (int) (l3 >>> 24) & 0xffffff;
       docIDs[i+7] = (int) l3 & 0xffffff;
     }
+    assert j / 3 == iter : iter + " != " + i / 3;
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] scratch) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
@@ -144,7 +147,7 @@ class DocIdsWriter {
         readInts32(in, count, visitor);
         break;
       case 24:
-        readInts24(in, count, visitor);
+        readInts24(in, count, visitor, scratch);
         break;
       default:
         throw new IOException("Unsupported number of bits per value: " + bpv);
@@ -165,12 +168,14 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
-    int i;
-    for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor, long[] scratch) throws IOException {
+    final int iter = count / 8;
+    in.readLongs(scratch, 0, 3 * iter);
+    int i, j;
+    for (i = 0, j = 0; i < count - 7; i += 8, j+= 3) {
+      long l1 = scratch[j];
+      long l2 = scratch[j + 1];
+      long l3 = scratch[j + 2];
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
