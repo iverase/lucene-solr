@@ -135,14 +135,14 @@ class DocIdsWriter {
   }
 
   /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
-  static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] scratch) throws IOException {
+  static void readInts(IndexInput in, int count, IntersectVisitor visitor, long[] scratch, int[] intscratch) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
       case 0:
         readDeltaVInts(in, count, visitor);
         break;
       case 32:
-        readInts32(in, count, visitor, scratch);
+        readInts32(in, count, visitor, intscratch);
         break;
       case 24:
         readInts24(in, count, visitor, scratch);
@@ -160,17 +160,10 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, long[] scratch) throws IOException {
-    final int iter = count / 2;
-    in.readLongs(scratch, 0, iter);
-    int i, j;
-    for (i = 0, j = 0; i < count - 1; i += 2, j++) {
-      long l = scratch[j];
-      visitor.visit((int)(l & 0xffffffff));
-      visitor.visit((int)(l >>> 32));
-    }
-    for (; i < count; i++) {
-      visitor.visit(in.readInt());
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor, int[] scratch) throws IOException {
+    in.readInts(scratch, 0, count);
+    for (int i = 0; i < count; i++) {
+      visitor.visit(scratch[i]);
     }
   }
 

@@ -94,7 +94,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
           throw new UnsupportedOperationException();
         }
 
-      }, scratch);
+      }, scratch, new int[ints.length]);
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
