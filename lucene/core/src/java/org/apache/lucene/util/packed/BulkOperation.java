@@ -131,6 +131,7 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
     switch (format) {
     case PACKED:
       assert packedBulkOps[bitsPerValue - 1] != null;
+      //return new BulkOperationPacked(bitsPerValue);
       return packedBulkOps[bitsPerValue - 1];
     case PACKED_SINGLE_BLOCK:
       assert packedSingleBlockBulkOps[bitsPerValue - 1] != null;

@@ -783,7 +783,7 @@ public class PackedInts {
    */
   public static Reader getReader(IndexInput in) throws IOException {
     // Hack to make test happy as the input is already wrapped. Note this method is only used there
-    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -824,7 +824,7 @@ public class PackedInts {
    */
   public static ReaderIterator getReaderIterator(IndexInput in, int mem) throws IOException {
     // Hack to make test happy as the input is already wrapped. Note this method is only used there
-    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -877,7 +877,7 @@ public class PackedInts {
    */
   public static Reader getDirectReader(IndexInput in) throws IOException {
     // Hack to make test happy as the input is already wrapped. Note this method is only used there
-    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
