@@ -25,6 +25,8 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -97,27 +99,22 @@ final class LatLonPointQuery extends SpatialQuery {
       }
 
       @Override
-      protected LeafVisitor getLeafVisitor() {
-        return new LeafVisitor() {
-          @Override
-          protected boolean queryIntersects(byte[] packedValue) {
-            return component2DPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                    NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES));
-          }
+      protected Predicate<byte[]> intersects() {
+        return packedValue -> component2DPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES));
+      }
 
-          @Override
-          protected boolean queryContains(byte[] packedValue) {
-            return component2DPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                    NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES));
-          }
+      @Override
+      protected Predicate<byte[]> within() {
+        return packedValue -> component2DPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
+                NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES));
+      }
 
-          @Override
-          protected Component2D.WithinRelation queryWithin(byte[] packedValue) {
-            final double lat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(packedValue, 0));
-            final double lon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES));
-            return component2D.withinPoint(lon, lat);
-          }
-        };
+      @Override
+      protected Function<byte[], Component2D.WithinRelation> contains() {
+        return packedValue -> component2D.withinPoint(
+                GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES)), 
+                GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(packedValue, 0)));
       }
     };
   }
@@ -160,23 +157,18 @@ final class LatLonPointQuery extends SpatialQuery {
     }
 
     @Override
-    protected LeafVisitor getLeafVisitor() {
-      return new LeafVisitor() {
-        @Override
-        protected boolean queryIntersects(byte[] triangle) {
-          return false;
-        }
+    protected Predicate<byte[]> intersects() {
+      return bytes -> false;
+    }
 
-        @Override
-        protected boolean queryContains(byte[] triangle) {
-          return false;
-        }
+    @Override
+    protected Predicate<byte[]> within() {
+      return bytes -> false;
+    }
 
-        @Override
-        protected Component2D.WithinRelation queryWithin(byte[] triangle) {
-          return Component2D.WithinRelation.NOTWITHIN;
-        }
-      };
+    @Override
+    protected Function<byte[], Component2D.WithinRelation> contains() {
+      return bytes -> Component2D.WithinRelation.NOTWITHIN;
     }
   };
 }

@@ -17,6 +17,8 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
@@ -62,97 +64,100 @@ final class XYShapeQuery extends SpatialQuery {
       }
 
       @Override
-      protected LeafVisitor getLeafVisitor() {
+      protected Predicate<byte[]> intersects() {
         final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
-        return new LeafVisitor() {
-          @Override
-          protected boolean queryIntersects(byte[] t) {
-            ShapeField.decodeTriangle(t, scratchTriangle);
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-            switch (scratchTriangle.type) {
-              case POINT: {
-                double y = decode(scratchTriangle.aY);
-                double x = decode(scratchTriangle.aX);
-                return component2D.contains(x, y);
-              }
-              case LINE: {
-                double aY = decode(scratchTriangle.aY);
-                double aX = decode(scratchTriangle.aX);
-                double bY = decode(scratchTriangle.bY);
-                double bX = decode(scratchTriangle.bX);
-                return component2D.intersectsLine(aX, aY, bX, bY);
-              }
-              case TRIANGLE: {
-                double aY = decode(scratchTriangle.aY);
-                double aX = decode(scratchTriangle.aX);
-                double bY = decode(scratchTriangle.bY);
-                double bX = decode(scratchTriangle.bX);
-                double cY = decode(scratchTriangle.cY);
-                double cX = decode(scratchTriangle.cX);
-                return component2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
-              }
-              default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+          switch (scratchTriangle.type) {
+            case POINT: {
+              double y = decode(scratchTriangle.aY);
+              double x = decode(scratchTriangle.aX);
+              return component2D.contains(x, y);
             }
+            case LINE: {
+              double aY = decode(scratchTriangle.aY);
+              double aX = decode(scratchTriangle.aX);
+              double bY = decode(scratchTriangle.bY);
+              double bX = decode(scratchTriangle.bX);
+              return component2D.intersectsLine(aX, aY, bX, bY);
+            }
+            case TRIANGLE: {
+              double aY = decode(scratchTriangle.aY);
+              double aX = decode(scratchTriangle.aX);
+              double bY = decode(scratchTriangle.bY);
+              double bX = decode(scratchTriangle.bX);
+              double cY = decode(scratchTriangle.cY);
+              double cX = decode(scratchTriangle.cX);
+              return component2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+            }
+            default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
           }
+        };
+      }
 
-          @Override
-          protected boolean queryContains(byte[] t) {
-            ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Predicate<byte[]> within() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-            switch (scratchTriangle.type) {
-              case POINT: {
-                double y = decode(scratchTriangle.aY);
-                double x = decode(scratchTriangle.aX);
-                return component2D.contains(x, y);
-              }
-              case LINE: {
-                double aY = decode(scratchTriangle.aY);
-                double aX = decode(scratchTriangle.aX);
-                double bY = decode(scratchTriangle.bY);
-                double bX = decode(scratchTriangle.bX);
-                return component2D.containsLine(aX, aY, bX, bY);
-              }
-              case TRIANGLE: {
-                double aY = decode(scratchTriangle.aY);
-                double aX = decode(scratchTriangle.aX);
-                double bY = decode(scratchTriangle.bY);
-                double bX = decode(scratchTriangle.bX);
-                double cY = decode(scratchTriangle.cY);
-                double cX = decode(scratchTriangle.cX);
-                return component2D.containsTriangle(aX, aY, bX, bY, cX, cY);
-              }
-              default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+          switch (scratchTriangle.type) {
+            case POINT: {
+              double y = decode(scratchTriangle.aY);
+              double x = decode(scratchTriangle.aX);
+              return component2D.contains(x, y);
             }
+            case LINE: {
+              double aY = decode(scratchTriangle.aY);
+              double aX = decode(scratchTriangle.aX);
+              double bY = decode(scratchTriangle.bY);
+              double bX = decode(scratchTriangle.bX);
+              return component2D.containsLine(aX, aY, bX, bY);
+            }
+            case TRIANGLE: {
+              double aY = decode(scratchTriangle.aY);
+              double aX = decode(scratchTriangle.aX);
+              double bY = decode(scratchTriangle.bY);
+              double bX = decode(scratchTriangle.bX);
+              double cY = decode(scratchTriangle.cY);
+              double cX = decode(scratchTriangle.cX);
+              return component2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+            }
+            default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
           }
+        };
+      }
 
-          @Override
-          protected Component2D.WithinRelation queryWithin(byte[] t) {
-            ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Function<byte[], Component2D.WithinRelation> contains() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-            switch (scratchTriangle.type) {
-              case POINT: {
-                double y = decode(scratchTriangle.aY);
-                double x = decode(scratchTriangle.aX);
-                return component2D.withinPoint(x, y);
-              }
-              case LINE: {
-                double aY = decode(scratchTriangle.aY);
-                double aX = decode(scratchTriangle.aX);
-                double bY = decode(scratchTriangle.bY);
-                double bX = decode(scratchTriangle.bX);
-                return component2D.withinLine(aX, aY, scratchTriangle.ab, bX, bY);
-              }
-              case TRIANGLE: {
-                double aY = decode(scratchTriangle.aY);
-                double aX = decode(scratchTriangle.aX);
-                double bY = decode(scratchTriangle.bY);
-                double bX = decode(scratchTriangle.bX);
-                double cY = decode(scratchTriangle.cY);
-                double cX = decode(scratchTriangle.cX);
-                return component2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
-              }
-              default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
+          switch (scratchTriangle.type) {
+            case POINT: {
+              double y = decode(scratchTriangle.aY);
+              double x = decode(scratchTriangle.aX);
+              return component2D.withinPoint(x, y);
             }
+            case LINE: {
+              double aY = decode(scratchTriangle.aY);
+              double aX = decode(scratchTriangle.aX);
+              double bY = decode(scratchTriangle.bY);
+              double bX = decode(scratchTriangle.bX);
+              return component2D.withinLine(aX, aY, scratchTriangle.ab, bX, bY);
+            }
+            case TRIANGLE: {
+              double aY = decode(scratchTriangle.aY);
+              double aX = decode(scratchTriangle.aX);
+              double bY = decode(scratchTriangle.bY);
+              double bX = decode(scratchTriangle.bX);
+              double cY = decode(scratchTriangle.cY);
+              double cX = decode(scratchTriangle.cX);
+              return component2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+            }
+            default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
           }
         };
       }
