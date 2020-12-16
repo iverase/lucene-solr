@@ -47,7 +47,7 @@ import java.util.List;
  * <p>The field must be indexed using {@link LatLonDocValuesField} added per document.
  *
  **/
-class LatLonDocValuesPointQuery extends Query {
+class LatLonDocValuesQuery extends Query {
 
   private final String field;
   private final LatLonGeometry[] geometries;
@@ -55,7 +55,7 @@ class LatLonDocValuesPointQuery extends Query {
   private final Component2D component2D;
 
 
-  LatLonDocValuesPointQuery(String field, ShapeField.QueryRelation queryRelation, LatLonGeometry... geometries) {
+  LatLonDocValuesQuery(String field, ShapeField.QueryRelation queryRelation, LatLonGeometry... geometries) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
@@ -93,7 +93,7 @@ class LatLonDocValuesPointQuery extends Query {
     if (sameClassAs(obj) == false) {
       return false;
     }
-    LatLonDocValuesPointQuery other = (LatLonDocValuesPointQuery) obj;
+    LatLonDocValuesQuery other = (LatLonDocValuesQuery) obj;
     return field.equals(other.field) && 
            queryRelation == other.queryRelation &&
            Arrays.equals(geometries, other.geometries);

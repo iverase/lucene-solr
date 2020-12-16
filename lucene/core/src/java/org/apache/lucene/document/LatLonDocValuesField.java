@@ -219,6 +219,6 @@ public class LatLonDocValuesField extends Field {
       Rectangle rect = (Rectangle) geometry;
       return newSlowBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     }
-    return new LatLonDocValuesPointQuery(field, queryRelation, latLonGeometries);
+    return new LatLonDocValuesQuery(field, queryRelation, latLonGeometries);
   }
 }

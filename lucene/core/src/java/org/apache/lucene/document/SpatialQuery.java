@@ -74,10 +74,10 @@ abstract class SpatialQuery extends Query {
     this.queryRelation = queryRelation;
   }
 
-  /** returns the spatial visitor to be used for this query. */
+  /** returns the spatial visitor to be used for this query. Called before generating the query {@link Weight} */
   protected abstract SpatialVisitor getSpatialVisitor();
 
-  /** Visitor used for walking the BKD tree. Called once when generating the query {@link Weight} */
+  /** Visitor used for walking the BKD tree. */
   protected static abstract class SpatialVisitor {
     /**
      * relates a range of points (internal node) to the query
