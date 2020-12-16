@@ -369,12 +369,13 @@ abstract class SpatialQuery extends Query {
 
     @Override
     public long cost() {
-      if (cost == -1) {
-        // Computing the cost may be expensive, so only do it if necessary
-        cost = values.estimateDocCount(getEstimateVisitor(spatialVisitor, queryRelation));
-        assert cost >= 0;
-      }
-      return cost;
+      return Long.MAX_VALUE;
+//      if (cost == -1) {
+//        // Computing the cost may be expensive, so only do it if necessary
+//        cost = values.estimateDocCount(getEstimateVisitor(spatialVisitor, queryRelation));
+//        assert cost >= 0;
+//      }
+//      return cost;
     }
   }
 
