@@ -72,24 +72,25 @@ public final class ShapeField {
         int bYencoded,
         int cXencoded,
         int cYencoded) {
-      super(name, TYPE);
-      setTriangleValue(
-          aXencoded, aYencoded, true, bXencoded, bYencoded, true, cXencoded, cYencoded, true);
+      this(
+          name, aXencoded, aYencoded, true, bXencoded, bYencoded, true, cXencoded, cYencoded, true);
     }
 
     /** xtor from a given Tessellated Triangle object */
-    Triangle(String name, Tessellator.Triangle t) {
+    Triangle(
+        String name,
+        int aXencoded,
+        int aYencoded,
+        boolean ab,
+        int bXencoded,
+        int bYencoded,
+        boolean bc,
+        int cXencoded,
+        int cYencoded,
+        boolean ca) {
       super(name, TYPE);
       setTriangleValue(
-          t.getEncodedX(0),
-          t.getEncodedY(0),
-          t.isEdgefromPolygon(0),
-          t.getEncodedX(1),
-          t.getEncodedY(1),
-          t.isEdgefromPolygon(1),
-          t.getEncodedX(2),
-          t.getEncodedY(2),
-          t.isEdgefromPolygon(2));
+          aXencoded, aYencoded, ab, bXencoded, bYencoded, bc, cXencoded, cYencoded, ca);
     }
 
     /** sets the vertices of the triangle as integer encoded values */

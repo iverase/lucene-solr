@@ -792,7 +792,7 @@ public class TestLatLonShape extends LuceneTestCase {
                   GeoEncodingUtils.encodeLongitude(polygon.getPolyLon(i)));
         }
         polygon = new Polygon(lats, lons);
-        Tessellator.tessellate(polygon);
+        Tessellator.tessellate(polygon, (aX, aY, ab, bX, bY, bc, cX, cY, ca) -> {});
         break;
       } catch (Exception e) {
         // invalid polygon, try a new one

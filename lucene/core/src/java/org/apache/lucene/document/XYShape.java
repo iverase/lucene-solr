@@ -69,12 +69,24 @@ public class XYShape {
   /** create indexable fields for cartesian polygon geometry */
   public static Field[] createIndexableFields(String fieldName, XYPolygon polygon) {
 
-    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
-    List<Triangle> fields = new ArrayList<>(tessellation.size());
-    for (Tessellator.Triangle t : tessellation) {
-      fields.add(new Triangle(fieldName, t));
-    }
-    return fields.toArray(new Field[fields.size()]);
+    final List<Triangle> fields = new ArrayList<>();
+    Tessellator.tessellate(
+        polygon,
+        (aX, aY, ab, bX, bY, bc, cX, cY, ca) -> {
+          fields.add(
+              new Triangle(
+                  fieldName,
+                  encode((float) aX),
+                  encode((float) aY),
+                  ab,
+                  encode((float) bX),
+                  encode((float) bY),
+                  bc,
+                  encode((float) cX),
+                  encode((float) cY),
+                  ca));
+        });
+    return fields.toArray(new Triangle[fields.size()]);
   }
 
   /** create indexable fields for cartesian line geometry */

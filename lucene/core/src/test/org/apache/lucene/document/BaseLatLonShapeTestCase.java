@@ -411,7 +411,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
         while (true) {
           Polygon p = GeoTestUtil.nextPolygon();
           try {
-            Tessellator.tessellate(p);
+            Tessellator.tessellate(p, (aX, aY, ab, bX, bY, bc, cX, cY, ca) -> {});
             return p;
           } catch (IllegalArgumentException e) {
             // if we can't tessellate; then random polygon generator created a malformed shape

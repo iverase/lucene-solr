@@ -72,12 +72,24 @@ public class LatLonShape {
   /** create indexable fields for polygon geometry */
   public static Field[] createIndexableFields(String fieldName, Polygon polygon) {
     // the lionshare of the indexing is done by the tessellator
-    List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
-    List<Triangle> fields = new ArrayList<>();
-    for (Tessellator.Triangle t : tessellation) {
-      fields.add(new Triangle(fieldName, t));
-    }
-    return fields.toArray(new Field[fields.size()]);
+    final List<Triangle> fields = new ArrayList<>();
+    Tessellator.tessellate(
+        polygon,
+        (aX, aY, ab, bX, bY, bc, cX, cY, ca) -> {
+          fields.add(
+              new Triangle(
+                  fieldName,
+                  encodeLongitude(aX),
+                  encodeLatitude(aY),
+                  ab,
+                  encodeLongitude(bX),
+                  encodeLatitude(bY),
+                  bc,
+                  encodeLongitude(cX),
+                  encodeLatitude(cY),
+                  ca));
+        });
+    return fields.toArray(new Triangle[fields.size()]);
   }
 
   /** create indexable fields for line geometry */
