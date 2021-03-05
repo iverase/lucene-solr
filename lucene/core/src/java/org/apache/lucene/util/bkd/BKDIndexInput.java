@@ -18,7 +18,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Abstraction of a block KD-tree that contains multi-dimensional points in byte[] space.
@@ -53,42 +52,27 @@ public interface BKDIndexInput {
 
     /** Clone, but you are not allowed to pop up past the point where the clone happened. */
     IndexTree clone();
+    
+    /** Move to the first child node and return {@code true} upon success. Returns {@code false} for
+     *  leaf nodes and {@code true} otherwise. */
+    boolean moveToChild();
+    
+    /** Move to the next sibling node and return {@code true} upon success. Returns {@code false} if
+     *  the current node has no more siblings. */
+    boolean moveToSibling();
+    
+    /** Move to the parent node and return {@code true} upon success. Returns {@code false} for the
+     *  root node and {@code true} otherwise. */
+    boolean moveToParent();
 
-    /** Return current node id. */
-    int getNodeID();
+    /** Return the minimum packed value of the current node. */
+    byte[] getMinPackedValue();
 
-    /**
-     * Navigate to left child. Should not be call if the current node has already called this method
-     * or pushRight.
-     */
-    void pushLeft();
-
-    /**
-     * Navigate to right child. Should not be call if the current node has already called this
-     * method.
-     */
-    void pushRight();
-
-    /** Navigate to parent node. */
-    void pop();
-
-    /** Check if the current node is a leaf. */
-    boolean isLeafNode();
-
-    /** Check if the current node exists. */
-    boolean nodeExists();
-
-    /** Get split dimension for this node. Only valid after pushLeft or pushRight, not pop! */
-    int getSplitDim();
-
-    /** Get split dimension value for this node. Only valid after pushLeft or pushRight, not pop! */
-    BytesRef getSplitDimValue();
-
-    /** Get split value for this node. Only valid after pushLeft or pushRight, not pop! */
-    byte[] getSplitPackedValue();
-
+    /** Return the maximum packed value of the current node. */
+    byte[] getMaxPackedValue();
+    
     /** Return the number of leaves below the current node. */
-    int getNumLeaves();
+    long size();
 
     /** Visit the docs of the current node. Only valid if isLeafNode() is true. */
     void visitDocIDs(IntersectVisitor visitor) throws IOException;
